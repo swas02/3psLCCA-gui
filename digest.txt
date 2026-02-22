@@ -1,0 +1,2668 @@
+# Repository Analysis
+
+## Summary
+
+Directory: c:\Users\Asus\Desktop\3psLCCA is here\osbridgelcca_new
+Files analyzed: 42
+
+Estimated tokens: 24.8k
+
+## Directory Structure
+
+Directory structure:
+└── osbridgelcca_new/
+    ├── core/
+    │   └── safechunk_engine.py
+    ├── gui/
+    │   ├── main.py
+    │   ├── project_controller.py
+    │   ├── project_manager.py
+    │   ├── project_window.py
+    │   ├── assets/
+    │   │   └── themes/
+    │   │       └── lightstyle.qss
+    │   └── components/
+    │       ├── base_widget.py
+    │       ├── checkpoint_dialog.py
+    │       ├── home_page.py
+    │       ├── logs.py
+    │       ├── save_status_bar.py
+    │       ├── bridge_data/
+    │       │   └── main.py
+    │       ├── carbon_emission/
+    │       │   ├── main.py
+    │       │   └── widgets/
+    │       │       ├── machinery_emissions.py
+    │       │       ├── material_emissions.py
+    │       │       ├── social_cost.py
+    │       │       ├── traffic_emissions.py
+    │       │       └── transport_emissions.py
+    │       ├── demolition/
+    │       │   └── main.py
+    │       ├── financial_data/
+    │       │   └── main.py
+    │       ├── global_info/
+    │       │   └── main.py
+    │       ├── maintenance/
+    │       │   └── main.py
+    │       ├── recycling/
+    │       │   └── main.py
+    │       ├── structure/
+    │       │   ├── main.py
+    │       │   └── widgets/
+    │       │       ├── foundation.py
+    │       │       ├── misc_widget.py
+    │       │       ├── substructure.py
+    │       │       └── super_structure.py
+    │       └── traffic_data/
+    │           └── main.py
+    └── user_projects/
+        ├── proj_877d7a81/
+        │   ├── version.json
+        │   ├── checkpoints/
+        │   │   └── cp_initial_20260222_233302.zip
+        │   ├── chunks/
+        │   │   ├── bridge_data.json
+        │   │   └── general_info.json
+        │   └── chunks_bak/
+        │       ├── bridge_data.ebak
+        │       └── general_info.ebak
+        └── proj_c2077bcd/
+            ├── version.json
+            ├── .lock
+            ├── checkpoints/
+            │   └── cp_initial_20260222_233154.zip
+            ├── chunks/
+            │   ├── bridge_data.json
+            │   └── general_info.json
+            └── chunks_bak/
+                ├── bridge_data.ebak
+                └── general_info.ebak
+
+
+## Files Content
+
+================================================
+FILE: core/safechunk_engine.py
+================================================
+import json
+import os
+import copy
+import threading
+import time
+import shutil
+import zipfile
+import psutil
+import re
+import functools
+from pathlib import Path
+
+
+def requires_active(func):
+    """
+    Decorator to ensure engine methods only run if the engine is properly
+    attached and hasn't been deleted or detached.
+    """
+
+    @functools.wraps(func)
+    def wrapper(self, *args, **kwargs):
+        if not self._engine_active:
+            self._log(
+                f"Execution Blocked: '{func.__name__}' called on inactive engine."
+            )
+            return None
+        return func(self, *args, **kwargs)
+
+    return wrapper
+
+
+class SafeChunkEngine:
+    VERSION = "1.5.0"
+
+    def __init__(
+        self,
+        project_id: str,
+        debounce_delay: float = 1.0,
+        force_save_delay: float = 2.0,
+        base_dir: str = "user_projects",
+    ):
+        """
+        Main Engine Constructor.
+
+        Args:
+            project_id:       Unique string ID for the project folder.
+            debounce_delay:   Seconds of idle time before a lightweight commit fires.
+                              Resets on every keystroke. Keeps disk writes low during
+                              active typing.
+            force_save_delay: Seconds after the FIRST keystroke in a burst before a
+                              guaranteed fsync commit is forced, regardless of whether
+                              the user is still typing. Protects against power loss
+                              during continuous input. Default 2 seconds.
+            base_dir:         The root folder where all user projects are stored.
+        """
+        # Configuration
+        self.project_id = project_id
+        self.debounce_delay = debounce_delay
+        self.force_save_delay = force_save_delay
+        self.base_dir_path = Path(base_dir).resolve()
+
+        # Path Architecture
+        self.project_path = self.base_dir_path / self.project_id
+        self.chunks_path = self.project_path / "chunks"
+        self.backup_path = self.project_path / "chunks_bak"
+        self.checkpoint_path = self.project_path / "checkpoints"
+        self.lock_file = self.project_path / ".lock"
+        self.version_file = self.project_path / "version.json"
+
+        # Threading and Memory Synchronization
+        self._write_lock = threading.Lock()
+        self._debounce_timer = None  # Resets on every keystroke; fires after idle
+        self._force_save_timer = (
+            None  # Set ONCE per typing burst; fires force_save_delay
+        )
+        # after the FIRST keystroke â€” power-loss guard
+        self._staged_data = {}  # High-speed write-ahead buffer (RAM)
+        self._dirty_chunks = set()  # Tracks which chunks have unsaved changes
+        self.log_history = []
+
+        # Communication Hooks (Callbacks)
+        self.on_status = None  # For UI status bar updates
+        self.on_sync = None  # Triggered after disk write is verified
+        self.on_fault = None  # Triggered on critical IO errors
+        self.on_dirty = None  # Triggered when unsaved changes exist (for UI indicator)
+
+        # Engine Lifecycle State
+        self._engine_active = False
+
+        # 1. Prepare Folders -> 2. Claim Lock
+        self._initialize_env()
+        self.attach()
+
+    # --------------------------------------------------------------------------
+    # FACTORY & ROOT MANAGEMENT
+    # --------------------------------------------------------------------------
+
+    @staticmethod
+    def list_all_projects(base_dir: str = "user_projects") -> list:
+        """
+        Scans the root directory and identifies existing valid projects.
+        """
+        root = Path(base_dir)
+        if not root.exists():
+            return []
+
+        valid_projects = []
+        for item in root.iterdir():
+            if item.is_dir() and (item / "chunks").exists():
+                valid_projects.append(item.name)
+        return valid_projects
+
+    @classmethod
+    def new(cls, project_id: str = None, base_dir: str = "user_projects", **kwargs):
+        """
+        Creates a brand new project. Handles ID collisions by auto-incrementing.
+        """
+        root = Path(base_dir)
+        root.mkdir(parents=True, exist_ok=True)
+
+        base_name = project_id or "new_project"
+        target_id = base_name
+        counter = 1
+
+        while (root / target_id).exists():
+            target_id = f"{base_name}_{counter}"
+            counter += 1
+
+        try:
+            instance = cls(target_id, base_dir=str(root), **kwargs)
+            return instance, "SUCCESS"
+        except Exception as e:
+            return None, f"FAILED_TO_CREATE: {str(e)}"
+
+    # In core/safechunk_engine.py
+    # Replace the open() classmethod with this version.
+    # It cleans stale lock files before attempting to attach,
+    # so crashed sessions don't permanently block reopening a project.
+
+    @classmethod
+    def open(cls, project_id: str, base_dir: str = "user_projects", **kwargs):
+        """
+        Opens an existing project.
+        Automatically removes stale lock files left by crashed processes.
+        Returns (None, reason) if the project is actively locked by another live process.
+        """
+        import psutil
+
+        root = Path(base_dir)
+        if not (root / project_id).exists():
+            return None, "PROJECT_NOT_FOUND"
+
+        # Pre-check: clean stale lock before attempting attach
+        lock_file = root / project_id / ".lock"
+        if lock_file.exists():
+            try:
+                lock_data = lock_file.read_text()
+                existing_pid = int(lock_data.split(":")[1].strip())
+                if not psutil.pid_exists(existing_pid):
+                    lock_file.unlink()  # stale â€” remove it so attach() succeeds
+            except Exception:
+                try:
+                    lock_file.unlink()  # unreadable lock â€” remove it
+                except Exception:
+                    pass
+
+        try:
+            instance = cls(project_id, base_dir=str(root), **kwargs)
+            if not instance.is_active():
+                return None, "PROJECT_ALREADY_OPEN_IN_ANOTHER_PROCESS"
+            return instance, "SUCCESS"
+        except Exception as e:
+            return None, f"OPEN_ERROR: {str(e)}"
+
+    # --------------------------------------------------------------------------
+    # LIFECYCLE MANAGEMENT
+    # --------------------------------------------------------------------------
+
+    def attach(self):
+        """Claims the project directory by creating a PID-based lock file."""
+        if self.lock_file.exists():
+            try:
+                lock_data = self.lock_file.read_text()
+                existing_pid = int(lock_data.split(":")[1].strip())
+
+                if not psutil.pid_exists(existing_pid):
+                    self._log(
+                        f"Removing stale lock file from crashed PID {existing_pid}"
+                    )
+                    self.lock_file.unlink()
+                else:
+                    self._engine_active = False
+                    self._log(
+                        "ATTACH_DENIED: Project is currently open in another window."
+                    )
+                    return
+            except Exception as e:
+                self._log(f"Lock Validation Error: {e}")
+
+        try:
+            self.lock_file.write_text(f"PID: {os.getpid()}")
+            self.version_file.write_text(
+                json.dumps(
+                    {
+                        "engine_version": self.VERSION,
+                        "attached_at": time.time(),
+                        "project_id": self.project_id,
+                    },
+                    indent=4,
+                )
+            )
+
+            self._engine_active = True
+            self._log(f"Engine attached to {self.project_id} successfully.")
+        except Exception as e:
+            self._engine_active = False
+            self._handle_error(f"Critical Lock Failure: {e}")
+
+    def detach(self):
+        """Gracefully shuts down the engine, ensuring all data is flushed."""
+        if not self._engine_active:
+            return
+
+        self._log("Detaching engine. Performing final sync...")
+        self.force_sync()
+
+        with self._write_lock:
+            if self._debounce_timer:
+                self._debounce_timer.cancel()
+                self._debounce_timer = None
+            if self._force_save_timer:
+                self._force_save_timer.cancel()
+                self._force_save_timer = None
+
+        if self.lock_file.exists():
+            self.lock_file.unlink()
+
+        self._engine_active = False
+        self._log("Engine detached. Lock released.")
+
+    def is_active(self) -> bool:
+        """Returns True if the engine is healthy and holds the lock."""
+        return self._engine_active
+
+    def is_dirty(self) -> bool:
+        """Returns True if there are unsaved (staged but not yet committed) changes."""
+        with self._write_lock:
+            return bool(self._staged_data)
+
+    # --------------------------------------------------------------------------
+    # CORE DATA OPERATIONS
+    # --------------------------------------------------------------------------
+
+    @requires_active
+    def stage_update(self, data: dict, chunk_name: str):
+        """
+        Updates memory buffer and manages two independent timers:
+
+          debounce_timer   â€” resets on EVERY call. Fires _commit_to_disk() after
+                             debounce_delay seconds of inactivity. Keeps disk writes
+                             low during rapid typing.
+
+          force_save_timer â€” started ONCE when a burst begins (not reset on each call).
+                             Fires force_sync() after force_save_delay seconds regardless
+                             of whether the user is still typing.
+                             POWER-LOSS GUARD: at most force_save_delay seconds of work
+                             can be lost even during continuous non-stop input.
+        """
+        with self._write_lock:
+            # 1. Update the in-memory shard
+            self._staged_data[chunk_name] = copy.deepcopy(data)
+            self._dirty_chunks.add(chunk_name)
+
+            # 2. Emergency backup (lightweight, no fsync â€” best-effort crash protection)
+            self._write_emergency_backup(chunk_name, data)
+
+            # 3. Debounce timer â€” reset on every keystroke
+            if self._debounce_timer:
+                self._debounce_timer.cancel()
+            self._debounce_timer = threading.Timer(
+                self.debounce_delay, self._commit_to_disk
+            )
+            self._debounce_timer.daemon = True
+            self._debounce_timer.start()
+
+            # 4. Force-save timer â€” only start if not already running for this burst.
+            #    This guarantees a full fsync commit within force_save_delay seconds
+            #    even if the user never stops typing.
+            if self._force_save_timer is None:
+                self._force_save_timer = threading.Timer(
+                    self.force_save_delay, self._force_save_from_timer
+                )
+                self._force_save_timer.daemon = True
+                self._force_save_timer.start()
+
+        # Notify UI of pending unsaved changes
+        if self.on_dirty:
+            self.on_dirty(True)
+        if self.on_status:
+            self.on_status("Unsaved changes...")
+
+    def _write_emergency_backup(self, chunk_name: str, data: dict):
+        """
+        Writes staged data to a SEPARATE .ebak (emergency backup) file without fsync.
+        Called inside stage_update (already under write_lock).
+
+        BUG FIX: Previously wrote to .bak, overwriting the authoritative committed-state
+        backup produced by _commit_to_disk. After one keystroke the .bak would contain
+        un-fsync'd staged data instead of the last known-good committed state.
+
+        Now uses .ebak as a separate file. fetch_chunk() falls back to .ebak only if
+        BOTH the primary .json AND the authoritative .bak are unreadable â€” worst-case
+        scenario where even the committed backup is gone.
+        """
+        try:
+            ebak_file = self.backup_path / f"{chunk_name}.ebak"
+            with open(ebak_file, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=4)
+        except Exception as e:
+            self._log(f"Emergency backup write failed for '{chunk_name}': {e}")
+
+    @requires_active
+    def fetch_chunk(self, chunk_name: str) -> dict:
+        """
+        High-integrity data retrieval.
+        Hierarchy: RAM -> Primary Disk -> Backup Disk.
+        """
+        # Step 1: Check Memory Buffer (most recent, uncommitted data)
+        with self._write_lock:
+            if chunk_name in self._staged_data:
+                return copy.deepcopy(self._staged_data[chunk_name])
+
+        # Step 2: Try Primary JSON
+        primary_file = self.chunks_path / f"{chunk_name}.json"
+        backup_file = self.backup_path / f"{chunk_name}.bak"
+
+        if primary_file.exists():
+            try:
+                with open(primary_file, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception:
+                self._log(f"Primary shard '{chunk_name}' corrupt. Trying backup...")
+
+        # Step 3: Try authoritative .bak (last committed state)
+        if backup_file.exists():
+            try:
+                with open(backup_file, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    self._log(
+                        f"Recovered '{chunk_name}' from .bak. Restoring primary..."
+                    )
+                    self.stage_update(data, chunk_name)
+                    return data
+            except Exception:
+                self._log(
+                    f"Authoritative .bak for '{chunk_name}' also corrupt. Trying emergency backup..."
+                )
+
+        # Step 4: Try .ebak (emergency backup â€” staged data, no fsync guarantee)
+        #         Last resort: may be slightly ahead of .bak but not fsync'd.
+        ebak_file = self.backup_path / f"{chunk_name}.ebak"
+        if ebak_file.exists():
+            try:
+                with open(ebak_file, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    self._log(
+                        f"Recovered '{chunk_name}' from emergency .ebak. Data may be incomplete."
+                    )
+                    self.stage_update(data, chunk_name)
+                    return data
+            except Exception as e:
+                self._handle_error(f"Total data loss for shard '{chunk_name}': {e}")
+
+        return {}
+
+    def delete_project(self, confirmed: bool = False):
+        """
+        Removes the entire project folder and all its contents.
+        Requires explicit confirmation to prevent accidental deletion.
+        """
+        if not confirmed:
+            self._log("Delete project rejected: Missing confirmation.")
+            return False
+
+        try:
+            self.detach()
+            if self.project_path.exists():
+                shutil.rmtree(self.project_path)
+            self._log(f"Project '{self.project_id}' was successfully wiped.")
+            return True
+        except Exception as e:
+            self._handle_error(f"Failed to delete project: {e}")
+            return False
+
+    @requires_active
+    def force_sync(self):
+        """Immediately writes all memory-staged data to disk, bypassing the debounce."""
+        with self._write_lock:
+            if self._debounce_timer:
+                self._debounce_timer.cancel()
+                self._debounce_timer = None
+            if self._force_save_timer:
+                self._force_save_timer.cancel()
+                self._force_save_timer = None
+        self._commit_to_disk()
+
+    def _force_save_from_timer(self):
+        """
+        Called by the force_save_timer after force_save_delay seconds from the
+        first keystroke in a burst. Performs a full fsync commit and resets the
+        force_save_timer so the next burst can start a fresh one.
+
+        This runs on a daemon thread â€” it must be safe to call concurrently
+        with stage_update() calls on the main thread.
+        """
+        with self._write_lock:
+            self._force_save_timer = None  # Reset so next burst starts a fresh timer
+        self._commit_to_disk()
+        self._log(
+            f"Force-save committed (power-loss guard fired after {self.force_save_delay}s)"
+        )
+
+    # --------------------------------------------------------------------------
+    # ATOMIC PERSISTENCE MECHANISM
+    # --------------------------------------------------------------------------
+
+    def _commit_to_disk(self):
+        """
+        The Atomic Write-Ahead-Log (WAL) Logic.
+        Flow: Write Temp -> Backup Current -> Replace Current with Temp.
+
+        FIX: Now correctly generates a .bak from the PREVIOUS committed state
+        (not from staged data), giving a true rollback point. Also notifies
+        the UI via on_sync and clears the dirty flag.
+        """
+        with self._write_lock:
+            if not self._staged_data or not self._engine_active:
+                return
+
+            failed_chunks = []
+
+            for chunk_name in list(self._staged_data.keys()):
+                data = self._staged_data[chunk_name]
+
+                p_file = self.chunks_path / f"{chunk_name}.json"
+                b_file = self.backup_path / f"{chunk_name}.bak"
+                t_file = self.chunks_path / f"{chunk_name}.tmp"
+
+                try:
+                    # 1. Write to temp file first (safest)
+                    with open(t_file, "w", encoding="utf-8") as f:
+                        json.dump(data, f, indent=4)
+                        f.flush()
+                        os.fsync(f.fileno())  # Force OS flush to physical hardware
+
+                    # 2. Backup the EXISTING primary (last known-good committed state).
+                    #    This is the authoritative .bak â€” never overwritten by emergency backup.
+                    if p_file.exists():
+                        shutil.copy2(p_file, b_file)
+
+                    # 3. Atomic swap: temp becomes the new primary
+                    t_file.replace(p_file)
+
+                    # 4. Remove from staging â€” this chunk is safe on disk
+                    del self._staged_data[chunk_name]
+                    self._dirty_chunks.discard(chunk_name)
+
+                except Exception as e:
+                    # BUG FIX: Per-chunk error handling. One bad chunk does NOT prevent
+                    # the remaining chunks from being written. Failed chunks stay in
+                    # _staged_data so they will be retried on the next commit cycle.
+                    failed_chunks.append(chunk_name)
+                    self._log(f"Sync failed for chunk '{chunk_name}': {e}")
+                    # Clean up any partial .tmp file
+                    try:
+                        if t_file.exists():
+                            t_file.unlink()
+                    except Exception:
+                        pass
+
+            self._debounce_timer = None
+
+            if failed_chunks:
+                # Some chunks failed â€” notify fault but don't mark as clean
+                self._handle_error(
+                    f"Sync failed for chunks: {failed_chunks}. Will retry."
+                )
+            else:
+                # All chunks committed â€” notify UI: all clean
+                if self.on_dirty:
+                    self.on_dirty(False)
+                if self.on_sync:
+                    self.on_sync()
+
+    # --------------------------------------------------------------------------
+    # SNAPSHOTS & RECOVERY
+    # --------------------------------------------------------------------------
+
+    @requires_active
+    def create_checkpoint(
+        self, label: str = "manual", notes: str = "", retention: int = 10
+    ) -> str | None:
+        """
+        Creates a time-stamped ZIP snapshot of the entire project state.
+        Always force-syncs first so the checkpoint captures the latest data.
+
+        Returns the zip filename on success, None on failure.
+        """
+        self.force_sync()
+
+        clean_label = re.sub(r"[^\w\-_]", "_", label)[:30]
+        timestamp = time.strftime("%Y%m%d_%H%M%S")
+        zip_name = f"cp_{clean_label}_{timestamp}.zip"
+        zip_full_path = self.checkpoint_path / zip_name
+
+        try:
+            with zipfile.ZipFile(zip_full_path, "w", zipfile.ZIP_DEFLATED) as zf:
+                for f in self.chunks_path.glob("*.json"):
+                    zf.write(f, arcname=f"chunks/{f.name}")
+
+                meta = {
+                    "timestamp": timestamp,
+                    "label": label,
+                    "notes": notes,
+                    "engine_ver": self.VERSION,
+                    "project_id": self.project_id,
+                }
+                zf.writestr("checkpoint_meta.json", json.dumps(meta, indent=4))
+
+            # Retention policy: remove oldest if over limit
+            history = sorted(self.checkpoint_path.glob("*.zip"), key=os.path.getmtime)
+            while len(history) > retention:
+                oldest = history.pop(0)
+                oldest.unlink()
+                self._log(f"Retention policy: removed old checkpoint {oldest.name}")
+
+            self._log(f"Checkpoint created: {zip_name}")
+            if self.on_status:
+                self.on_status(f"Checkpoint saved: {label}")
+            return zip_name
+
+        except Exception as e:
+            self._handle_error(f"Checkpoint failed: {e}")
+            return None
+
+    @requires_active
+    def restore_checkpoint(self, zip_name: str) -> bool:
+        """
+        Full system restoration from a checkpoint ZIP file.
+        Clears all staged/pending data before restoring.
+
+        BUG FIX: Previously wiped chunks/ and chunks_bak/ then extracted the ZIP all
+        inside a single try block with no rollback. If extraction failed halfway, the
+        project would be left with empty folders and no data at all.
+
+        Now uses a safe staging approach:
+          1. Extract ZIP to a temp staging folder first
+          2. Only if extraction succeeds, swap the staging folder into place
+          3. If anything fails, the original files are untouched
+        """
+        zip_full_path = self.checkpoint_path / zip_name
+        if not zip_full_path.exists():
+            self._log(f"Restore failed: {zip_name} not found.")
+            return False
+
+        staging_path = self.project_path / "_restore_staging"
+
+        try:
+            # Cancel all pending writes first
+            with self._write_lock:
+                if self._debounce_timer:
+                    self._debounce_timer.cancel()
+                    self._debounce_timer = None
+                if self._force_save_timer:
+                    self._force_save_timer.cancel()
+                    self._force_save_timer = None
+                self._staged_data.clear()
+                self._dirty_chunks.clear()
+
+            # Step 1: Extract to a safe staging folder (original files untouched)
+            if staging_path.exists():
+                shutil.rmtree(staging_path)
+            staging_path.mkdir()
+
+            with zipfile.ZipFile(zip_full_path, "r") as zf:
+                zf.extractall(path=staging_path)
+
+            # Step 2: Validate the staging folder has the expected chunks folder
+            staging_chunks = staging_path / "chunks"
+            if not staging_chunks.exists():
+                raise ValueError("Checkpoint ZIP is missing the chunks/ folder.")
+
+            # Step 3: Swap â€” only now do we touch the live data
+            with self._write_lock:
+                # Wipe current active data
+                for folder in [self.chunks_path, self.backup_path]:
+                    for f in folder.glob("*"):
+                        try:
+                            f.unlink()
+                        except Exception:
+                            pass
+
+                # Move staged files into place
+                for f in staging_chunks.glob("*"):
+                    shutil.copy2(f, self.chunks_path / f.name)
+
+            # Step 4: Clean up staging folder
+            shutil.rmtree(staging_path, ignore_errors=True)
+
+            if self.on_dirty:
+                self.on_dirty(False)
+            if self.on_sync:
+                self.on_sync()
+
+            self._log(f"Project successfully restored from: {zip_name}")
+            if self.on_status:
+                self.on_status(f"Restored from checkpoint: {zip_name}")
+            return True
+
+        except Exception as e:
+            # Clean up staging folder if it exists
+            shutil.rmtree(staging_path, ignore_errors=True)
+            self._handle_error(f"Restore failed: {e}")
+            return False
+
+    def list_checkpoints(self) -> list:
+        """Returns metadata for all available snapshots, sorted newest first."""
+        cp_list = []
+        for zp in self.checkpoint_path.glob("*.zip"):
+            try:
+                with zipfile.ZipFile(zp, "r") as zf:
+                    meta = json.loads(zf.read("checkpoint_meta.json"))
+                    cp_list.append(
+                        {
+                            "filename": zp.name,
+                            "label": meta.get("label", ""),
+                            "date": meta.get("timestamp", ""),
+                            "notes": meta.get("notes", ""),
+                            "engine_ver": meta.get("engine_ver", ""),
+                        }
+                    )
+            except Exception:
+                continue
+        return sorted(cp_list, key=lambda x: x["date"], reverse=True)
+
+    def delete_checkpoint(self, zip_name: str) -> bool:
+        """Deletes a specific checkpoint file."""
+        zip_full_path = self.checkpoint_path / zip_name
+        if zip_full_path.exists():
+            try:
+                zip_full_path.unlink()
+                self._log(f"Checkpoint deleted: {zip_name}")
+                return True
+            except Exception as e:
+                self._handle_error(f"Failed to delete checkpoint: {e}")
+        return False
+
+    # --------------------------------------------------------------------------
+    # DIAGNOSTICS
+    # --------------------------------------------------------------------------
+
+    def get_health_report(self) -> dict:
+        """Returns a diagnostic summary of the current engine state."""
+        return {
+            "active": self._engine_active,
+            "project": self.project_id,
+            "root_path": str(self.base_dir_path),
+            "shards_count": len(list(self.chunks_path.glob("*.json"))),
+            "backups_count": len(list(self.backup_path.glob("*.bak"))),
+            "checkpoints_count": len(list(self.checkpoint_path.glob("*.zip"))),
+            "pending_syncs": len(self._staged_data),
+            "dirty_chunks": list(self._dirty_chunks),
+        }
+
+    # --------------------------------------------------------------------------
+    # INTERNAL HELPERS
+    # --------------------------------------------------------------------------
+
+    def _initialize_env(self):
+        """Creates directory structure and cleans up crash artifacts."""
+        for path in [self.chunks_path, self.backup_path, self.checkpoint_path]:
+            path.mkdir(parents=True, exist_ok=True)
+
+        # Clean up orphaned .tmp files from previous crashes
+        for tmp_file in self.chunks_path.glob("*.tmp"):
+            try:
+                tmp_file.unlink()
+                self._log(f"Cleaned up orphaned temp file: {tmp_file.name}")
+            except Exception:
+                pass
+
+    def _log(self, message: str):
+        timestamped_msg = f"[{time.strftime('%H:%M:%S')}] {message}"
+        self.log_history.append(timestamped_msg)
+        if len(self.log_history) > 100:  # Increased from 50 for better diagnostics
+            self.log_history.pop(0)
+
+        if self.on_status:
+            self.on_status(message)
+        else:
+            print(timestamped_msg)
+
+    def _handle_error(self, error_message: str):
+        """Logs a critical fault and fires the on_fault callback for UI notification."""
+        self._log(f"CRITICAL FAULT: {error_message}")
+        if self.on_fault:
+            self.on_fault(str(error_message))
+
+
+
+================================================
+FILE: gui/main.py
+================================================
+import sys
+import os
+from PySide6.QtWidgets import QApplication
+from gui.project_manager import ProjectManager
+
+def main():
+    """
+    Main entry point for the OS Bridge LCCA application.
+    Initializes the QApplication and delegates window management to ProjectManager.
+    """
+    app = QApplication(sys.argv)
+    
+    # Optional: Set Application Name for OS-level identification
+    app.setApplicationName("OS Bridge LCCA")
+    app.setOrganizationName("OSBridge")
+
+    # Optional: Load the QSS theme if available
+    qss_path = os.path.join("gui", "assets", "themes", "lightstyle.qss")
+    if os.path.exists(qss_path):
+        try:
+            with open(qss_path, "r") as f:
+                app.setStyleSheet(f.read())
+        except Exception as e:
+            print(f"Warning: Could not load stylesheet: {e}")
+
+    # Initialize the Manager
+    # The manager handles the lifecycle of one or more ProjectWindows
+    manager = ProjectManager()
+    
+    # open_project() without arguments defaults to showing the Home/Project Selection screen
+    manager.open_project()
+    
+    sys.exit(app.exec())
+
+if __name__ == "__main__":
+    # Ensure the script is run from the root directory to maintain correct package imports
+    main()
+
+
+================================================
+FILE: gui/project_controller.py
+================================================
+from PySide6.QtCore import QObject, Signal
+from core.safechunk_engine import SafeChunkEngine
+
+
+class ProjectController(QObject):
+    """
+    Central mediator between the SafeChunkEngine and the UI.
+
+    Signals:
+        status_message  — emitted with human-readable status text for the status bar
+        sync_completed  — emitted after a successful disk commit (data is safe)
+        fault_occurred  — emitted when a critical IO error happens (show error to user)
+        dirty_changed   — emitted with True when unsaved changes exist, False when clean
+        project_loaded  — emitted once the engine is fully attached and ready to serve data.
+                          All widgets should connect refresh_from_engine() to THIS signal,
+                          not to sync_completed, and not rely on __init__-time refresh.
+    """
+    status_message = Signal(str)
+    sync_completed = Signal()
+    fault_occurred = Signal(str)
+    dirty_changed  = Signal(bool)
+    project_loaded = Signal()       # ← THE FIX: fired when engine is ready for data reads
+
+    def __init__(self):
+        super().__init__()
+        self.engine = None
+        self.active_project_id = None
+
+    def init_project(self, project_id: str, is_new: bool = False) -> bool:
+        """
+        Initialises or opens a project and wires all engine callbacks to Qt signals.
+        Returns True on success, False on failure.
+        """
+        if is_new:
+            self.engine, status = SafeChunkEngine.new(project_id)
+        else:
+            self.engine, status = SafeChunkEngine.open(project_id)
+
+        if self.engine and self.engine.is_active():
+            self.active_project_id = project_id
+
+            # Wire all engine callbacks to Qt signals so the UI reacts correctly
+            self.engine.on_sync   = lambda: self.sync_completed.emit()
+            self.engine.on_status = lambda msg: self.status_message.emit(msg)
+            self.engine.on_fault  = lambda msg: self.fault_occurred.emit(msg)   # FIX: was never wired
+            self.engine.on_dirty  = lambda dirty: self.dirty_changed.emit(dirty) # NEW
+
+            # Auto-create an initial checkpoint so .bak files exist from day one
+            # and there is always at least one restore point for new projects.
+            if is_new:
+                self.engine.create_checkpoint(label="initial", notes="Auto-checkpoint on project creation")
+
+            # Signal all widgets that the engine is ready and they can now load their data.
+            # This is the correct moment — engine is attached, data is readable.
+            self.project_loaded.emit()
+            return True
+
+        return False
+
+    def save_chunk_data(self, chunk_name: str, data: dict):
+        """
+        The key method for autosave.
+        Passes data to the engine's staging area (debounced write).
+        """
+        if self.engine and self.engine.is_active():
+            self.engine.stage_update(data, chunk_name)
+
+    def close_project(self):
+        """Force-syncs and detaches the engine cleanly."""
+        if self.engine:
+            self.engine.force_sync()
+            self.engine.detach()
+            self.engine = None
+            self.active_project_id = None
+
+    # --------------------------------------------------------------------------
+    # CHECKPOINT API — used by CheckpointDialog
+    # --------------------------------------------------------------------------
+
+    def save_checkpoint(self, label: str = "manual", notes: str = "") -> str | None:
+        """
+        Creates a named checkpoint. Returns the zip filename, or None on failure.
+        Force-syncs before snapshotting so the checkpoint is always up-to-date.
+        """
+        if self.engine and self.engine.is_active():
+            return self.engine.create_checkpoint(label=label, notes=notes)
+        return None
+
+    def load_checkpoint(self, zip_name: str) -> bool:
+        """
+        Restores the project from a checkpoint ZIP.
+        Emits sync_completed after a successful restore so the UI refreshes.
+        """
+        if self.engine and self.engine.is_active():
+            success = self.engine.restore_checkpoint(zip_name)
+            if success:
+                self.sync_completed.emit()
+                self.project_loaded.emit()  # Re-trigger full UI repopulation after restore
+            return success
+        return False
+
+    def list_checkpoints(self) -> list:
+        """Returns checkpoint metadata list (newest first)."""
+        if self.engine and self.engine.is_active():
+            return self.engine.list_checkpoints()
+        return []
+
+    def delete_checkpoint(self, zip_name: str) -> bool:
+        """Deletes a specific checkpoint by filename."""
+        if self.engine and self.engine.is_active():
+            return self.engine.delete_checkpoint(zip_name)
+        return False
+
+    def get_engine_logs(self) -> list:
+        """Returns the engine's rolling log history for display in the Logs panel."""
+        if self.engine:
+            return list(self.engine.log_history)
+        return []
+
+    def get_health_report(self) -> dict:
+        """Returns engine diagnostics."""
+        if self.engine:
+            return self.engine.get_health_report()
+        return {}
+
+    def is_dirty(self) -> bool:
+        """Returns True if there are pending unsaved changes in memory."""
+        if self.engine:
+            return self.engine.is_dirty()
+        return False
+
+
+# Single instance used across the app
+controller = ProjectController()
+
+
+================================================
+FILE: gui/project_manager.py
+================================================
+import os
+from PySide6.QtWidgets import QApplication, QMessageBox
+from gui.project_controller import controller
+from gui.project_window import ProjectWindow
+
+
+class ProjectManager:
+    def __init__(self):
+        self.windows = []
+
+    def broadcast_refresh(self):
+        for win in self.windows:
+            win.home_widget.refresh_project_list()
+
+    def get_available_window(self):
+        for win in self.windows:
+            if win.controller.engine is None:
+                return win
+        return None
+
+    def open_project(self, project_id=None, is_new=False, target=None):
+        # If already open in a window, just focus it
+        if project_id:
+            for win in self.windows:
+                if win.project_id == project_id:
+                    win.show_project_view()
+                    win.show()
+                    win.activateWindow()
+                    return
+
+        if target is None:
+            target = self.get_available_window()
+        if target is None or (target.controller.engine and (is_new or project_id)):
+            target = self.create_window()
+
+        if is_new:
+            new_id = f"proj_{os.urandom(4).hex()}"
+            success = controller.init_project(new_id, is_new=True)
+        elif project_id:
+            success = controller.init_project(project_id, is_new=False)
+        else:
+            target.show_home()
+            target.show()
+            return
+
+        if success:
+            target.project_id = controller.active_project_id
+            target.show_project_view()
+        else:
+            QMessageBox.warning(None, "Error", "Could not open project engine.")
+            target.show_home()
+
+        target.show()
+        target.activateWindow()
+
+    def create_window(self):
+        win = ProjectWindow(self)
+        self.windows.append(win)
+        return win
+
+    def remove_window(self, win):
+        if win in self.windows:
+            self.windows.remove(win)
+        if not self.windows:
+            QApplication.quit()
+
+
+================================================
+FILE: gui/project_window.py
+================================================
+import os
+
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import (
+    QMainWindow,
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QStackedWidget,
+    QLabel,
+    QPushButton,
+    QStatusBar,
+    QMenuBar,
+    QMenu,
+    QTreeWidget,
+    QTreeWidgetItem,
+    QMessageBox,
+    QListWidget,
+    QListWidgetItem,
+    QSplitter,
+)
+from PySide6.QtGui import QAction
+
+from gui.project_controller import controller
+from gui.components.save_status_bar import SaveStatusBar
+from gui.components.logs import Logs
+from gui.components.global_info.main import GeneralInfo
+from gui.components.bridge_data.main import BridgeData
+from gui.components.structure.main import StructureTabView
+from gui.components.traffic_data.main import TrafficData
+from gui.components.financial_data.main import FinancialData
+from gui.components.carbon_emission.main import CarbonEmissionTabView
+from gui.components.maintenance.main import Maintenance
+from gui.components.recycling.main import Recycling
+from gui.components.demolition.main import Demolition
+from gui.components.home_page import HomePage
+
+
+class ProjectWindow(QMainWindow):
+    def __init__(self, manager):
+        super().__init__()
+        self.manager = manager
+        self.controller = controller
+        self.project_id = None
+
+        self.setWindowTitle("LCCA - Home")
+        self.resize(1100, 750)
+
+        self.main_stack = QStackedWidget()
+        self.setCentralWidget(self.main_stack)
+
+        self.status_bar = QStatusBar()
+        self.setStatusBar(self.status_bar)
+
+        self._setup_home_ui()       # index 0 â€” must be first
+        self._setup_project_ui()    # index 1
+
+        # Wire controller signals
+        self.controller.fault_occurred.connect(self._on_fault)
+        self.controller.project_loaded.connect(self._on_project_loaded)
+        self.controller.sync_completed.connect(
+            lambda: self.status_bar.showMessage("All changes saved", 3000)
+        )
+        self.controller.dirty_changed.connect(
+            lambda d: self.status_bar.showMessage("Unsaved changes...") if d else None
+        )
+
+        self.show_home()
+
+    # â”€â”€ HOME SCREEN â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    def _setup_home_ui(self):
+        self.home_widget = HomePage(manager=self.manager)
+        self.main_stack.addWidget(self.home_widget)   # index 0
+
+    # â”€â”€ PROJECT VIEW â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    def _setup_project_ui(self):
+        self.project_widget = QWidget()
+        master_layout = QVBoxLayout(self.project_widget)
+        master_layout.setContentsMargins(0, 0, 0, 0)
+        master_layout.setSpacing(0)
+
+        # â”€â”€ Top bar: menubar left, SaveStatusBar + buttons right â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        top_bar = QWidget()
+        top_bar_layout = QHBoxLayout(top_bar)
+        top_bar_layout.setContentsMargins(4, 2, 4, 2)
+        top_bar_layout.setSpacing(6)
+
+        self.menubar = QMenuBar()
+
+        # File menu
+        self.menuFile = QMenu("&File", self.menubar)
+        for label in ["New", "Open"]:
+            self.menuFile.addAction(QAction(label, self))
+        self.menuFile.addSeparator()
+        self.actionSave = QAction("Save", self)
+        self.menuFile.addAction(self.actionSave)
+        for label in ["Save As...", "Create a Copy", "Print"]:
+            self.menuFile.addAction(QAction(label, self))
+        self.menuFile.addSeparator()
+        for label in ["Rename", "Export", "Version History", "Info"]:
+            self.menuFile.addAction(QAction(label, self))
+
+        # Help menu
+        self.menuHelp = QMenu("&Help", self.menubar)
+        for label in ["Contact us", "Feedback"]:
+            self.menuHelp.addAction(QAction(label, self))
+        self.menuHelp.addSeparator()
+        for label in ["Video Tutorials", "Join our Community"]:
+            self.menuHelp.addAction(QAction(label, self))
+
+        home_action = QAction("Home", self)
+        home_action.triggered.connect(self.show_home)
+
+        self.log_action = QAction("Logs", self)
+
+        self.menubar.addAction(home_action)
+        self.menubar.addMenu(self.menuFile)
+        self.menubar.addMenu(self.menuHelp)
+        self.menubar.addAction(QAction("Tutorials", self))
+        self.menubar.addAction(self.log_action)
+
+        top_bar_layout.addWidget(self.menubar)
+        top_bar_layout.addStretch()
+
+        self.save_status_bar = SaveStatusBar(controller=self.controller)
+        top_bar_layout.addWidget(self.save_status_bar)
+        top_bar_layout.addWidget(QPushButton("Calculate"))
+        top_bar_layout.addWidget(QPushButton("Lock"))
+
+        master_layout.setMenuBar(top_bar)
+
+        # â”€â”€ Workspace: resizable splitter with tree sidebar + content stack â”€â”€â”€
+        self.splitter = QSplitter(Qt.Horizontal)
+        self.splitter.setChildrenCollapsible(False)
+
+        # Tree sidebar
+        self.sidebar = QTreeWidget()
+        self.sidebar.setHeaderHidden(True)
+        self.sidebar.setMinimumWidth(80)
+
+        sidebar_info = {
+            "General Information": {},
+            "Bridge Data": {},
+            "Input Parameters": {
+                "Construction Work Data": [
+                    "Foundation",
+                    "Super-Structure",
+                    "Substructure",
+                    "Miscellaneous",
+                ],
+                "Traffic Data": [],
+                "Financial Data": [],
+                "Carbon Emission Data": [
+                    "Material Emissions",
+                    "Transportation Emissions",
+                    "Machinery Emissions",
+                    "Traffic Diversion Emissions",
+                    "Social Cost of Carbon",
+                ],
+                "Maintenance and Repair": [],
+                "Recycling": [],
+                "Demolition": [],
+            },
+            "Outputs": {},
+        }
+
+        for header, subheaders in sidebar_info.items():
+            top_item = QTreeWidgetItem(self.sidebar)
+            top_item.setText(0, header)
+            for subheader, subitems in subheaders.items():
+                sub_item = QTreeWidgetItem(top_item)
+                sub_item.setText(0, subheader)
+                for subitem in subitems:
+                    leaf = QTreeWidgetItem(sub_item)
+                    leaf.setText(0, subitem)
+
+        self.sidebar.expandAll()
+
+        # Content stack
+        self.content_stack = QStackedWidget()
+
+        self.metadata_page = QLabel()
+        self.metadata_page.setAlignment(Qt.AlignCenter)
+
+        self.logs_page = Logs(controller=self.controller)
+
+        self.widget_map = {
+            "General Information": GeneralInfo(controller=self.controller),
+            "Bridge Data": BridgeData(controller=self.controller),
+            "Construction Work Data": StructureTabView(controller=self.controller),
+            "Traffic Data":           TrafficData(controller=self.controller),
+            "Financial Data":         FinancialData(controller=self.controller),
+            "Carbon Emission Data":   CarbonEmissionTabView(controller=self.controller),
+            "Maintenance and Repair": Maintenance(controller=self.controller),
+            "Recycling":              Recycling(controller=self.controller),
+            "Demolition":             Demolition(controller=self.controller),
+            "Outputs": self.metadata_page,
+        }
+
+        for widget in self.widget_map.values():
+            self.content_stack.addWidget(widget)
+        self.content_stack.addWidget(self.logs_page)
+
+        self.log_action.triggered.connect(
+            lambda: self.content_stack.setCurrentWidget(self.logs_page)
+        )
+        self.sidebar.itemPressed.connect(self._select_sidebar)
+
+        self.splitter.addWidget(self.sidebar)
+        self.splitter.addWidget(self.content_stack)
+        self.splitter.setSizes([220, 880])
+
+        master_layout.addWidget(self.splitter, stretch=1)
+        self.main_stack.addWidget(self.project_widget)   # index 1
+
+    def _select_sidebar(self, item: QTreeWidgetItem):
+        header = item.text(0)
+        parent = item.parent()
+        item.setExpanded(True)
+
+        if header in self.widget_map:
+            self.content_stack.setCurrentWidget(self.widget_map[header])
+        elif parent:
+            parent_header = parent.text(0)
+            if parent_header == "Construction Work Data":
+                self.content_stack.setCurrentWidget(
+                    self.widget_map["Construction Work Data"]
+                )
+                self.widget_map["Construction Work Data"].select_tab(header)
+            elif parent_header == "Carbon Emission Data":
+                self.content_stack.setCurrentWidget(
+                    self.widget_map["Carbon Emission Data"]
+                )
+                self.widget_map["Carbon Emission Data"].select_tab(header)
+
+    # â”€â”€ VIEW SWITCHING â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    def show_home(self):
+        self.setWindowTitle("LCCA - Home")
+        self.home_widget.set_active_project(
+            self.project_id if self.has_project_loaded() else None
+        )
+        self.home_widget.refresh_project_list()
+        self.main_stack.setCurrentWidget(self.home_widget)
+
+    def show_project_view(self):
+        if self.has_project_loaded():
+            self.setWindowTitle(f"LCCA - {self.project_id}")
+            self.main_stack.setCurrentWidget(self.project_widget)
+            self.content_stack.setCurrentWidget(self.widget_map["General Information"])
+            items = self.sidebar.findItems("General Information", Qt.MatchExactly)
+            if items:
+                self.sidebar.setCurrentItem(items[0])
+
+    def has_project_loaded(self):
+        return self.project_id is not None
+
+    # â”€â”€ CONTROLLER SIGNALS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    def _on_project_loaded(self):
+        if self.controller.active_project_id:
+            self.project_id = self.controller.active_project_id
+            self.setWindowTitle(f"LCCA - {self.project_id}")
+            self.metadata_page.setText(
+                f"<h2>Project Metadata</h2>"
+                f"<p><b>ID:</b> {self.project_id}</p>"
+            )
+            self.status_bar.showMessage(f"Project: {self.project_id}")
+            self.show_project_view()
+
+    def _on_fault(self, error_message: str):
+        QMessageBox.critical(
+            self,
+            "Engine Error â€” Data may not be saved",
+            f"A critical storage error occurred:\n\n{error_message}\n\n"
+            "Save a checkpoint immediately if possible, then restart.",
+        )
+
+    # â”€â”€ CLOSE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    def closeEvent(self, event):
+        if self.controller.engine:
+            self.controller.close_project()
+        self.manager.remove_window(self)
+        event.accept()
+
+
+================================================
+FILE: gui/assets/themes/lightstyle.qss
+================================================
+/* QMenuBar { 
+    background-color: #fff;
+    border-bottom: 1px solid #d0d0d0;
+    border-left: 1px solid #285A23;
+    border-right: 1px solid #285A23;
+    color: #000;
+}
+QMenuBar::item {
+    padding: 4px 10px;
+    background-color: transparent;
+    border-bottom: 2px solid #FAFAFA;
+    margin: 2px;
+}
+QMenuBar::item:selected { 
+    border-bottom: 2px solid #806C6C; 
+}
+QMenu { 
+    background-color: #f0f0f0;
+    border: 1px solid #d0d0d0;
+}
+QMenu::item { 
+    padding: 4px 4px 4px 12px;
+    text-align: left;
+    color: #514E4E;
+}
+QMenu::item:selected { 
+    background-color: #e0e0e0;
+}
+QMenu::separator { 
+    height: 1px;
+    background-color: #d0d0d0;
+    margin: 4px 0px;
+}
+QMenu::icon { 
+    padding-left: 5px;
+    width: 16px;
+    height: 16px;
+}
+QMenu::indicator { 
+    width: 16px;
+    height: 16px;
+}
+QMenu::right-arrow { 
+    margin-right: 5px;
+}
+QLabel {
+    color: #333333;
+    font-size: 12px;
+}
+QWidget#central_panel_widget QScrollArea { 
+    border-top: 8px solid qlineargradient(
+        x1: 0, y1: 1,
+        x2: 0, y2: 0,
+        stop: 0 #d0d0d0,
+        stop: 1 #fafafa
+    );
+    border-bottom: 8px solid qlineargradient(
+        x1: 0, y1: 0,
+        x2: 0, y2: 1,
+        stop: 0 #d0d0d0,
+        stop: 1 #fafafa
+    );
+    border-left: 8px solid qlineargradient(
+        x1: 1, y1: 0,
+        x2: 0, y2: 0,
+        stop: 0 #d0d0d0,
+        stop: 1 #fafafa
+    );
+    border-right: 8px solid qlineargradient(
+        x1: 0, y1: 0,
+        x2: 1, y2: 0,
+        stop: 0 #d0d0d0,
+        stop: 1 #fafafa
+    );
+    background-color: transparent;
+    outline: none;
+} 
+QWidget{
+    background-color: #FAFAFA;
+}
+QScrollBar:vertical {
+    border: 1px solid #E0E0E0;
+    background: #F0F0F0;
+    width: 12px;
+    margin: 18px 0px 18px 0px;
+    border-radius: 6px;
+}
+QScrollBar::handle:vertical {
+    background: #C0C0C0;
+    border: 1px solid #A0A0A0;
+    min-height: 20px;
+    border-radius: 5px;
+}
+QScrollBar::add-line:vertical {
+    border: 1px solid #E0E0E0;
+    background: #E8E8E8;
+    height: 18px;
+    subcontrol-origin: bottom;
+    subcontrol-position: bottom;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+QScrollBar::sub-line:vertical {
+    border: 1px solid #E0E0E0;
+    background: #E8E8E8;
+    height: 18px;
+    subcontrol-origin: top;
+    subcontrol-position: top;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+}
+QScrollBar::up-arrow:vertical, 
+QScrollBar::down-arrow:vertical {
+    width: 10px;
+    height: 10px;
+}
+QScrollBar::add-page:vertical, 
+QScrollBar::sub-page:vertical {
+    background: none;
+}
+QScrollBar::up-arrow:vertical {
+    image: url(:/images/arrow_up.png);
+}
+QScrollBar::down-arrow:vertical {
+    image: url(:/images/arrow_down.png);
+}
+QScrollBar::add-line:vertical:hover, QScrollBar::sub-line:vertical:hover {
+    background: #D0D0D0;
+}
+QLineEdit,
+QTextEdit,
+QComboBox {
+    border: 1px solid #DDDCE0;
+    border-radius: 10px;
+    padding: 3px 10px;
+    background-color: white;
+    combobox-popup: 0;
+    color: black;
+}
+QComboBox QAbstractItemView {
+    color: black;
+    selection-background-color: #90af13;
+    background-color: white;
+}
+QTextEdit::viewport {
+    background-color: #FFFFFF;
+}
+QLineEdit:focus,
+QTextEdit:focus {
+    border: 1px solid #DDDCE0;
+    background-color: #FFFFFF;
+}
+QTextEdit:focus::viewport {
+    background-color: #FFFFFF;
+} 
+
+QPushButton {
+    background-color: white;
+    color: black;
+    font-weight: bold; 
+    border-radius: 5px;
+    border: 1px solid black;
+    padding: 5px 14px;
+    text-align: center;
+}
+
+QPushButton:hover {
+    background-color: #90AF13;
+    border: 1px solid #90AF13;
+    color: white;
+}
+
+QPushButton:pressed {
+    color: black;
+    background-color: white;
+    border: 1px solid black;
+} */
+
+
+================================================
+FILE: gui/components/base_widget.py
+================================================
+"""
+gui/components/base_widget.py
+
+Centralized base for all data-entry panels in the LCCA app.
+Handles: field registration, autosave, load-from-engine, signal wiring.
+
+Usage in subclasses:
+    class MyPanel(ScrollableForm):
+        def __init__(self, controller=None):
+            super().__init__(controller=controller, chunk_name="my_chunk")
+
+            self.my_line  = self.field("my_key",  QLineEdit(), placeholder="Enter value")
+            self.my_spin  = self.field("my_spin", QDoubleSpinBox(), min_val=0, max_val=100, suffix="m")
+            self.my_combo = self.field("my_combo", QComboBox(), items=["A", "B", "C"])
+
+            self.form.addRow("My Field:",  self.my_line)
+            self.form.addRow("My Spin:",   self.my_spin)
+            self.form.addRow("My Combo:",  self.my_combo)
+
+That's it. Save / load / autosave are fully automatic.
+"""
+
+from PySide6.QtWidgets import (
+    QWidget, QLineEdit, QComboBox, QDoubleSpinBox,
+    QSpinBox, QCheckBox, QTextEdit, QFormLayout,
+    QScrollArea, QVBoxLayout
+)
+from PySide6.QtCore import Signal, Qt
+
+
+class BaseDataWidget(QWidget):
+    """
+    Base class for all data-entry widgets.
+
+    Subclasses only need to:
+      1. Call super().__init__(controller=..., chunk_name="...")
+      2. Use self.field(key, widget, **options) to create + register each input
+      3. Build their layout normally
+
+    Everything else (autosave, load, signal wiring) is automatic.
+    """
+    data_changed = Signal()
+
+    def __init__(self, controller=None, chunk_name: str = None):
+        super().__init__()
+        self.controller = controller
+        self.chunk_name = chunk_name
+        self._field_map = {}    # key -> widget
+        self._loading   = False
+
+        if self.controller and hasattr(self.controller, 'project_loaded'):
+            self.controller.project_loaded.connect(self.refresh_from_engine)
+
+    # â”€â”€ PUBLIC API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    def field(self, key: str, widget: QWidget, *,
+              default=None,
+              placeholder: str = None,
+              suffix: str = None,
+              decimals: int = None,
+              min_val=None,
+              max_val=None,
+              items: list = None) -> QWidget:
+        """
+        Configure, register, and return a field widget in one call.
+
+        Args:
+            key:         JSON key this widget maps to in the saved chunk.
+            widget:      A QLineEdit, QComboBox, QDoubleSpinBox, QSpinBox,
+                         QCheckBox, or QTextEdit instance.
+            default:     Initial value applied to the widget.
+            placeholder: Placeholder text  (QLineEdit / QTextEdit).
+            suffix:      Unit suffix string (QDoubleSpinBox / QSpinBox).
+            decimals:    Decimal places     (QDoubleSpinBox).
+            min_val:     Minimum value      (spin boxes).
+            max_val:     Maximum value      (spin boxes).
+            items:       Strings to populate a QComboBox.
+
+        Returns the configured widget so it can be assigned + laid out inline.
+        """
+        # Configure
+        if placeholder and isinstance(widget, (QLineEdit, QTextEdit)):
+            widget.setPlaceholderText(placeholder)
+
+        if suffix and isinstance(widget, (QDoubleSpinBox, QSpinBox)):
+            widget.setSuffix(f" {suffix}")
+
+        if decimals is not None and isinstance(widget, QDoubleSpinBox):
+            widget.setDecimals(decimals)
+
+        if min_val is not None and isinstance(widget, (QDoubleSpinBox, QSpinBox)):
+            widget.setMinimum(min_val)
+
+        if max_val is not None and isinstance(widget, (QDoubleSpinBox, QSpinBox)):
+            widget.setMaximum(max_val)
+
+        if items and isinstance(widget, QComboBox):
+            widget.addItems(items)
+
+        if default is not None:
+            self._apply_value(widget, default)
+
+        # Register
+        self._field_map[key] = widget
+        self._connect_widget(widget)
+
+        return widget
+
+    def register_field(self, key: str, widget: QWidget) -> QWidget:
+        """
+        Back-compat alias for field() without options.
+        GeneralInfo and BridgeData use this â€” no changes needed there.
+        """
+        self._field_map[key] = widget
+        self._connect_widget(widget)
+        return widget
+
+    def refresh_from_engine(self):
+        """Loads stored data from the engine into all registered widgets."""
+        if not self.controller or not self.controller.engine:
+            return
+        if not self.controller.engine.is_active() or not self.chunk_name:
+            return
+        data = self.controller.engine.fetch_chunk(self.chunk_name)
+        if data:
+            self.load_data_dict(data)
+
+    def get_data_dict(self) -> dict:
+        """Extracts current widget values into a plain dict for saving."""
+        data = {}
+        for key, widget in self._field_map.items():
+            if isinstance(widget, QLineEdit):
+                data[key] = widget.text()
+            elif isinstance(widget, QTextEdit):
+                data[key] = widget.toPlainText()
+            elif isinstance(widget, (QDoubleSpinBox, QSpinBox)):
+                data[key] = widget.value()
+            elif isinstance(widget, QComboBox):
+                data[key] = widget.currentText()
+            elif isinstance(widget, QCheckBox):
+                data[key] = widget.isChecked()
+        return data
+
+    def load_data_dict(self, data: dict):
+        """
+        Populates widgets from a dict.
+        Blocks all change signals during load to prevent feedback-loop autosaves.
+        """
+        if not data:
+            return
+        self._loading = True
+        try:
+            for key, widget in self._field_map.items():
+                if key not in data:
+                    continue
+                widget.blockSignals(True)
+                try:
+                    self._apply_value(widget, data[key])
+                finally:
+                    widget.blockSignals(False)
+        finally:
+            self._loading = False
+
+    # â”€â”€ INTERNALS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+    def _connect_widget(self, widget: QWidget):
+        if isinstance(widget, QLineEdit):
+            widget.textChanged.connect(self._on_field_changed)
+        elif isinstance(widget, (QDoubleSpinBox, QSpinBox)):
+            widget.valueChanged.connect(self._on_field_changed)
+        elif isinstance(widget, QComboBox):
+            widget.currentIndexChanged.connect(self._on_field_changed)
+        elif isinstance(widget, QCheckBox):
+            widget.stateChanged.connect(self._on_field_changed)
+        elif isinstance(widget, QTextEdit):
+            widget.textChanged.connect(self._on_field_changed)
+
+    def _on_field_changed(self):
+        if self._loading:
+            return
+        self.data_changed.emit()
+        if self.controller and self.chunk_name:
+            self.controller.save_chunk_data(self.chunk_name, self.get_data_dict())
+
+    @staticmethod
+    def _apply_value(widget: QWidget, val):
+        """Write a value to any supported widget type."""
+        if isinstance(widget, QLineEdit):
+            widget.setText(str(val))
+        elif isinstance(widget, QTextEdit):
+            widget.setPlainText(str(val))
+        elif isinstance(widget, (QDoubleSpinBox, QSpinBox)):
+            widget.setValue(float(val))
+        elif isinstance(widget, QComboBox):
+            idx = widget.findText(str(val))
+            if idx >= 0:
+                widget.setCurrentIndex(idx)
+        elif isinstance(widget, QCheckBox):
+            widget.setChecked(bool(val))
+
+
+# â”€â”€ SCROLLABLE FORM â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+class ScrollableForm(BaseDataWidget):
+    """
+    A BaseDataWidget that wraps its content in a QScrollArea and exposes
+    a QFormLayout (self.form) for adding labelled rows.
+
+    This is the recommended base class for all flat data-entry panels.
+    Tab-based panels (Structure, CarbonEmission) use BaseDataWidget directly
+    since they manage their own layout.
+
+    Example:
+        class TrafficData(ScrollableForm):
+            def __init__(self, controller=None):
+                super().__init__(controller=controller, chunk_name="traffic_data")
+                self.aadt = self.field("aadt", QSpinBox(), min_val=0, max_val=10_000_000)
+                self.form.addRow("AADT:", self.aadt)
+    """
+
+    def __init__(self, controller=None, chunk_name: str = None):
+        super().__init__(controller=controller, chunk_name=chunk_name)
+
+        # Inner widget holds the form
+        self._content = QWidget()
+        self.form = QFormLayout(self._content)
+        self.form.setContentsMargins(24, 20, 24, 20)
+        self.form.setSpacing(12)
+        self.form.setLabelAlignment(Qt.AlignRight)
+
+        # Wrap in scroll area
+        scroll = QScrollArea()
+        scroll.setWidget(self._content)
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QScrollArea.NoFrame)
+
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.addWidget(scroll)
+
+
+================================================
+FILE: gui/components/checkpoint_dialog.py
+================================================
+Error reading file with 'cp1252': 'charmap' codec can't decode byte 0x8f in position 9498: character maps to <undefined>
+
+
+================================================
+FILE: gui/components/home_page.py
+================================================
+Error reading file with 'cp1252': 'charmap' codec can't decode byte 0x90 in position 6677: character maps to <undefined>
+
+
+================================================
+FILE: gui/components/logs.py
+================================================
+"""
+gui/components/logs.py
+
+A real-time log viewer panel that reads from the engine's log_history
+via the ProjectController. Replaces the placeholder stub.
+"""
+
+from PySide6.QtWidgets import (
+    QWidget, QVBoxLayout, QHBoxLayout,
+    QTextEdit, QPushButton, QLabel
+)
+from PySide6.QtCore import QTimer, Qt
+from PySide6.QtGui import QFont, QColor, QTextCharFormat, QTextCursor
+
+
+class Logs(QWidget):
+    """
+    Live log viewer panel. Polls the engine log history every 2 seconds
+    and displays entries with colour-coded severity.
+    """
+
+    def __init__(self, controller=None):
+        super().__init__()
+        self.controller = controller
+        self._last_log_count = 0
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(12, 12, 12, 12)
+        layout.setSpacing(8)
+
+        # Header row
+        header_row = QHBoxLayout()
+        title = QLabel("Engine Logs")
+        font = QFont()
+        font.setPointSize(11)
+        font.setBold(True)
+        title.setFont(font)
+        header_row.addWidget(title)
+        header_row.addStretch()
+
+        self.health_label = QLabel("")
+        self.health_label.setStyleSheet("color: #555; font-size: 11px;")
+        header_row.addWidget(self.health_label)
+
+        clear_btn = QPushButton("Clear")
+        clear_btn.setFixedWidth(60)
+        clear_btn.clicked.connect(self._clear_display)
+        header_row.addWidget(clear_btn)
+
+        layout.addLayout(header_row)
+
+        # Log display
+        self.log_view = QTextEdit()
+        self.log_view.setReadOnly(True)
+        self.log_view.setFont(QFont("Courier New", 10))
+        self.log_view.setStyleSheet(
+            "QTextEdit { background-color: #1e1e1e; color: #d4d4d4; "
+            "border: 1px solid #444; border-radius: 4px; padding: 6px; }"
+        )
+        layout.addWidget(self.log_view)
+
+        # Auto-refresh timer (polls every 2 seconds)
+        self._timer = QTimer(self)
+        self._timer.setInterval(2000)
+        self._timer.timeout.connect(self.refresh_logs)
+        self._timer.start()
+
+        self.refresh_logs()
+
+    def refresh_logs(self):
+        """Fetches latest log entries from the controller and appends new ones."""
+        if not self.controller:
+            return
+
+        logs = self.controller.get_engine_logs()
+
+        # Only append new entries since last refresh
+        new_entries = logs[self._last_log_count:]
+        if new_entries:
+            cursor = self.log_view.textCursor()
+            cursor.movePosition(QTextCursor.End)
+
+            for entry in new_entries:
+                fmt = QTextCharFormat()
+
+                # Colour-code by severity
+                if "CRITICAL" in entry or "FAULT" in entry or "FAILED" in entry:
+                    fmt.setForeground(QColor("#f48771"))  # red
+                elif "ERROR" in entry or "corrupt" in entry or "loss" in entry:
+                    fmt.setForeground(QColor("#f48771"))  # red
+                elif "WARN" in entry or "stale" in entry or "DENIED" in entry:
+                    fmt.setForeground(QColor("#dcdcaa"))  # yellow
+                elif "Checkpoint" in entry or "Restored" in entry or "saved" in entry.lower():
+                    fmt.setForeground(QColor("#4ec9b0"))  # teal
+                elif "attached" in entry or "SUCCESS" in entry:
+                    fmt.setForeground(QColor("#b5cea8"))  # green
+                else:
+                    fmt.setForeground(QColor("#d4d4d4"))  # default white-grey
+
+                cursor.setCharFormat(fmt)
+                cursor.insertText(entry + "\n")
+
+            self._last_log_count = len(logs)
+
+            # Auto-scroll to bottom
+            self.log_view.setTextCursor(cursor)
+            self.log_view.ensureCursorVisible()
+
+        # Update health badge
+        report = self.controller.get_health_report()
+        if report:
+            shards = report.get("shards_count", 0)
+            backups = report.get("backups_count", 0)
+            checkpoints = report.get("checkpoints_count", 0)
+            pending = report.get("pending_syncs", 0)
+            self.health_label.setText(
+                f"Shards: {shards}  |  Backups: {backups}  |  "
+                f"Checkpoints: {checkpoints}  |  Pending: {pending}"
+            )
+
+    def _clear_display(self):
+        """Clears the display (does not clear the engine's log_history)."""
+        self.log_view.clear()
+        self._last_log_count = 0
+        if self.controller:
+            # Reset to current length so we don't re-display old entries
+            logs = self.controller.get_engine_logs()
+            self._last_log_count = len(logs)
+
+
+
+================================================
+FILE: gui/components/save_status_bar.py
+================================================
+"""
+gui/components/save_status_bar.py
+
+Status bar showing autosave state + Save Checkpoint / Checkpoints buttons.
+"""
+
+from PySide6.QtWidgets import QWidget, QHBoxLayout, QLabel, QPushButton
+from PySide6.QtCore import QTimer
+
+from gui.components.checkpoint_dialog import SaveCheckpointDialog, CheckpointManagerDialog
+
+
+class SaveStatusBar(QWidget):
+    def __init__(self, controller, parent=None):
+        super().__init__(parent)
+        self.controller = controller
+        self.setFixedHeight(36)
+
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(12, 0, 12, 0)
+        layout.setSpacing(10)
+
+        self.status_label = QLabel("No project open")
+        layout.addWidget(self.status_label)
+        layout.addStretch()
+
+        self.checkpoint_btn = QPushButton("Save Checkpoint")
+        self.checkpoint_btn.clicked.connect(self._open_save_dialog)
+        layout.addWidget(self.checkpoint_btn)
+
+        self.manager_btn = QPushButton("Checkpoints")
+        self.manager_btn.clicked.connect(self._open_manager_dialog)
+        layout.addWidget(self.manager_btn)
+
+        self.set_active(False)
+        self._connect_signals()
+
+    def _connect_signals(self):
+        if self.controller:
+            self.controller.project_loaded.connect(lambda: self.set_active(True))
+            self.controller.sync_completed.connect(self._on_saved)
+            self.controller.dirty_changed.connect(self._on_dirty_changed)
+            self.controller.status_message.connect(self._on_status_message)
+            self.controller.fault_occurred.connect(self._on_fault)
+
+    def _on_saved(self):
+        self.status_label.setText("All changes saved")
+
+    def _on_dirty_changed(self, is_dirty: bool):
+        self.status_label.setText("Unsaved changes..." if is_dirty else "All changes saved")
+
+    def _on_status_message(self, message: str):
+        if "Checkpoint saved" in message or "Restored" in message:
+            self.status_label.setText(message)
+            QTimer.singleShot(4000, lambda: self.status_label.setText("All changes saved"))
+
+    def _on_fault(self, error_message: str):
+        self.status_label.setText(f"Error: {error_message}")
+
+    def _open_save_dialog(self):
+        SaveCheckpointDialog(self.controller, parent=self).exec()
+
+    def _open_manager_dialog(self):
+        CheckpointManagerDialog(self.controller, parent=self).exec()
+
+    def set_active(self, active: bool):
+        self.checkpoint_btn.setEnabled(active)
+        self.manager_btn.setEnabled(active)
+        if not active:
+            self.status_label.setText("No project open")
+
+
+================================================
+FILE: gui/components/bridge_data/main.py
+================================================
+# gui/components/bridge_data/main.py
+from PySide6.QtWidgets import QWidget, QFormLayout, QLineEdit
+from PySide6.QtCore import Signal
+
+class BridgeData(QWidget):
+    created = Signal()
+
+    def __init__(self, controller=None):
+        super().__init__()
+        self.controller = controller
+        self.chunk_name = "bridge_data"
+
+        layout = QFormLayout(self)
+        self.bridge_id = QLineEdit()
+        layout.addRow("Bridge ID:", self.bridge_id)
+
+        self.bridge_id.textChanged.connect(self.trigger_autosave)
+
+    def get_data_dict(self):
+        return {"bridge_id": self.bridge_id.text()}
+
+    def trigger_autosave(self):
+        self.created.emit()
+        if self.controller:
+            self.controller.save_chunk_data(self.chunk_name, self.get_data_dict())
+
+
+================================================
+FILE: gui/components/carbon_emission/main.py
+================================================
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QTabWidget
+from gui.components.carbon_emission.widgets.material_emissions import MaterialEmissions
+from gui.components.carbon_emission.widgets.transport_emissions import TransportEmissions
+from gui.components.carbon_emission.widgets.machinery_emissions import MachineryEmissions
+from gui.components.carbon_emission.widgets.traffic_emissions import TrafficEmissions
+from gui.components.carbon_emission.widgets.social_cost import SocialCost
+
+
+class CarbonEmissionTabView(QWidget):
+    def __init__(self, controller=None):
+        super().__init__()
+
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+
+        self.tab_view = QTabWidget()
+        self.tab_view.addTab(MaterialEmissions(controller=controller),  "Material Emissions")
+        self.tab_view.addTab(TransportEmissions(controller=controller), "Transportation Emissions")
+        self.tab_view.addTab(MachineryEmissions(controller=controller), "Machinery Emissions")
+        self.tab_view.addTab(TrafficEmissions(controller=controller),   "Traffic Diversion Emissions")
+        self.tab_view.addTab(SocialCost(controller=controller),        "Social Cost of Carbon")
+
+        main_layout.addWidget(self.tab_view)
+
+    def select_tab(self, name):
+        tabs = ["Material Emissions", "Transportation Emissions", "Machinery Emissions",
+                "Traffic Diversion Emissions", "Social Cost of Carbon"]
+        if name in tabs:
+            self.tab_view.setCurrentIndex(tabs.index(name))
+
+
+================================================
+FILE: gui/components/carbon_emission/widgets/machinery_emissions.py
+================================================
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel
+
+
+class MachineryEmissions(QWidget):
+    def __init__(self):
+        super().__init__()
+
+        main_layout = QVBoxLayout()
+        self.setLayout(main_layout)
+
+        main_layout.addWidget(QLabel("Welcome to Machinery Emissions"))
+
+
+================================================
+FILE: gui/components/carbon_emission/widgets/material_emissions.py
+================================================
+from PySide6.QtWidgets import QDoubleSpinBox, QComboBox
+from gui.components.base_widget import ScrollableForm
+
+
+class MaterialEmissions(ScrollableForm):
+    def __init__(self, controller=None):
+        super().__init__(controller=controller, chunk_name="carbon_material")
+
+        self.cement_quantity  = self.field("cement_quantity",  QDoubleSpinBox(), min_val=0, max_val=1e6, suffix="t",      decimals=2)
+        self.cement_ef        = self.field("cement_ef",        QDoubleSpinBox(), min_val=0, max_val=2,   suffix="tCOâ‚‚/t", decimals=4, default=0.8700)
+        self.steel_quantity   = self.field("steel_quantity",   QDoubleSpinBox(), min_val=0, max_val=1e6, suffix="t",      decimals=2)
+        self.steel_ef         = self.field("steel_ef",         QDoubleSpinBox(), min_val=0, max_val=5,   suffix="tCOâ‚‚/t", decimals=4, default=1.8500)
+        self.aggregate_qty    = self.field("aggregate_qty",    QDoubleSpinBox(), min_val=0, max_val=1e6, suffix="t",      decimals=2)
+        self.aggregate_ef     = self.field("aggregate_ef",     QDoubleSpinBox(), min_val=0, max_val=1,   suffix="tCOâ‚‚/t", decimals=4, default=0.0048)
+        self.bitumen_qty      = self.field("bitumen_qty",      QDoubleSpinBox(), min_val=0, max_val=1e6, suffix="t",      decimals=2)
+        self.bitumen_ef       = self.field("bitumen_ef",       QDoubleSpinBox(), min_val=0, max_val=5,   suffix="tCOâ‚‚/t", decimals=4, default=0.4140)
+
+        self.form.addRow("Cement Quantity:",         self.cement_quantity)
+        self.form.addRow("Cement Emission Factor:",  self.cement_ef)
+        self.form.addRow("Steel Quantity:",          self.steel_quantity)
+        self.form.addRow("Steel Emission Factor:",   self.steel_ef)
+        self.form.addRow("Aggregate Quantity:",      self.aggregate_qty)
+        self.form.addRow("Aggregate Emission Factor:", self.aggregate_ef)
+        self.form.addRow("Bitumen Quantity:",        self.bitumen_qty)
+        self.form.addRow("Bitumen Emission Factor:", self.bitumen_ef)
+
+
+================================================
+FILE: gui/components/carbon_emission/widgets/social_cost.py
+================================================
+from PySide6.QtWidgets import QDoubleSpinBox, QComboBox
+from gui.components.base_widget import ScrollableForm
+
+
+class SocialCost(ScrollableForm):
+    def __init__(self, controller=None):
+        super().__init__(controller=controller, chunk_name="carbon_social")
+
+        self.social_cost_carbon = self.field("social_cost_carbon", QDoubleSpinBox(), min_val=0, max_val=1000, suffix="/tCOâ‚‚", decimals=2, default=51.0)
+        self.currency           = self.field("currency",           QComboBox(),      items=["USD", "EUR", "GBP", "INR"])
+        self.total_emissions    = self.field("total_emissions",    QDoubleSpinBox(), min_val=0, max_val=1e6,  suffix="tCOâ‚‚",  decimals=2)
+        self.discount_rate      = self.field("discount_rate",      QDoubleSpinBox(), min_val=0, max_val=20,   suffix="%",      decimals=2, default=3.5)
+
+        self.form.addRow("Social Cost of Carbon:",  self.social_cost_carbon)
+        self.form.addRow("Currency:",               self.currency)
+        self.form.addRow("Total Emissions:",        self.total_emissions)
+        self.form.addRow("Discount Rate:",          self.discount_rate)
+
+
+================================================
+FILE: gui/components/carbon_emission/widgets/traffic_emissions.py
+================================================
+from PySide6.QtWidgets import QDoubleSpinBox, QSpinBox
+from gui.components.base_widget import ScrollableForm
+
+
+class TrafficEmissions(ScrollableForm):
+    def __init__(self, controller=None):
+        super().__init__(controller=controller, chunk_name="carbon_traffic")
+
+        self.diverted_vehicles = self.field("diverted_vehicles", QSpinBox(),       min_val=0, max_val=1_000_000)
+        self.detour_length     = self.field("detour_length",     QDoubleSpinBox(), min_val=0, max_val=500,  suffix="km",      decimals=2)
+        self.car_ef            = self.field("car_ef",            QDoubleSpinBox(), min_val=0, max_val=1,    suffix="tCOâ‚‚/km", decimals=6, default=0.000192)
+        self.truck_ef          = self.field("truck_ef",          QDoubleSpinBox(), min_val=0, max_val=1,    suffix="tCOâ‚‚/km", decimals=6, default=0.000900)
+        self.truck_percent     = self.field("truck_percent",     QDoubleSpinBox(), min_val=0, max_val=100,  suffix="%",       decimals=1)
+        self.work_zone_days    = self.field("work_zone_days",    QSpinBox(),       min_val=0, max_val=3650)
+
+        self.form.addRow("Diverted Vehicles/day:",  self.diverted_vehicles)
+        self.form.addRow("Detour Length:",          self.detour_length)
+        self.form.addRow("Car Emission Factor:",    self.car_ef)
+        self.form.addRow("Truck Emission Factor:",  self.truck_ef)
+        self.form.addRow("Truck Percentage:",       self.truck_percent)
+        self.form.addRow("Work Zone Duration:",     self.work_zone_days)
+
+
+================================================
+FILE: gui/components/carbon_emission/widgets/transport_emissions.py
+================================================
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel
+
+
+class TransportEmissions(QWidget):
+    def __init__(self):
+        super().__init__()
+
+        main_layout = QVBoxLayout()
+        self.setLayout(main_layout)
+
+        main_layout.addWidget(QLabel("Welcome to Transportation Emissions"))
+
+
+================================================
+FILE: gui/components/demolition/main.py
+================================================
+from PySide6.QtWidgets import QDoubleSpinBox, QSpinBox, QComboBox
+from gui.components.base_widget import ScrollableForm
+
+
+class Demolition(ScrollableForm):
+    def __init__(self, controller=None):
+        super().__init__(controller=controller, chunk_name="demolition_data")
+
+        self.demolition_cost    = self.field("demolition_cost",    QDoubleSpinBox(), min_val=0, max_val=1e9, decimals=2)
+        self.demolition_year    = self.field("demolition_year",    QSpinBox(),       min_val=1, max_val=200, suffix=" yr")
+        self.waste_volume       = self.field("waste_volume",       QDoubleSpinBox(), min_val=0, max_val=1e6, suffix="mÂ³", decimals=2)
+        self.disposal_cost      = self.field("disposal_cost",      QDoubleSpinBox(), min_val=0, max_val=1e9, decimals=2)
+        self.demolition_method  = self.field("demolition_method",  QComboBox(),      items=["Conventional", "Implosion", "Deconstruction"])
+        self.landfill_distance  = self.field("landfill_distance",  QDoubleSpinBox(), min_val=0, max_val=500, suffix="km", decimals=1)
+
+        self.form.addRow("Demolition Cost:",           self.demolition_cost)
+        self.form.addRow("Demolition Year:",           self.demolition_year)
+        self.form.addRow("Waste Volume:",              self.waste_volume)
+        self.form.addRow("Disposal Cost:",             self.disposal_cost)
+        self.form.addRow("Demolition Method:",         self.demolition_method)
+        self.form.addRow("Landfill Distance:",         self.landfill_distance)
+
+
+================================================
+FILE: gui/components/financial_data/main.py
+================================================
+from PySide6.QtWidgets import QDoubleSpinBox, QComboBox, QSpinBox
+from gui.components.base_widget import ScrollableForm
+
+
+class FinancialData(ScrollableForm):
+    def __init__(self, controller=None):
+        super().__init__(controller=controller, chunk_name="financial_data")
+
+        self.initial_cost       = self.field("initial_cost",       QDoubleSpinBox(), min_val=0, max_val=1e9,  suffix="", decimals=2)
+        self.discount_rate      = self.field("discount_rate",      QDoubleSpinBox(), min_val=0, max_val=50,   suffix="%", decimals=2, default=3.5)
+        self.analysis_period    = self.field("analysis_period",    QSpinBox(),       min_val=1, max_val=200,  suffix=" yr", default=75)
+        self.inflation_rate     = self.field("inflation_rate",     QDoubleSpinBox(), min_val=0, max_val=50,   suffix="%", decimals=2)
+        self.cost_escalation    = self.field("cost_escalation",    QDoubleSpinBox(), min_val=0, max_val=50,   suffix="%", decimals=2)
+        self.residual_value     = self.field("residual_value",     QDoubleSpinBox(), min_val=0, max_val=1e9,  suffix="", decimals=2)
+        self.funding_source     = self.field("funding_source",     QComboBox(),      items=["Government", "Private", "PPP", "Other"])
+
+        self.form.addRow("Initial Construction Cost:", self.initial_cost)
+        self.form.addRow("Discount Rate:",             self.discount_rate)
+        self.form.addRow("Analysis Period:",           self.analysis_period)
+        self.form.addRow("Inflation Rate:",            self.inflation_rate)
+        self.form.addRow("Cost Escalation Rate:",      self.cost_escalation)
+        self.form.addRow("Residual Value:",            self.residual_value)
+        self.form.addRow("Funding Source:",            self.funding_source)
+
+
+================================================
+FILE: gui/components/global_info/main.py
+================================================
+from PySide6.QtWidgets import QFormLayout, QLineEdit, QComboBox, QDoubleSpinBox
+from PySide6.QtCore import Signal
+from gui.components.base_widget import BaseDataWidget
+
+
+class GeneralInfo(BaseDataWidget):
+    """
+    General Information panel â€” manages the 'general_info' data chunk.
+
+    Loading fix:
+        The old version manually connected sync_completed â†’ refresh_from_engine
+        and also called refresh_from_engine() directly in __init__. Both were wrong:
+        - The __init__ call always failed because the engine wasn't attached yet.
+        - sync_completed fires after every autosave, which would overwrite the UI
+          while the user is typing in a different field.
+
+        Now: BaseDataWidget.__init__ connects project_loaded â†’ refresh_from_engine
+        automatically for every subclass. No manual wiring needed here.
+    """
+    created = Signal()  # Kept for compatibility with ProjectWindow state management
+
+    def __init__(self, controller=None):
+        # BaseDataWidget.__init__ handles project_loaded connection automatically
+        super().__init__(controller=controller, chunk_name="general_info")
+
+        layout = QFormLayout(self)
+
+        # Field registration â€” BaseDataWidget handles signal connections + data extraction
+        self.project_name = self.register_field("project_name", QLineEdit())
+        self.project_code = self.register_field("project_code", QLineEdit())
+        self.client_name  = self.register_field("client", QLineEdit())
+        self.location     = self.register_field("location", QLineEdit())
+
+        self.currency = self.register_field("currency", QComboBox())
+        self.currency.addItems(["USD", "EUR", "GBP", "INR", "JPY", "AUD"])
+
+        self.discount_rate = self.register_field("discount_rate", QDoubleSpinBox())
+        self.discount_rate.setRange(0, 100)
+        self.discount_rate.setSuffix(" %")
+        self.discount_rate.setValue(3.5)
+
+        self.analysis_period = self.register_field("analysis_period", QDoubleSpinBox())
+        self.analysis_period.setRange(1, 200)
+        self.analysis_period.setSuffix(" Years")
+        self.analysis_period.setDecimals(0)
+
+        layout.addRow("Project Name:",   self.project_name)
+        layout.addRow("Project Code:",   self.project_code)
+        layout.addRow("Client:",         self.client_name)
+        layout.addRow("Location:",       self.location)
+        layout.addRow("Currency:",       self.currency)
+        layout.addRow("Discount Rate:",  self.discount_rate)
+        layout.addRow("Analysis Period:", self.analysis_period)
+
+    def _on_field_changed(self):
+        """
+        Emit the created signal in addition to the base autosave behaviour,
+        so ProjectWindow can update its title/state when this chunk changes.
+        """
+        super()._on_field_changed()
+        self.created.emit()
+
+
+================================================
+FILE: gui/components/maintenance/main.py
+================================================
+from PySide6.QtWidgets import QDoubleSpinBox, QSpinBox, QComboBox
+from gui.components.base_widget import ScrollableForm
+
+
+class Maintenance(ScrollableForm):
+    def __init__(self, controller=None):
+        super().__init__(controller=controller, chunk_name="maintenance_data")
+
+        self.routine_cost       = self.field("routine_cost",       QDoubleSpinBox(), min_val=0, max_val=1e9, decimals=2)
+        self.routine_interval   = self.field("routine_interval",   QSpinBox(),       min_val=1, max_val=50,  suffix=" yr", default=1)
+        self.major_cost         = self.field("major_cost",         QDoubleSpinBox(), min_val=0, max_val=1e9, decimals=2)
+        self.major_interval     = self.field("major_interval",     QSpinBox(),       min_val=1, max_val=100, suffix=" yr", default=20)
+        self.rehab_cost         = self.field("rehab_cost",         QDoubleSpinBox(), min_val=0, max_val=1e9, decimals=2)
+        self.rehab_year         = self.field("rehab_year",         QSpinBox(),       min_val=1, max_val=200, suffix=" yr", default=40)
+        self.inspection_cost    = self.field("inspection_cost",    QDoubleSpinBox(), min_val=0, max_val=1e9, decimals=2)
+        self.inspection_interval= self.field("inspection_interval",QSpinBox(),       min_val=1, max_val=20,  suffix=" yr", default=2)
+        self.maintenance_strategy = self.field("maintenance_strategy", QComboBox(), items=["Corrective", "Preventive", "Condition-based"])
+
+        self.form.addRow("Routine Maintenance Cost:",  self.routine_cost)
+        self.form.addRow("Routine Interval:",          self.routine_interval)
+        self.form.addRow("Major Repair Cost:",         self.major_cost)
+        self.form.addRow("Major Repair Interval:",     self.major_interval)
+        self.form.addRow("Rehabilitation Cost:",       self.rehab_cost)
+        self.form.addRow("Rehabilitation Year:",       self.rehab_year)
+        self.form.addRow("Inspection Cost:",           self.inspection_cost)
+        self.form.addRow("Inspection Interval:",       self.inspection_interval)
+        self.form.addRow("Maintenance Strategy:",      self.maintenance_strategy)
+
+
+
+================================================
+FILE: gui/components/recycling/main.py
+================================================
+from PySide6.QtWidgets import QDoubleSpinBox, QComboBox
+from gui.components.base_widget import ScrollableForm
+
+
+class Recycling(ScrollableForm):
+    def __init__(self, controller=None):
+        super().__init__(controller=controller, chunk_name="recycling_data")
+
+        self.steel_weight       = self.field("steel_weight",       QDoubleSpinBox(), min_val=0, max_val=1e6, suffix="t",  decimals=2)
+        self.steel_recycle_rate = self.field("steel_recycle_rate", QDoubleSpinBox(), min_val=0, max_val=100, suffix="%",  decimals=1, default=90.0)
+        self.concrete_weight    = self.field("concrete_weight",    QDoubleSpinBox(), min_val=0, max_val=1e6, suffix="t",  decimals=2)
+        self.concrete_recycle_rate = self.field("concrete_recycle_rate", QDoubleSpinBox(), min_val=0, max_val=100, suffix="%", decimals=1, default=70.0)
+        self.recycling_revenue  = self.field("recycling_revenue",  QDoubleSpinBox(), min_val=0, max_val=1e9, decimals=2)
+        self.recycling_cost     = self.field("recycling_cost",     QDoubleSpinBox(), min_val=0, max_val=1e9, decimals=2)
+        self.recycling_method   = self.field("recycling_method",   QComboBox(),      items=["On-site", "Off-site", "Mixed"])
+
+        self.form.addRow("Steel Weight:",              self.steel_weight)
+        self.form.addRow("Steel Recycling Rate:",      self.steel_recycle_rate)
+        self.form.addRow("Concrete Weight:",           self.concrete_weight)
+        self.form.addRow("Concrete Recycling Rate:",   self.concrete_recycle_rate)
+        self.form.addRow("Recycling Revenue:",         self.recycling_revenue)
+        self.form.addRow("Recycling Cost:",            self.recycling_cost)
+        self.form.addRow("Recycling Method:",          self.recycling_method)
+
+
+
+
+================================================
+FILE: gui/components/structure/main.py
+================================================
+from PySide6.QtWidgets import QTabWidget, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel
+from gui.components.structure.widgets.foundation import Foundation
+from gui.components.structure.widgets.super_structure import SuperStruct
+from gui.components.structure.widgets.substructure import SubStruct
+from gui.components.structure.widgets.misc_widget import Misc
+
+
+class StructureTabView(QWidget):
+    def __init__(self, controller=None):
+        super().__init__()
+
+        main_layout = QVBoxLayout(self)
+
+        # Top area
+        top_area = QWidget()
+        top_layout = QHBoxLayout(top_area)
+        region_info = QWidget()
+        region_info_layout = QVBoxLayout(region_info)
+        region_info_layout.addWidget(QLabel("Region Info: India"))
+        region_info_layout.addWidget(QLabel("Selected DB: Maharashtra PWD"))
+        top_layout.addWidget(region_info)
+        top_layout.addStretch()
+        top_layout.addWidget(QPushButton("Upload Excel"))
+        top_layout.addWidget(QPushButton("Trash"))
+
+        self.tab_view = QTabWidget()
+        self.tab_view.addTab(Foundation(controller=controller),  "Foundation")
+        self.tab_view.addTab(SuperStruct(controller=controller), "Super-Structure")
+        self.tab_view.addTab(SubStruct(controller=controller),   "Substructure")
+        self.tab_view.addTab(Misc(controller=controller),        "Miscellaneous")
+
+        main_layout.addWidget(top_area)
+        main_layout.addWidget(self.tab_view)
+
+    def select_tab(self, name):
+        tabs = ["Foundation", "Super-Structure", "Substructure", "Miscellaneous"]
+        if name in tabs:
+            self.tab_view.setCurrentIndex(tabs.index(name))
+
+
+================================================
+FILE: gui/components/structure/widgets/foundation.py
+================================================
+from PySide6.QtWidgets import QDoubleSpinBox, QSpinBox, QComboBox, QLineEdit
+from gui.components.base_widget import ScrollableForm
+
+
+class Foundation(ScrollableForm):
+    def __init__(self, controller=None):
+        super().__init__(controller=controller, chunk_name="structure_foundation")
+
+        self.foundation_type  = self.field("foundation_type",  QComboBox(),      items=["Pile", "Spread Footing", "Well Foundation", "Raft"])
+        self.pile_length      = self.field("pile_length",      QDoubleSpinBox(), min_val=0, max_val=200,  suffix="m",  decimals=2)
+        self.pile_diameter    = self.field("pile_diameter",    QDoubleSpinBox(), min_val=0, max_val=10,   suffix="m",  decimals=3)
+        self.num_piles        = self.field("num_piles",        QSpinBox(),       min_val=0, max_val=1000)
+        self.concrete_grade   = self.field("concrete_grade",   QComboBox(),      items=["M20", "M25", "M30", "M35", "M40", "M45", "M50"])
+        self.steel_grade      = self.field("steel_grade",      QComboBox(),      items=["Fe415", "Fe500", "Fe550"])
+        self.concrete_volume  = self.field("concrete_volume",  QDoubleSpinBox(), min_val=0, max_val=1e5,  suffix="mÂ³", decimals=2)
+        self.steel_weight     = self.field("steel_weight",     QDoubleSpinBox(), min_val=0, max_val=1e6,  suffix="t",  decimals=2)
+        self.unit_cost        = self.field("unit_cost",        QDoubleSpinBox(), min_val=0, max_val=1e9,  decimals=2)
+
+        self.form.addRow("Foundation Type:",   self.foundation_type)
+        self.form.addRow("Pile Length:",       self.pile_length)
+        self.form.addRow("Pile Diameter:",     self.pile_diameter)
+        self.form.addRow("Number of Piles:",   self.num_piles)
+        self.form.addRow("Concrete Grade:",    self.concrete_grade)
+        self.form.addRow("Steel Grade:",       self.steel_grade)
+        self.form.addRow("Concrete Volume:",   self.concrete_volume)
+        self.form.addRow("Steel Weight:",      self.steel_weight)
+        self.form.addRow("Unit Cost:",         self.unit_cost)
+
+
+================================================
+FILE: gui/components/structure/widgets/misc_widget.py
+================================================
+from PySide6.QtWidgets import QDoubleSpinBox, QLineEdit
+from gui.components.base_widget import ScrollableForm
+
+
+class Misc(ScrollableForm):
+    def __init__(self, controller=None):
+        super().__init__(controller=controller, chunk_name="structure_misc")
+
+        self.railing_cost     = self.field("railing_cost",     QDoubleSpinBox(), min_val=0, max_val=1e9, decimals=2)
+        self.expansion_joints = self.field("expansion_joints", QDoubleSpinBox(), min_val=0, max_val=1e9, decimals=2)
+        self.bearings_cost    = self.field("bearings_cost",    QDoubleSpinBox(), min_val=0, max_val=1e9, decimals=2)
+        self.waterproofing    = self.field("waterproofing",    QDoubleSpinBox(), min_val=0, max_val=1e9, decimals=2)
+        self.drainage_cost    = self.field("drainage_cost",    QDoubleSpinBox(), min_val=0, max_val=1e9, decimals=2)
+        self.lighting_cost    = self.field("lighting_cost",    QDoubleSpinBox(), min_val=0, max_val=1e9, decimals=2)
+        self.signage_cost     = self.field("signage_cost",     QDoubleSpinBox(), min_val=0, max_val=1e9, decimals=2)
+        self.notes            = self.field("notes",            QLineEdit(),      placeholder="Any additional notes")
+
+        self.form.addRow("Railing Cost:",          self.railing_cost)
+        self.form.addRow("Expansion Joints Cost:", self.expansion_joints)
+        self.form.addRow("Bearings Cost:",         self.bearings_cost)
+        self.form.addRow("Waterproofing Cost:",    self.waterproofing)
+        self.form.addRow("Drainage Cost:",         self.drainage_cost)
+        self.form.addRow("Lighting Cost:",         self.lighting_cost)
+        self.form.addRow("Signage Cost:",          self.signage_cost)
+        self.form.addRow("Notes:",                 self.notes)
+
+
+================================================
+FILE: gui/components/structure/widgets/substructure.py
+================================================
+from PySide6.QtWidgets import QDoubleSpinBox, QSpinBox, QComboBox
+from gui.components.base_widget import ScrollableForm
+
+
+class SubStruct(ScrollableForm):
+    def __init__(self, controller=None):
+        super().__init__(controller=controller, chunk_name="structure_substructure")
+
+        self.pier_type        = self.field("pier_type",        QComboBox(),      items=["Solid", "Hollow", "Portal Frame", "Hammerhead"])
+        self.num_piers        = self.field("num_piers",        QSpinBox(),       min_val=0, max_val=200)
+        self.pier_height      = self.field("pier_height",      QDoubleSpinBox(), min_val=0, max_val=200,  suffix="m",  decimals=2)
+        self.abutment_type    = self.field("abutment_type",    QComboBox(),      items=["Gravity", "Cantilever", "Counterfort", "Spill-through"])
+        self.concrete_grade   = self.field("concrete_grade",   QComboBox(),      items=["M25", "M30", "M35", "M40"])
+        self.steel_grade      = self.field("steel_grade",      QComboBox(),      items=["Fe415", "Fe500", "Fe550"])
+        self.concrete_volume  = self.field("concrete_volume",  QDoubleSpinBox(), min_val=0, max_val=1e5,  suffix="mÂ³", decimals=2)
+        self.steel_weight     = self.field("steel_weight",     QDoubleSpinBox(), min_val=0, max_val=1e6,  suffix="t",  decimals=2)
+        self.unit_cost        = self.field("unit_cost",        QDoubleSpinBox(), min_val=0, max_val=1e9,  decimals=2)
+
+        self.form.addRow("Pier Type:",         self.pier_type)
+        self.form.addRow("Number of Piers:",   self.num_piers)
+        self.form.addRow("Pier Height:",       self.pier_height)
+        self.form.addRow("Abutment Type:",     self.abutment_type)
+        self.form.addRow("Concrete Grade:",    self.concrete_grade)
+        self.form.addRow("Steel Grade:",       self.steel_grade)
+        self.form.addRow("Concrete Volume:",   self.concrete_volume)
+        self.form.addRow("Steel Weight:",      self.steel_weight)
+        self.form.addRow("Unit Cost:",         self.unit_cost)
+
+
+================================================
+FILE: gui/components/structure/widgets/super_structure.py
+================================================
+from PySide6.QtWidgets import QDoubleSpinBox, QSpinBox, QComboBox
+from gui.components.base_widget import ScrollableForm
+
+
+class SuperStruct(ScrollableForm):
+    def __init__(self, controller=None):
+        super().__init__(controller=controller, chunk_name="structure_superstructure")
+
+        self.bridge_type      = self.field("bridge_type",      QComboBox(),      items=["Simply Supported", "Continuous", "Cantilever", "Arch", "Cable-stayed", "Suspension"])
+        self.span_length      = self.field("span_length",      QDoubleSpinBox(), min_val=0, max_val=2000, suffix="m",  decimals=2)
+        self.num_spans        = self.field("num_spans",        QSpinBox(),       min_val=1, max_val=100)
+        self.deck_width       = self.field("deck_width",       QDoubleSpinBox(), min_val=0, max_val=100,  suffix="m",  decimals=2)
+        self.deck_thickness   = self.field("deck_thickness",   QDoubleSpinBox(), min_val=0, max_val=5,    suffix="m",  decimals=3)
+        self.concrete_grade   = self.field("concrete_grade",   QComboBox(),      items=["M25", "M30", "M35", "M40", "M45", "M50"])
+        self.steel_grade      = self.field("steel_grade",      QComboBox(),      items=["Fe415", "Fe500", "Fe550"])
+        self.concrete_volume  = self.field("concrete_volume",  QDoubleSpinBox(), min_val=0, max_val=1e5,  suffix="mÂ³", decimals=2)
+        self.steel_weight     = self.field("steel_weight",     QDoubleSpinBox(), min_val=0, max_val=1e6,  suffix="t",  decimals=2)
+        self.unit_cost        = self.field("unit_cost",        QDoubleSpinBox(), min_val=0, max_val=1e9,  decimals=2)
+
+        self.form.addRow("Bridge Type:",       self.bridge_type)
+        self.form.addRow("Span Length:",       self.span_length)
+        self.form.addRow("Number of Spans:",   self.num_spans)
+        self.form.addRow("Deck Width:",        self.deck_width)
+        self.form.addRow("Deck Thickness:",    self.deck_thickness)
+        self.form.addRow("Concrete Grade:",    self.concrete_grade)
+        self.form.addRow("Steel Grade:",       self.steel_grade)
+        self.form.addRow("Concrete Volume:",   self.concrete_volume)
+        self.form.addRow("Steel Weight:",      self.steel_weight)
+        self.form.addRow("Unit Cost:",         self.unit_cost)
+
+
+================================================
+FILE: gui/components/traffic_data/main.py
+================================================
+from PySide6.QtWidgets import QSpinBox, QDoubleSpinBox, QComboBox, QLineEdit
+from gui.components.base_widget import ScrollableForm
+
+
+class TrafficData(ScrollableForm):
+    def __init__(self, controller=None):
+        super().__init__(controller=controller, chunk_name="traffic_data")
+
+        self.aadt          = self.field("aadt",           QSpinBox(),       min_val=0, max_val=10_000_000, placeholder="Vehicles/day")
+        self.truck_percent = self.field("truck_percent",  QDoubleSpinBox(), min_val=0, max_val=100, suffix="%", decimals=1)
+        self.growth_rate   = self.field("growth_rate",    QDoubleSpinBox(), min_val=0, max_val=20,  suffix="%", decimals=2)
+        self.speed_limit   = self.field("speed_limit",    QDoubleSpinBox(), min_val=0, max_val=200, suffix="km/h", decimals=1)
+        self.detour_length = self.field("detour_length",  QDoubleSpinBox(), min_val=0, max_val=500, suffix="km", decimals=2)
+        self.detour_type   = self.field("detour_type",    QComboBox(),      items=["None", "Partial", "Full"])
+        self.work_zone_duration = self.field("work_zone_duration", QSpinBox(), min_val=0, max_val=3650, suffix=" days")
+
+        self.form.addRow("AADT (vehicles/day):",       self.aadt)
+        self.form.addRow("Truck Percentage:",          self.truck_percent)
+        self.form.addRow("Annual Growth Rate:",        self.growth_rate)
+        self.form.addRow("Speed Limit:",               self.speed_limit)
+        self.form.addRow("Detour Length:",             self.detour_length)
+        self.form.addRow("Detour Type:",               self.detour_type)
+        self.form.addRow("Work Zone Duration:",        self.work_zone_duration)
+
+
+================================================
+FILE: user_projects/proj_877d7a81/version.json
+================================================
+{
+    "engine_version": "1.5.0",
+    "attached_at": 1771784147.595079,
+    "project_id": "proj_877d7a81"
+}
+
+
+================================================
+FILE: user_projects/proj_877d7a81/checkpoints/cp_initial_20260222_233302.zip
+================================================
+[Binary file]
+
+
+================================================
+FILE: user_projects/proj_877d7a81/chunks/bridge_data.json
+================================================
+{
+    "bridge_id": "ajkadjjadjka"
+}
+
+
+================================================
+FILE: user_projects/proj_877d7a81/chunks/general_info.json
+================================================
+{
+    "project_name": "kdkjgjkdgj",
+    "project_code": "kjjdajak",
+    "client": "jj",
+    "location": "jkjk",
+    "currency": "JPY",
+    "discount_rate": 3.5,
+    "analysis_period": 1.0
+}
+
+
+================================================
+FILE: user_projects/proj_877d7a81/chunks_bak/bridge_data.ebak
+================================================
+{
+    "bridge_id": "ajkadjjadjka"
+}
+
+
+================================================
+FILE: user_projects/proj_877d7a81/chunks_bak/general_info.ebak
+================================================
+{
+    "project_name": "kdkjgjkdgj",
+    "project_code": "kjjdajak",
+    "client": "jj",
+    "location": "jkjk",
+    "currency": "JPY",
+    "discount_rate": 3.5,
+    "analysis_period": 1.0
+}
+
+
+================================================
+FILE: user_projects/proj_c2077bcd/version.json
+================================================
+{
+    "engine_version": "1.5.0",
+    "attached_at": 1771783844.3033278,
+    "project_id": "proj_c2077bcd"
+}
+
+
+================================================
+FILE: user_projects/proj_c2077bcd/.lock
+================================================
+PID: 37756
+
+
+================================================
+FILE: user_projects/proj_c2077bcd/checkpoints/cp_initial_20260222_233154.zip
+================================================
+[Binary file]
+
+
+================================================
+FILE: user_projects/proj_c2077bcd/chunks/bridge_data.json
+================================================
+{
+    "bridge_id": "hjahhjdahdhjasdhahsdhjasdhashdhjasdhashdhjs"
+}
+
+
+================================================
+FILE: user_projects/proj_c2077bcd/chunks/general_info.json
+================================================
+{
+    "project_name": "ahhd",
+    "project_code": "ahj",
+    "client": "hjhjadhj",
+    "location": "hasdhah",
+    "currency": "USD",
+    "discount_rate": 3.5,
+    "analysis_period": 1.0
+}
+
+
+================================================
+FILE: user_projects/proj_c2077bcd/chunks_bak/bridge_data.ebak
+================================================
+{
+    "bridge_id": "hjahhjdahdhjasdhahsdhjasdhashdhjasdhashdhjs"
+}
+
+
+================================================
+FILE: user_projects/proj_c2077bcd/chunks_bak/general_info.ebak
+================================================
+{
+    "project_name": "ahhd",
+    "project_code": "ahj",
+    "client": "hjhjadhj",
+    "location": "hasdhah",
+    "currency": "USD",
+    "discount_rate": 3.5,
+    "analysis_period": 1.0
+}
+

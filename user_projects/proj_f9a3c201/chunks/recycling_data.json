@@ -1,0 +1,9 @@
+{
+    "steel_weight": 0.0,
+    "steel_recycle_rate": 90.0,
+    "concrete_weight": 0.0,
+    "concrete_recycle_rate": 70.0,
+    "recycling_revenue": 0.0,
+    "recycling_cost": 0.0,
+    "recycling_method": "Off-site"
+}

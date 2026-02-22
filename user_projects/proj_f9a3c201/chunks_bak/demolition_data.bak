@@ -1,0 +1,8 @@
+{
+    "demolition_cost": 0.0,
+    "demolition_year": 1,
+    "waste_volume": 0.0,
+    "disposal_cost": 0.0,
+    "demolition_method": "Deconstruction",
+    "landfill_distance": 455.0
+}

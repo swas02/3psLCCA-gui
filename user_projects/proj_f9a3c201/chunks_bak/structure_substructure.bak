@@ -1,0 +1,11 @@
+{
+    "pier_type": "Hollow",
+    "num_piers": 42,
+    "pier_height": 54.0,
+    "abutment_type": "Spill-through",
+    "concrete_grade": "M40",
+    "steel_grade": "Fe415",
+    "concrete_volume": 55555.0,
+    "steel_weight": 456666.0,
+    "unit_cost": 0.0
+}

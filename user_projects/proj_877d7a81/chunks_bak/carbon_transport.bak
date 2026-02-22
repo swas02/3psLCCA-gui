@@ -1,0 +1,6 @@
+{
+    "material_mass": 9.0,
+    "transport_dist": 4.0,
+    "emission_factor": 6.2e-05,
+    "num_trips": 50.0
+}

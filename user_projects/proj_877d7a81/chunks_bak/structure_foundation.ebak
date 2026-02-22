@@ -1,0 +1,11 @@
+{
+    "foundation_type": "Pile",
+    "pile_length": 0.0,
+    "pile_diameter": 10.0,
+    "num_piles": 50,
+    "concrete_grade": "M25",
+    "steel_grade": "Fe415",
+    "concrete_volume": 0.0,
+    "steel_weight": 6.0,
+    "unit_cost": 0.0
+}
