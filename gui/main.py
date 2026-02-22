@@ -8,6 +8,9 @@ def main():
     Main entry point for the OS Bridge LCCA application.
     Initializes the QApplication and delegates window management to ProjectManager.
     """
+    import os
+    os.environ["QT_ENABLE_HIGHDPI_SCALING"] = "1"
+    os.environ["QT_SCALE_FACTOR"] = "1.1"  # try 1.1 – 1.3
     app = QApplication(sys.argv)
     
     # Optional: Set Application Name for OS-level identification

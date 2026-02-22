@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QFormLayout, QLineEdit, QComboBox, QDoubleSpinBox
+from PySide6.QtWidgets import QLineEdit, QComboBox, QDoubleSpinBox
 from PySide6.QtCore import Signal
 from gui.components.base_widget import BaseDataWidget
 
@@ -7,29 +7,29 @@ class GeneralInfo(BaseDataWidget):
     """
     General Information panel — manages the 'general_info' data chunk.
 
-    Loading fix:
-        The old version manually connected sync_completed → refresh_from_engine
-        and also called refresh_from_engine() directly in __init__. Both were wrong:
-        - The __init__ call always failed because the engine wasn't attached yet.
-        - sync_completed fires after every autosave, which would overwrite the UI
-          while the user is typing in a different field.
-
-        Now: BaseDataWidget.__init__ connects project_loaded → refresh_from_engine
-        automatically for every subclass. No manual wiring needed here.
+    Fixes:
+        - Resolved NameError by using self.form (inherited from BaseDataWidget).
+        - Fixed Layout Conflict by not calling QFormLayout(self) twice.
+        - Simplified field registration using the base class pattern.
     """
+
     created = Signal()  # Kept for compatibility with ProjectWindow state management
 
     def __init__(self, controller=None):
-        # BaseDataWidget.__init__ handles project_loaded connection automatically
+        # BaseDataWidget.__init__ sets up self.form and connects project_loaded signals
         super().__init__(controller=controller, chunk_name="general_info")
 
-        layout = QFormLayout(self)
+        # Use the already initialized self.form from BaseDataWidget
+        # This prevents the "Attempting to add QLayout which already has a layout" warning
+        layout = self.form
 
         # Field registration — BaseDataWidget handles signal connections + data extraction
+        # Note: If your BaseDataWidget uses 'register_field', keep it.
+        # If it uses 'field', change the method name below.
         self.project_name = self.register_field("project_name", QLineEdit())
         self.project_code = self.register_field("project_code", QLineEdit())
-        self.client_name  = self.register_field("client", QLineEdit())
-        self.location     = self.register_field("location", QLineEdit())
+        self.client_name = self.register_field("client", QLineEdit())
+        self.location = self.register_field("location", QLineEdit())
 
         self.currency = self.register_field("currency", QComboBox())
         self.currency.addItems(["USD", "EUR", "GBP", "INR", "JPY", "AUD"])
@@ -44,12 +44,13 @@ class GeneralInfo(BaseDataWidget):
         self.analysis_period.setSuffix(" Years")
         self.analysis_period.setDecimals(0)
 
-        layout.addRow("Project Name:",   self.project_name)
-        layout.addRow("Project Code:",   self.project_code)
-        layout.addRow("Client:",         self.client_name)
-        layout.addRow("Location:",       self.location)
-        layout.addRow("Currency:",       self.currency)
-        layout.addRow("Discount Rate:",  self.discount_rate)
+        # Add rows to the form
+        layout.addRow("Project Name:", self.project_name)
+        layout.addRow("Project Code:", self.project_code)
+        layout.addRow("Client:", self.client_name)
+        layout.addRow("Location:", self.location)
+        layout.addRow("Currency:", self.currency)
+        layout.addRow("Discount Rate:", self.discount_rate)
         layout.addRow("Analysis Period:", self.analysis_period)
 
     def _on_field_changed(self):

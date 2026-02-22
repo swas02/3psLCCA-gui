@@ -1,36 +1,36 @@
-from PySide6.QtCore import QObject, Signal
+from PySide6.QtCore import QObject, Signal, QTimer
 from core.safechunk_engine import SafeChunkEngine
 
 
 class ProjectController(QObject):
     """
     Central mediator between the SafeChunkEngine and the UI.
-
-    Signals:
-        status_message  — emitted with human-readable status text for the status bar
-        sync_completed  — emitted after a successful disk commit (data is safe)
-        fault_occurred  — emitted when a critical IO error happens (show error to user)
-        dirty_changed   — emitted with True when unsaved changes exist, False when clean
-        project_loaded  — emitted once the engine is fully attached and ready to serve data.
-                          All widgets should connect refresh_from_engine() to THIS signal,
-                          not to sync_completed, and not rely on __init__-time refresh.
     """
+
     status_message = Signal(str)
     sync_completed = Signal()
     fault_occurred = Signal(str)
-    dirty_changed  = Signal(bool)
-    project_loaded = Signal()       # ← THE FIX: fired when engine is ready for data reads
+    dirty_changed = Signal(bool)
+    project_loaded = Signal()
 
     def __init__(self):
         super().__init__()
         self.engine = None
         self.active_project_id = None
 
+    def get_chunk(self, chunk_name: str) -> dict:
+        """Helper for widgets to retrieve their specific data."""
+        if self.engine and self.engine.is_active():
+            # Use fetch_chunk or read_chunk depending on your Engine implementation
+            return self.engine.read_chunk(chunk_name)
+        return {}
+
     def init_project(self, project_id: str, is_new: bool = False) -> bool:
-        """
-        Initialises or opens a project and wires all engine callbacks to Qt signals.
-        Returns True on success, False on failure.
-        """
+        """Initialises or opens a project and wires callbacks."""
+        # CLEANUP: If a project is already open, close it properly first
+        if self.engine:
+            self.close_project()
+
         if is_new:
             self.engine, status = SafeChunkEngine.new(project_id)
         else:
@@ -39,77 +39,68 @@ class ProjectController(QObject):
         if self.engine and self.engine.is_active():
             self.active_project_id = project_id
 
-            # Wire all engine callbacks to Qt signals so the UI reacts correctly
-            self.engine.on_sync   = lambda: self.sync_completed.emit()
+            # Wire engine callbacks
+            self.engine.on_sync = lambda: self.sync_completed.emit()
             self.engine.on_status = lambda msg: self.status_message.emit(msg)
-            self.engine.on_fault  = lambda msg: self.fault_occurred.emit(msg)   # FIX: was never wired
-            self.engine.on_dirty  = lambda dirty: self.dirty_changed.emit(dirty) # NEW
+            self.engine.on_fault = lambda msg: self.fault_occurred.emit(msg)
+            self.engine.on_dirty = lambda dirty: self.dirty_changed.emit(dirty)
 
-            # Auto-create an initial checkpoint so .bak files exist from day one
-            # and there is always at least one restore point for new projects.
             if is_new:
-                self.engine.create_checkpoint(label="initial", notes="Auto-checkpoint on project creation")
+                self.engine.create_checkpoint(label="initial", notes="Auto-checkpoint")
 
-            # Signal all widgets that the engine is ready and they can now load their data.
-            # This is the correct moment — engine is attached, data is readable.
-            self.project_loaded.emit()
+            # BROADCAST: Signal the UI. We use a singleShot to ensure
+            # the controller has finished its state update before UI reacts.
+            QTimer.singleShot(0, self.project_loaded.emit)
             return True
 
         return False
 
     def save_chunk_data(self, chunk_name: str, data: dict):
-        """
-        The key method for autosave.
-        Passes data to the engine's staging area (debounced write).
-        """
+        """Passes data to the engine's staging area (debounced write)."""
         if self.engine and self.engine.is_active():
             self.engine.stage_update(data, chunk_name)
+
+    def load_checkpoint(self, zip_name: str) -> bool:
+        """Restores the project from a checkpoint ZIP."""
+        if self.engine and self.engine.is_active():
+            # SAFETY: Ensure we don't have pending writes before restoring
+            self.engine.force_sync()
+
+            success = self.engine.restore_checkpoint(zip_name)
+            if success:
+                # Tell widgets to discard their current memory state and reload
+                self.sync_completed.emit()
+                self.project_loaded.emit()
+            return success
+        return False
 
     def close_project(self):
         """Force-syncs and detaches the engine cleanly."""
         if self.engine:
-            self.engine.force_sync()
-            self.engine.detach()
-            self.engine = None
-            self.active_project_id = None
+            try:
+                self.engine.force_sync()
+                self.engine.detach()
+            except Exception as e:
+                self.fault_occurred.emit(f"Error during close: {e}")
+            finally:
+                self.engine = None
+                self.active_project_id = None
+                self.dirty_changed.emit(False)
 
-    # --------------------------------------------------------------------------
-    # CHECKPOINT API — used by CheckpointDialog
-    # --------------------------------------------------------------------------
-
+    # --- Pass-through Checkpoint API ---
     def save_checkpoint(self, label: str = "manual", notes: str = "") -> str | None:
-        """
-        Creates a named checkpoint. Returns the zip filename, or None on failure.
-        Force-syncs before snapshotting so the checkpoint is always up-to-date.
-        """
         if self.engine and self.engine.is_active():
             return self.engine.create_checkpoint(label=label, notes=notes)
         return None
 
-    def load_checkpoint(self, zip_name: str) -> bool:
-        """
-        Restores the project from a checkpoint ZIP.
-        Emits sync_completed after a successful restore so the UI refreshes.
-        """
-        if self.engine and self.engine.is_active():
-            success = self.engine.restore_checkpoint(zip_name)
-            if success:
-                self.sync_completed.emit()
-                self.project_loaded.emit()  # Re-trigger full UI repopulation after restore
-            return success
-        return False
-
     def list_checkpoints(self) -> list:
-        """Returns checkpoint metadata list (newest first)."""
-        if self.engine and self.engine.is_active():
-            return self.engine.list_checkpoints()
-        return []
+        return self.engine.list_checkpoints() if self.engine else []
 
     def delete_checkpoint(self, zip_name: str) -> bool:
-        """Deletes a specific checkpoint by filename."""
-        if self.engine and self.engine.is_active():
-            return self.engine.delete_checkpoint(zip_name)
-        return False
+        return self.engine.delete_checkpoint(zip_name) if self.engine else False
+
+    def is_dirty(self) -> bool:
+        return self.engine.is_dirty() if self.engine else False
 
     def get_engine_logs(self) -> list:
         """Returns the engine's rolling log history for display in the Logs panel."""
@@ -118,17 +109,11 @@ class ProjectController(QObject):
         return []
 
     def get_health_report(self) -> dict:
-        """Returns engine diagnostics."""
+        """Returns engine diagnostics for technical support/debugging."""
         if self.engine:
             return self.engine.get_health_report()
         return {}
 
-    def is_dirty(self) -> bool:
-        """Returns True if there are pending unsaved changes in memory."""
-        if self.engine:
-            return self.engine.is_dirty()
-        return False
 
-
-# Single instance used across the app
+# Single instance
 controller = ProjectController()

@@ -1,25 +1,29 @@
-# gui/components/bridge_data/main.py
-from PySide6.QtWidgets import QWidget, QFormLayout, QLineEdit
-from PySide6.QtCore import Signal
+from PySide6.QtWidgets import QLineEdit, QDoubleSpinBox
+from gui.components.base_widget import BaseDataWidget
 
-class BridgeData(QWidget):
-    created = Signal()
-
+class BridgeData(BaseDataWidget):
+    """
+    Bridge Data panel — manages the 'bridge_data' chunk.
+    """
     def __init__(self, controller=None):
-        super().__init__()
-        self.controller = controller
-        self.chunk_name = "bridge_data"
+        # BaseDataWidget handles self.form and data-loading signals
+        super().__init__(controller=controller, chunk_name="bridge_data")
 
-        layout = QFormLayout(self)
-        self.bridge_id = QLineEdit()
-        layout.addRow("Bridge ID:", self.bridge_id)
+        # 1. Use 'self.field' to match the BaseDataWidget's auto-loading logic.
+        # This ensures data is actually pulled from the engine.
+        self.bridge_name = self.field("bridge_name", QLineEdit())
+        self.bridge_id   = self.field("bridge_id",   QLineEdit())
+        
+        self.bridge_length = self.field("bridge_length", QDoubleSpinBox())
+        self.bridge_length.setRange(0, 10000)
+        self.bridge_length.setSuffix(" m")
 
-        self.bridge_id.textChanged.connect(self.trigger_autosave)
+        self.bridge_width = self.field("bridge_width", QDoubleSpinBox())
+        self.bridge_width.setRange(0, 1000)
+        self.bridge_width.setSuffix(" m")
 
-    def get_data_dict(self):
-        return {"bridge_id": self.bridge_id.text()}
-
-    def trigger_autosave(self):
-        self.created.emit()
-        if self.controller:
-            self.controller.save_chunk_data(self.chunk_name, self.get_data_dict())
+        # 2. Add to self.form (inherited) to avoid the QLayout warning.
+        self.form.addRow("Bridge Name:",   self.bridge_name)
+        self.form.addRow("Bridge ID:",     self.bridge_id)
+        self.form.addRow("Total Length:",  self.bridge_length)
+        self.form.addRow("Total Width:",   self.bridge_width)

@@ -373,6 +373,8 @@ class SafeChunkEngine:
 
         return {}
 
+    read_chunk = fetch_chunk
+
     def delete_project(self, confirmed: bool = False):
         """
         Removes the entire project folder and all its contents.
