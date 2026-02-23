@@ -39,7 +39,7 @@ class Logs(QWidget):
         header_row.addStretch()
 
         self.health_label = QLabel("")
-        self.health_label.setStyleSheet("color: #555; font-size: 11px;")
+        # self.health_label.setStyleSheet("color: #555; font-size: 11px;")
         header_row.addWidget(self.health_label)
 
         clear_btn = QPushButton("Clear")
@@ -53,10 +53,10 @@ class Logs(QWidget):
         self.log_view = QTextEdit()
         self.log_view.setReadOnly(True)
         self.log_view.setFont(QFont("Courier New", 10))
-        self.log_view.setStyleSheet(
-            "QTextEdit { background-color: #1e1e1e; color: #d4d4d4; "
-            "border: 1px solid #444; border-radius: 4px; padding: 6px; }"
-        )
+        # self.log_view.setStyleSheet(
+        #     "QTextEdit { background-color: #1e1e1e; color: #d4d4d4; "
+        #     "border: 1px solid #444; border-radius: 4px; padding: 6px; }"
+        # )
         layout.addWidget(self.log_view)
 
         # Auto-refresh timer (polls every 2 seconds)

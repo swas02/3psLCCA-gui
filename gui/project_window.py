@@ -146,8 +146,8 @@ class ProjectWindow(QMainWindow):
             "Input Parameters": {
                 "Construction Work Data": [
                     "Foundation",
-                    "Super-Structure",
-                    "Substructure",
+                    "Super Structure",
+                    "Sub Structure",
                     "Miscellaneous",
                 ],
                 "Traffic Data": [],

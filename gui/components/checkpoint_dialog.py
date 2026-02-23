@@ -50,7 +50,7 @@ class SaveCheckpointDialog(QDialog):
             "You can restore it at any time from the Checkpoint Manager."
         )
         desc.setWordWrap(True)
-        desc.setStyleSheet("color: #555; font-size: 11px;")
+        # desc.setStyleSheet("color: #555; font-size: 11px;")
         layout.addWidget(desc)
 
         # Form
@@ -80,11 +80,11 @@ class SaveCheckpointDialog(QDialog):
         self.save_btn = QPushButton("Save Checkpoint")
         self.save_btn.setDefault(True)
         self.save_btn.clicked.connect(self._on_save)
-        self.save_btn.setStyleSheet(
-            "QPushButton { background-color: #4a7c10; color: white; border: none; "
-            "border-radius: 5px; padding: 6px 16px; font-weight: bold; }"
-            "QPushButton:hover { background-color: #5a9214; }"
-        )
+        # self.save_btn.setStyleSheet(
+        #     "QPushButton { background-color: #4a7c10; color: white; border: none; "
+        #     "border-radius: 5px; padding: 6px 16px; font-weight: bold; }"
+        #     "QPushButton:hover { background-color: #5a9214; }"
+        # )
         btn_layout.addWidget(self.save_btn)
 
         layout.addLayout(btn_layout)
@@ -147,7 +147,7 @@ class CheckpointManagerDialog(QDialog):
             "Restoring will replace all current project data with the snapshot."
         )
         desc.setWordWrap(True)
-        desc.setStyleSheet("color: #555; font-size: 11px;")
+        # desc.setStyleSheet("color: #555; font-size: 11px;")
         layout.addWidget(desc)
 
         # Table
@@ -187,11 +187,11 @@ class CheckpointManagerDialog(QDialog):
         self.restore_btn = QPushButton("↩  Restore")
         self.restore_btn.setEnabled(False)
         self.restore_btn.clicked.connect(self._on_restore)
-        self.restore_btn.setStyleSheet(
-            "QPushButton:enabled { background-color: #4a7c10; color: white; border: none; "
-            "border-radius: 5px; padding: 6px 16px; font-weight: bold; }"
-            "QPushButton:enabled:hover { background-color: #5a9214; }"
-        )
+        # self.restore_btn.setStyleSheet(
+        #     "QPushButton:enabled { background-color: #4a7c10; color: white; border: none; "
+        #     "border-radius: 5px; padding: 6px 16px; font-weight: bold; }"
+        #     "QPushButton:enabled:hover { background-color: #5a9214; }"
+        # )
         btn_row.addWidget(self.restore_btn)
 
         layout.addLayout(btn_row)
