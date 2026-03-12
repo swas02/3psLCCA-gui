@@ -318,7 +318,9 @@ class ProjectWindow(QMainWindow):
 
         self.menuFile = QMenu("&File", self.menubar)
         for label in ["New", "Open"]:
-            self.menuFile.addAction(QAction(label, self))
+            action = QAction(label, self)
+            self.menuFile.addAction(action)
+            action.triggered.connect(lambda checked, action=label: self._on_menu(action))
         self.menuFile.addSeparator()
         self.actionSave = QAction("Save", self)
         self.menuFile.addAction(self.actionSave)
@@ -536,6 +538,12 @@ class ProjectWindow(QMainWindow):
             f"A critical storage error occurred:\n\n{error_message}\n\n"
             "Save a checkpoint immediately if possible, then restart.",
         )
+
+    # ── Menu Function ─────────────────────────────────────────────────────────
+
+    def _on_menu(self, action: str):
+        if action == "New":
+            self.manager.open_project(is_new=True)
 
     # ── Close ─────────────────────────────────────────────────────────────────
 
