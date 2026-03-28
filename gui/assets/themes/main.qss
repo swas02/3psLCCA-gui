@@ -534,7 +534,6 @@ QScrollBar::sub-page {
 QMenuBar {
     background-color: $white;
     color: $body-color;
-    border-bottom: 1px solid $border;
     spacing: 2px;
 }
 
