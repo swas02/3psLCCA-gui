@@ -29,6 +29,8 @@ from gui.components.utils.validation_helpers import (
     freeze_form,
     validate_form,
 )
+from .lcc_plot import LCCBreakdownTable, LCCChartWidget, LCCDetailsTable
+from .Pie import LCCPieWidget
 
 CHUNK = "outputs_data"
 CHUNK_AP = "analysis_period"
@@ -602,8 +604,6 @@ class OutputsPage(ScrollableForm):
 
         # ── Chart ──────────────────────────────────────────────────────────
         try:
-            from .lcc_plot import LCCBreakdownTable, LCCChartWidget, LCCDetailsTable
-            from .Pie import LCCPieWidget
 
             chart = LCCChartWidget(results)
             self._status_layout.addWidget(chart)

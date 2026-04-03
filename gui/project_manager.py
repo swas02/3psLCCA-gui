@@ -1,6 +1,11 @@
 import os
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication
+
+from gui.project_window import ProjectWindow
+from gui.project_controller import ProjectController
+from gui.components.new_project_dialog import NewProjectDialog
+
 import core.start_manager as sm
 
 # All chunk names used by page widgets and their sub-widgets.
@@ -40,9 +45,6 @@ class ProjectManager:
     # --------------------------------------------------------------------------
 
     def _create_window(self):
-        from gui.project_window import ProjectWindow
-        from gui.project_controller import ProjectController
-
         new_controller = ProjectController()
         win = ProjectWindow(manager=self, controller=new_controller)
         self.windows.append(win)
@@ -83,8 +85,6 @@ class ProjectManager:
                 return
 
         if is_new:
-            from gui.components.new_project_dialog import NewProjectDialog
-
             dialog = NewProjectDialog()
 
             def _on_loading_started(display_name, country, currency, unit_system):

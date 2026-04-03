@@ -34,6 +34,28 @@ from gui.theme import (
 )
 from gui.styles import font as _f
 from PySide6.QtWidgets import QToolTip
+from gui.project_controller import ProjectController
+from gui.themes import get_token
+from gui.components.home_page import HomePage
+from gui.components.save_status_bar import SaveStatusBar
+from gui.components.logs import Logs
+from gui.components.outputs.outputs_page import OutputsPage
+from gui.components.global_info.main import GeneralInfo
+from gui.components.bridge_data.main import BridgeData
+from gui.components.structure.main import StructureTabView
+from gui.components.traffic_data.main import TrafficData
+from gui.components.financial_data.main import FinancialData
+from gui.components.carbon_emission.main import CarbonEmissionTabView
+from gui.components.maintenance.main import Maintenance
+from gui.components.recycling.main import Recycling
+from gui.components.demolition.main import Demolition
+from gui.components.utils.validation_helpers import set_lock_tooltip_target
+from gui.components.utils.definitions import set_active_unit_system
+from core.safechunk_engine import SafeChunkEngine
+from PySide6.QtWidgets import QDialog, QFormLayout, QVBoxLayout, QLabel, QPushButton
+from gui.components.rollback_dialog import RollbackDialog
+from gui.components.blob_manager import BlobManagerDialog
+import shutil
 
 
 # ── Sidebar tree definition ───────────────────────────────────────────────────
@@ -284,14 +306,11 @@ class ProjectWindow(QMainWindow):
         if controller is not None:
             self.controller = controller
         else:
-            from gui.project_controller import ProjectController
-
             self.controller = ProjectController()
 
         self.project_id = None
 
         self.setWindowTitle("LCCA - Home")
-        from gui.themes import get_token
         self.setWindowIcon(make_icon("bridge", color=get_token("$icon-brand", "#2ecc71"), size=64))
         self.resize(1100, 750)
 
@@ -320,16 +339,12 @@ class ProjectWindow(QMainWindow):
     # ── Home screen ───────────────────────────────────────────────────────────
 
     def _setup_home_ui(self):
-        from gui.components.home_page import HomePage
         self.home_widget = HomePage(manager=self.manager)
         self.main_stack.addWidget(self.home_widget)  # index 0
 
     # ── Project view ──────────────────────────────────────────────────────────
 
     def _setup_project_ui(self):
-        from gui.components.save_status_bar import SaveStatusBar
-        from gui.components.logs import Logs
-        from gui.components.outputs.outputs_page import OutputsPage
 
         self.project_widget = QWidget()
         master_layout = QVBoxLayout(self.project_widget)
@@ -532,31 +547,22 @@ class ProjectWindow(QMainWindow):
             return None
 
         if name == "General Information":
-            from gui.components.global_info.main import GeneralInfo
             widget = GeneralInfo(controller=self.controller)
         elif name == "Bridge Data":
-            from gui.components.bridge_data.main import BridgeData
             widget = BridgeData(controller=self.controller)
         elif name == "Construction Work Data":
-            from gui.components.structure.main import StructureTabView
             widget = StructureTabView(controller=self.controller)
         elif name == "Traffic Data":
-            from gui.components.traffic_data.main import TrafficData
             widget = TrafficData(controller=self.controller)
         elif name == "Financial Data":
-            from gui.components.financial_data.main import FinancialData
             widget = FinancialData(controller=self.controller)
         elif name == "Carbon Emission Data":
-            from gui.components.carbon_emission.main import CarbonEmissionTabView
             widget = CarbonEmissionTabView(controller=self.controller)
         elif name == "Maintenance and Repair":
-            from gui.components.maintenance.main import Maintenance
             widget = Maintenance(controller=self.controller)
         elif name == "Recycling":
-            from gui.components.recycling.main import Recycling
             widget = Recycling(controller=self.controller)
         elif name == "Demolition":
-            from gui.components.demolition.main import Demolition
             widget = Demolition(controller=self.controller)
         else:
             return None
@@ -687,7 +693,6 @@ class ProjectWindow(QMainWindow):
             if checked else
             "Click to lock this project and prevent accidental edits."
         )
-        from gui.components.utils.validation_helpers import set_lock_tooltip_target
         set_lock_tooltip_target(self.btn_lock if checked else None)
         for page in self.widget_map.values():
             if hasattr(page, "freeze"):
@@ -733,7 +738,6 @@ class ProjectWindow(QMainWindow):
         try:
             info = self.controller.engine.fetch_chunk("general_info") or {}
             unit_system = info.get("unit_system", "metric")
-            from gui.components.utils.definitions import set_active_unit_system
             set_active_unit_system(unit_system)
         except Exception:
             pass
@@ -784,7 +788,6 @@ class ProjectWindow(QMainWindow):
         )
         if not dest:
             return
-        import shutil
         zip_name = self.controller.engine.create_checkpoint(
             label="export", notes="Exported from 3psLCCA", include_blobs=True
         )
@@ -801,8 +804,6 @@ class ProjectWindow(QMainWindow):
     def _show_project_info(self):
         if not self.project_id:
             return
-        from core.safechunk_engine import SafeChunkEngine
-        from PySide6.QtWidgets import QDialog, QFormLayout, QVBoxLayout, QLabel, QPushButton
         info = SafeChunkEngine.get_project_info(self.project_id)
         if not info:
             return
@@ -847,14 +848,12 @@ class ProjectWindow(QMainWindow):
     def _open_rollback_dialog(self):
         if not self.controller.engine or not self.controller.engine.is_active():
             return
-        from gui.components.rollback_dialog import RollbackDialog
         dlg = RollbackDialog(self.controller, parent=self)
         dlg.exec()
 
     def _open_blob_manager(self):
         if not self.controller.engine or not self.controller.engine.is_active():
             return
-        from gui.components.blob_manager import BlobManagerDialog
         dlg = BlobManagerDialog(self.controller, parent=self)
         dlg.exec()
 
