@@ -311,7 +311,7 @@ class ProjectWindow(QMainWindow):
         self.project_id = None
 
         self.setWindowTitle("LCCA - Home")
-        _icon_path = os.path.join("gui", "assets", "logo", "logo-3psLCCA.png")
+        _icon_path = os.path.join("gui", "assets", "logo", "logo-3psLCCA.ico")
         if os.path.exists(_icon_path):
             self.setWindowIcon(QIcon(_icon_path))
         self.resize(1100, 750)

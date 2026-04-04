@@ -1,6 +1,6 @@
 import sys
 import os
-import time
+import platform
 
 from PySide6.QtWidgets import (
     QApplication,
@@ -127,6 +127,17 @@ class SelectTextOnFocus(QObject):
 
 
 def main():
+    # Windows: set AppUserModelID before QApplication so Task Manager
+    # shows the app icon instead of the Python interpreter icon.
+    if platform.system() == "Windows":
+        try:
+            import ctypes
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(
+                "OSBridge.3psLCCA"
+            )
+        except Exception:
+            pass
+
     # Configure High DPI and Scaling
     os.environ["QT_ENABLE_HIGHDPI_SCALING"] = "1"
     os.environ["QT_SCALE_FACTOR"] = "1"
@@ -137,9 +148,13 @@ def main():
     app.setOrganizationName("OSBridge")
 
     # Set Window Icon
-    _ICON_PATH = os.path.join("gui", "assets", "logo", "logo-3psLCCA.png")
+    _ICON_PATH = os.path.join("gui", "assets", "logo", "logo-3psLCCA.ico")
     if os.path.exists(_ICON_PATH):
         app.setWindowIcon(QIcon(_ICON_PATH))
+
+    # Linux: link to .desktop file so taskbar/task-manager uses the app icon
+    if platform.system() == "Linux":
+        app.setDesktopFileName("3psLCCA")
 
     # Initialize Style and Theme before showing Splash
     app.setStyle(_ComboItemStyle("Fusion"))
@@ -202,10 +217,12 @@ def main():
     # Initialize Project Manager and Close Splash
     manager = ProjectManager()
 
-    # splash.finish() handles the minimum display duration internally
-    splash.finish()
-
+    # Heavy work first — splash stays visible during entire load
     manager.open_project()
+
+    # Pass main window so Qt waits until it's visible AND MIN_DISPLAY_MS has elapsed
+    main_win = manager.windows[0] if manager.windows else None
+    splash.finish(main_win)
 
     sys.exit(app.exec())
 
