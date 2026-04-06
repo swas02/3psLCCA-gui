@@ -593,6 +593,13 @@ class OutputsPage(ScrollableForm):
         dl_btn.clicked.connect(self._download_report)
         banner_row.addWidget(dl_btn)
 
+        pdf_btn = QPushButton("📄  Generate PDF Report")
+        pdf_btn.setFixedHeight(30)
+        pdf_btn.setFixedWidth(180)
+        pdf_btn.setToolTip("Generate a customizable PDF report")
+        pdf_btn.clicked.connect(self._generate_pdf_report)
+        banner_row.addWidget(pdf_btn)
+
         self._status_layout.addWidget(banner)
 
         # ── Warnings ───────────────────────────────────────────────────────
@@ -1231,6 +1238,19 @@ class OutputsPage(ScrollableForm):
             "computed": _sanitize(lcc_breakdown),
             "results": _sanitize(results),
         }
+
+    def _generate_pdf_report(self):
+        """Open the section selection dialog and generate a PDF report."""
+        from .report_section_dialog import ReportSectionDialog
+
+        dlg = ReportSectionDialog(
+            build_export_dict=self._build_export_dict,
+            all_data=getattr(self, "_last_all_data", {}),
+            lcc_breakdown=getattr(self, "_last_lcc_breakdown", {}),
+            results=getattr(self, "_last_results", {}),
+            parent=self,
+        )
+        dlg.exec()
 
     def _on_proceed(self):
         self.run_calculation()
