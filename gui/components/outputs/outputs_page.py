@@ -73,8 +73,8 @@ class _LCCAWorker(QObject):
 
     Signals
     -------
-    finished(results)   – emitted with the raw results dict on success.
-    errored(exc, tb)    – emitted with the exception and formatted traceback on failure.
+    finished(results)   - emitted with the raw results dict on success.
+    errored(exc, tb)    - emitted with the exception and formatted traceback on failure.
     """
 
     finished = Signal(object)  # results dict
@@ -147,13 +147,13 @@ class OutputsPage(ScrollableForm):
         super().__init__(controller=controller, chunk_name=CHUNK)
         self._pages = {}
         self._has_results = False  # True while calculation results are displayed
-        self._calc_thread = None  # QThread – kept alive during calculation
+        self._calc_thread = None  # QThread - kept alive during calculation
         self._calc_worker = None  # _LCCAWorker
         self._timeout_timer = (
-            None  # QTimer – fires if calculation exceeds CALC_TIMEOUT_MS
+            None  # QTimer - fires if calculation exceeds CALC_TIMEOUT_MS
         )
         self._elapsed_timer = (
-            None  # QTimer – ticks every second to update elapsed label
+            None  # QTimer - ticks every second to update elapsed label
         )
         self._elapsed_secs = 0  # seconds since calculation started
         self._build_ui()
