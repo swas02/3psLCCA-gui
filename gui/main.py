@@ -19,7 +19,6 @@ from PySide6.QtGui import QFontDatabase, QIcon
 from gui.components.splash_screen import SplashScreen
 from gui.project_manager import ProjectManager
 from gui.themes import get_light_theme, get_dark_theme, resolve_is_dark, track_mode
-import winreg
 import ctypes
 from gui.components.utils.unit_resolver import load_custom_units
 
@@ -38,7 +37,7 @@ def _is_dark(scheme=None) -> bool:
 
     # Windows registry fallback
     try:
-
+        import winreg
         key = winreg.OpenKey(
             winreg.HKEY_CURRENT_USER,
             r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize",

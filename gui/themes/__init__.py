@@ -39,6 +39,7 @@ from pathlib import Path
 import yaml
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPalette, QColor
+import sys
 
 # ── Fallback defaults (used if no user pref is saved) ────────────────────
 ACTIVE_LIGHT: str = "soft_light"  # built-in: "default" | "soft_light"
@@ -50,7 +51,8 @@ _PKG = "gui.themes"
 _THEMES_DIR = Path(__file__).parent
 # Absolute path — works regardless of working directory (e.g. when a project is open)
 _QSS_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+    os.path.dirname(os.path.dirname(
+        os.path.dirname(os.path.abspath(__file__)))),
     "gui",
     "assets",
     "themes",
@@ -58,7 +60,8 @@ _QSS_PATH = os.path.join(
 )
 _prefs_loaded = False
 _current_is_dark: bool = False  # last-known resolved is_dark; set by track_mode()
-_active_tokens: dict[str, str] = {}  # populated by get_light/dark_theme(); read via get_token()
+# populated by get_light/dark_theme(); read via get_token()
+_active_tokens: dict[str, str] = {}
 
 # ── Hardcoded fallback themes — system NEVER fails even if all YAMLs are gone ──
 #
@@ -96,8 +99,14 @@ _FALLBACK_LIGHT: dict = {
         "$muted":              "#adb5bd",
         "$white":              "#fafafa",
         # ── Semantic status ────────────────────────────────────────────────
-        "$validation-error":   "#dc3545",   # gui/assets/themes/main.qss QComboBox selector
+        # gui/assets/themes/main.qss QComboBox selector
+        "$validation-error":   "#dc3545",
         "$danger":             "#ef4444",   # gui/theme.py DANGER
+        # soft red tint (matches your system)
+        "$danger-bg": "rgba(239,68,68,0.08)",
+        "$danger-bg-pressed": "rgba(239,68,68,0.18)",
+        # matches SECONDARY (Bootstrap-consistent)
+        "$placeholder-text": "#6c757d",
         "$success":            "#22c55e",   # gui/theme.py SUCCESS
         "$warning":            "#f97316",   # gui/theme.py WARNING_COLOR
         "$info":               "#3b82f6",   # gui/theme.py INFO
@@ -118,22 +127,35 @@ _FALLBACK_LIGHT: dict = {
         "$log-error":          "#f48771",   # gui/components/logs.py red
         "$log-info":           "#4ec9b0",   # gui/components/logs.py teal
         # ── Action icons ────────────────────────────────────────────────────
-        "$icon-success":       "#2ecc71",   # include buttons (recycling, carbon, structure)
+        # include buttons (recycling, carbon, structure)
+        "$icon-success":       "#2ecc71",
+        # matches SECONDARY (Bootstrap-consistent)
+        "$placeholder-text": "#6c757d",
         "$icon-danger":        "#e74c3c",   # trash/delete icons everywhere
         "$icon-muted":         "#aaaaaa",   # disabled/muted icon fallback
         # ── Table cell validation states ────────────────────────────────────
-        "$cell-warn-row-bg":   "#fff1f0",   # gui/components/carbon_emission/.../transport_emissions.py
-        "$cell-disabled-bg":   "#e9ecef",   # gui/components/carbon_emission/.../material_emissions.py
-        "$cell-invalid-bg":    "#f8d7da",   # material_emissions BG_INVALID, excel_importer ERROR_COLOR
-        "$cell-warn-bg":       "#fff3cd",   # material_emissions BG_SUSPICIOUS, excel_importer WARN_COLOR
-        "$cell-warn-fg":       "#cf1322",   # gui/components/carbon_emission/.../transport_emissions.py
+        # gui/components/carbon_emission/.../transport_emissions.py
+        "$cell-warn-row-bg":   "#fff1f0",
+        # gui/components/carbon_emission/.../material_emissions.py
+        "$cell-disabled-bg":   "#e9ecef",
+        # material_emissions BG_INVALID, excel_importer ERROR_COLOR
+        "$cell-invalid-bg":    "#f8d7da",
+        # material_emissions BG_SUSPICIOUS, excel_importer WARN_COLOR
+        "$cell-warn-bg":       "#fff3cd",
+        # gui/components/carbon_emission/.../transport_emissions.py
+        "$cell-warn-fg":       "#cf1322",
         # ── Integrity states ────────────────────────────────────────────────
-        "$integrity-mismatch": "#b71c1c",   # gui/components/traffic_data/wpi_selector.py MISMATCH
-        "$integrity-missing":  "#e65100",   # gui/components/traffic_data/wpi_selector.py MISSING
-        "$integrity-ok":       "#2e7d32",   # gui/components/traffic_data/wpi_selector.py OK
+        # gui/components/traffic_data/wpi_selector.py MISMATCH
+        "$integrity-mismatch": "#b71c1c",
+        # gui/components/traffic_data/wpi_selector.py MISSING
+        "$integrity-missing":  "#e65100",
+        # gui/components/traffic_data/wpi_selector.py OK
+        "$integrity-ok":       "#2e7d32",
         # ── LCC Plot chart bands ─────────────────────────────────────────────
-        "$chart-initial-tick": "#2c4a75",   # gui/components/outputs/lcc_plot.py Initial Stage tick
-        "$chart-initial-bg":   "#cfd9e8",   # gui/components/outputs/lcc_plot.py Initial Stage band
+        # gui/components/outputs/lcc_plot.py Initial Stage tick
+        "$chart-initial-tick": "#2c4a75",
+        # gui/components/outputs/lcc_plot.py Initial Stage band
+        "$chart-initial-bg":   "#cfd9e8",
         "$chart-use-tick":     "#1f6f66",   # Use Stage tick
         "$chart-use-bg":       "#cfe8e2",   # Use Stage band
         "$chart-recon-tick":   "#5a3270",   # Reconstruction Stage tick
@@ -181,6 +203,10 @@ _FALLBACK_DARK: dict = {
         # ── Semantic status ────────────────────────────────────────────────
         "$validation-error":   "#f87171",
         "$danger":             "#f87171",
+        # based on dark danger (#f87171)
+        "$danger-bg": "rgba(248,113,113,0.10)",
+        "$danger-bg-pressed": "rgba(248,113,113,0.20)",
+        "$placeholder-text": "#a0a0a0",               # matches your $secondary
         "$success":            "#4ade80",
         "$warning":            "#fb923c",
         "$info":               "#60a5fa",
@@ -250,14 +276,33 @@ _PALETTE_ROLES: dict[str, QPalette.ColorRole] = {
 }
 
 
-def get_token(name: str, fallback: str = "") -> str:
-    """Return the current active theme token value (e.g. ``get_token('$log-error')``).
+def _ensure_tokens() -> None:
+    """Bootstrap _active_tokens from fallback if not yet loaded."""
+    global _active_tokens
+    if not _active_tokens:
+        data = _FALLBACK_DARK if _current_is_dark else _FALLBACK_LIGHT
+        _active_tokens = {str(k): str(v)
+                          for k, v in data["qss_tokens"].items()}
 
-    Returns *fallback* if the token is not in the active set yet (e.g. before
-    the first theme apply).  Always call this at render time, not at module
-    level, so you get the live value instead of an import-time snapshot.
-    """
-    return _active_tokens.get(name, fallback)
+
+_missing_token_cache = set()
+
+
+def get_token(name: str, fallback: str = "") -> str:
+    _ensure_tokens()
+    value = _active_tokens.get(name)
+    if value is not None:
+        return value
+    if name not in _missing_token_cache:
+        _missing_token_cache.add(name)
+        print(
+            f"[THEME WARN] Missing token: {name} → using fallback '{fallback}'", file=sys.stderr)
+    return fallback
+
+
+def get_active_theme() -> dict[str, str]:
+    _ensure_tokens()
+    return _active_tokens
 
 
 def _build_theme(data: dict) -> tuple[QPalette, dict[str, str]]:
@@ -339,7 +384,8 @@ def _load(variant: str, name: str) -> tuple[QPalette, dict[str, str]]:
         try:
             return _load_yaml_theme(yml_path)
         except Exception as e:
-            print(f"[themes] Warning: '{yml_path.name}' failed to load ({e}); using built-in fallback.")
+            print(
+                f"[themes] Warning: '{yml_path.name}' failed to load ({e}); using built-in fallback.")
             return _fallback(variant)
 
     # 2. Legacy .py module
@@ -350,7 +396,8 @@ def _load(variant: str, name: str) -> tuple[QPalette, dict[str, str]]:
         pass
 
     # 3. Hardcoded fallback — YAML missing and no .py module found
-    print(f"[themes] Warning: theme '{variant}/{name}' not found; using built-in fallback.")
+    print(
+        f"[themes] Warning: theme '{variant}/{name}' not found; using built-in fallback.")
     return _fallback(variant)
 
 
@@ -436,9 +483,11 @@ def _detect_os_dark(app=None) -> bool:
             if scheme == Qt.ColorScheme.Light:
                 print(f"[themes] _detect_os_dark → Light (Qt.ColorScheme.Light)")
                 return False
-            print(f"[themes] _detect_os_dark: Qt.ColorScheme returned Unknown ({scheme}), trying registry …")
+            print(
+                f"[themes] _detect_os_dark: Qt.ColorScheme returned Unknown ({scheme}), trying registry …")
         except AttributeError:
-            print("[themes] _detect_os_dark: Qt.ColorScheme not available, trying registry …")
+            print(
+                "[themes] _detect_os_dark: Qt.ColorScheme not available, trying registry …")
 
     # 2. Windows registry
     try:
@@ -450,10 +499,12 @@ def _detect_os_dark(app=None) -> bool:
         val, _ = winreg.QueryValueEx(key, "AppsUseLightTheme")
         winreg.CloseKey(key)
         result = (val == 0)
-        print(f"[themes] _detect_os_dark → {'Dark' if result else 'Light'} (registry AppsUseLightTheme={val})")
+        print(
+            f"[themes] _detect_os_dark → {'Dark' if result else 'Light'} (registry AppsUseLightTheme={val})")
         return result
     except Exception as e:
-        print(f"[themes] _detect_os_dark: registry read failed ({e}), defaulting to Light")
+        print(
+            f"[themes] _detect_os_dark: registry read failed ({e}), defaulting to Light")
 
     return False
 
@@ -475,7 +526,8 @@ def reapply(app=None) -> None:
         os_is_dark = _current_is_dark
 
     is_dark = resolve_is_dark(os_is_dark)
-    print(f"[themes] reapply: APPEARANCE_MODE={APPEARANCE_MODE!r}, os_is_dark={os_is_dark}, resolved is_dark={is_dark}")
+    print(
+        f"[themes] reapply: APPEARANCE_MODE={APPEARANCE_MODE!r}, os_is_dark={os_is_dark}, resolved is_dark={is_dark}")
     track_mode(is_dark)
     palette, tokens = get_dark_theme() if is_dark else get_light_theme()
 

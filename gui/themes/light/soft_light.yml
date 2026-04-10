@@ -58,6 +58,9 @@ qss_tokens:
   # ── Log viewer (gui/components/logs.py) ─────────────────────────────────
   "$log-success":        "#b5cea8"
   "$log-default":        "#4c4f69"   # matches body-color for soft light
+  "$danger-bg":          "rgba(239,68,68,0.08)"        # soft red tint (same system as default light)
+  "$danger-bg-pressed":  "rgba(239,68,68,0.16)"
+  "$placeholder-text":   "#6c6f85"              # Subtext0 (better than Overlay0 for readability)
   "$log-warning":        "#dcdcaa"
   "$log-error":          "#f48771"
   "$log-info":           "#4ec9b0"

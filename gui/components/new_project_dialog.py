@@ -129,6 +129,7 @@ class NewProjectDialog(QDialog):
         layout.addWidget(self._btn_box)
 
         self._ok_btn = self._btn_box.button(QDialogButtonBox.Ok)
+        self._ok_btn.setText("Create") 
         self._msg_index = 0
         self._msg_timer = QTimer(self)
         self._msg_timer.setInterval(1100)

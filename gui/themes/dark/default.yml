@@ -2,7 +2,7 @@
 name: Default Dark
 
 palette:
-  accent:           "#6B7D20"   # desaturated brand green for dark-mode accent
+  accent:           "#6B7D20"
   window:           "#282828"
   alternate_base:   "#333333"
   base:             "#3a3a3a"
@@ -30,43 +30,56 @@ qss_tokens:
   "$border":             "#505050"
   "$surface":            "#4a4a4a"
   "$muted":              "#686868"
-  "$white":              "#3a3a3a"   # elevated surface (inputs, cards, tables)
+  "$white":              "#3a3a3a"
+  "$card-bg":            "#3a3a3a"
+
   # ── Semantic status ────────────────────────────────────────────────────
   "$validation-error":   "#f87171"
   "$danger":             "#f87171"
+  "$danger-bg":          "rgba(248,113,113,0.10)"
+  "$danger-bg-pressed":  "rgba(248,113,113,0.20)"
+  "$placeholder":        "#888888"
+  "$placeholder-text":   "#a0a0a0"
+
   "$success":            "#4ade80"
   "$warning":            "#fb923c"
   "$info":               "#60a5fa"
-  "$placeholder":        "#888888"
-  "$card-bg":            "#3a3a3a"
-  # ── Sidebar chrome ──────────────────────────────────────────────────────
+
+  # ── Sidebar chrome ─────────────────────────────────────────────────────
   "$sidebar-hover":      "#2e3424"
   "$sidebar-sel":        "#3a4a25"
+
   # ── Splash screen (gui/main.py) ─────────────────────────────────────────
   "$splash-progress":    "#2ecc71"
   "$splash-bg":          "#1a1a2e"
+
   # ── Brand icon (gui/project_window.py window icon) ───────────────────────
   "$icon-brand":         "#2ecc71"
+
   # ── Log viewer (gui/components/logs.py) ─────────────────────────────────
   "$log-success":        "#b5cea8"
   "$log-default":        "#d4d4d4"
   "$log-warning":        "#dcdcaa"
   "$log-error":          "#f48771"
   "$log-info":           "#4ec9b0"
+
   # ── Action icons ─────────────────────────────────────────────────────────
   "$icon-success":       "#2ecc71"
   "$icon-danger":        "#e74c3c"
   "$icon-muted":         "#888888"
+
   # ── Table cell validation states ─────────────────────────────────────────
   "$cell-warn-row-bg":   "#2a1515"
   "$cell-disabled-bg":   "#3a3a3a"
   "$cell-invalid-bg":    "#4a1f22"
   "$cell-warn-bg":       "#3d3000"
   "$cell-warn-fg":       "#ff4d4f"
+
   # ── Integrity states ────────────────────────────────────────────────────
   "$integrity-mismatch": "#f44336"
   "$integrity-missing":  "#ff9800"
   "$integrity-ok":       "#4caf50"
+
   # ── LCC Plot chart bands ─────────────────────────────────────────────────
   "$chart-initial-tick": "#6699cc"
   "$chart-initial-bg":   "#1e2a38"

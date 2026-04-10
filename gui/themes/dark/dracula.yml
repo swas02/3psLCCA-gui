@@ -43,6 +43,9 @@ qss_tokens:
   # ── Semantic status ────────────────────────────────────────────────────
   "$validation-error":   "#ff5555"   # Dracula Red
   "$danger":             "#ff5555"   # Dracula Red
+  "$danger-bg":          "rgba(255,85,85,0.10)"        # Dracula red #ff5555
+  "$danger-bg-pressed":  "rgba(255,85,85,0.20)"
+  "$placeholder-text":   "#6272a4"              # Comment (correct Dracula semantic choice)
   "$success":            "#50fa7b"   # Dracula Green
   "$warning":            "#ffb86c"   # Dracula Orange
   "$info":               "#8be9fd"   # Dracula Cyan

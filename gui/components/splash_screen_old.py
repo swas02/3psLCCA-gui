@@ -8,16 +8,16 @@ from __future__ import annotations
 import time, os
 
 from PySide6.QtCore import Property, QEasingCurve, QPropertyAnimation, QRect, Qt, QTimer
-from PySide6.QtCore import Property, QEasingCurve, QPropertyAnimation, QRect, QRectF, Qt, QTimer
-from PySide6.QtGui import QColor, QPainter, QPainterPath
-from PySide6.QtSvg import QSvgRenderer
+from PySide6.QtGui import QColor, QPainter, QPixmap
 from PySide6.QtWidgets import QApplication, QWidget
 
 from gui.themes import get_token
+from gui.theme import SP4, SP8, SP10, FS_DISP, FS_BASE, FW_BOLD
+from gui.styles import font
 
 MIN_DISPLAY_MS = 1_500
 SPLASH_W, SPLASH_H = 520, 300
-_SVG_PATH = os.path.join("gui", "assets", "logo", "splashScreen.svg")
+_ICON_PATH = os.path.join("gui", "assets", "logo", "logo-3psLCCA.png")
 
 
 class _Bar(QWidget):
@@ -61,7 +61,12 @@ class SplashScreen(QWidget):
         self.setFixedSize(SPLASH_W, SPLASH_H)
         self._center()
 
-        self._svg = QSvgRenderer(_SVG_PATH, self)
+        # Cache pixmap once — never re-read disk on repaint
+        self._logo: QPixmap | None = None
+        if os.path.exists(_ICON_PATH):
+            self._logo = QPixmap(_ICON_PATH).scaled(
+                64, 64, Qt.KeepAspectRatio, Qt.SmoothTransformation
+            )
 
         self._bar = _Bar(self)
         self._bar.setGeometry(0, SPLASH_H - 3, SPLASH_W, 3)
@@ -106,29 +111,40 @@ class SplashScreen(QWidget):
         p.setRenderHint(QPainter.Antialiasing)
         p.setRenderHint(QPainter.SmoothPixmapTransform)
 
-        # Background (visible only if image fails to load)
+        # Background
         p.setPen(Qt.NoPen)
         p.setBrush(QColor(get_token("$splash-bg", get_token("$body-bg", "#0d1117"))))
         p.drawRoundedRect(self.rect(), 12, 12)
 
-        # Clip to rounded rect so image corners are masked
-        clip = QPainterPath()
-        clip.addRoundedRect(self.rect(), 12, 12)
-        p.setClipPath(clip)
-
-        # SVG — crisp at any DPI, aspect ratio preserved
-        if self._svg.isValid():
-            m = 24
-            avail_w, avail_h = SPLASH_W - m * 2, SPLASH_H - m * 2
-            svgsize = self._svg.defaultSize()
-            scale = min(avail_w / svgsize.width(), avail_h / svgsize.height())
-            w, h = svgsize.width() * scale, svgsize.height() * scale
-            x, y = m + (avail_w - w) / 2, m + (avail_h - h) / 2
-            self._svg.render(p, QRectF(x, y, w, h))
-
-        # Top accent strip drawn on top of image, outside clip
-        p.setClipping(False)
+        # Top accent strip
         p.setBrush(QColor(get_token("$primary", "#90af13")))
         p.drawRoundedRect(QRect(0, 0, SPLASH_W, 4), 2, 2)
+
+        margin, logo_size = SP10, 64
+
+        # Logo (pre-cached)
+        if self._logo:
+            p.drawPixmap(margin, margin + SP8, self._logo)
+
+        # App name
+        p.setPen(QColor(get_token("$body-color", "#FFFFFF")))
+        p.setFont(font(FS_DISP, FW_BOLD))
+        p.drawText(
+            QRect(margin + logo_size + SP4, margin + SP8, 300, logo_size),
+            Qt.AlignVCenter,
+            "3psLCCA",
+        )
+
+        # Subtitle
+        p.setPen(QColor(get_token("$secondary", "#8b949e")))
+        p.setFont(font(FS_BASE))
+        p.drawText(
+            margin,
+            margin + logo_size + SP8 + SP4,
+            SPLASH_W - (2 * margin),
+            30,
+            Qt.AlignLeft,
+            "Life Cycle Cost Analysis · Bridge Infrastructure",
+        )
 
         p.end()

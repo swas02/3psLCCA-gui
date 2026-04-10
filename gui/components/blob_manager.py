@@ -22,7 +22,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont, QColor
-from gui.theme import PLACEHOLDER
+from gui.themes import get_token
 
 
 class BlobManagerDialog(QDialog):
@@ -127,7 +127,7 @@ class BlobManagerDialog(QDialog):
         if not blobs:
             self.table.setRowCount(1)
             placeholder = QTableWidgetItem("No blobs stored. Click 'Upload File...' to add one.")
-            placeholder.setForeground(QColor(PLACEHOLDER))
+            placeholder.setForeground(QColor(get_token("$placeholder")))
             self.table.setItem(0, 0, placeholder)
             self.table.setSpan(0, 0, 1, 3)
             return

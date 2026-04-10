@@ -220,16 +220,9 @@ QComboBox::drop-down {
     subcontrol-origin: padding;
     subcontrol-position: center right;
     width: 32px;
-    border: none;
-    border-left: 1px solid $border;
-    border-top-right-radius: 6px;
-    border-bottom-right-radius: 6px;
-    background: transparent;
+
 }
 
-QComboBox::drop-down:hover {
-    background-color: $surface;
-}
 
 /* ── Dropdown popup list ────────────────────────────────────────────────── */
 QComboBox QAbstractItemView {

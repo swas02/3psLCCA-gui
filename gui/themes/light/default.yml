@@ -33,10 +33,13 @@ qss_tokens:
   # ── Semantic status ────────────────────────────────────────────────────
   "$validation-error":   "#dc3545"   # QComboBox validation selector in main.qss
   "$danger":             "#ef4444"   # danger buttons / error states
+  "$danger-bg":          "rgba(239,68,68,0.08)"
+  "$danger-bg-pressed":  "rgba(239,68,68,0.18)"
   "$success":            "#22c55e"   # success / pass / include
   "$warning":            "#f97316"   # corrupted / warning
   "$info":               "#3b82f6"   # locked / informational
-  "$placeholder":        "#888888"   # empty-state / placeholder text
+  "$placeholder":        "#6c757d"
+  "$placeholder-text":   "#888888"   # empty-state / placeholder text
   "$card-bg":            "#ffffff"   # card / list-item background
   # ── Sidebar chrome ──────────────────────────────────────────────────────
   "$sidebar-hover":      "#e8edff"   # sidebar item hover

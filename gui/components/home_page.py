@@ -139,7 +139,7 @@ def _greeting() -> str:
     elif 17 <= hour < 21:
         return "Good Evening"
     else:
-        return "Good Night"
+        return "Hello"
 
 
 STATUS_CONFIG = {

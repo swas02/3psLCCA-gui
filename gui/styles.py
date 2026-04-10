@@ -19,12 +19,11 @@ from PySide6.QtGui import QFont
 
 from gui.theme import (
     FONT_FAMILY,
-    PRIMARY, PRIMARY_HOVER, PRIMARY_ACTIVE,
-    DANGER, DANGER_BG, DANGER_BG_PRESSED,
-    BORDER,
     RADIUS_MD,
     FW_NORMAL,
 )
+
+from gui.themes import get_token
 
 
 # ── Font helper ────────────────────────────────────────────────────────────────
@@ -46,10 +45,10 @@ def font(size: int, weight: int = FW_NORMAL, italic: bool = False) -> QFont:
 def btn_primary(radius: int = RADIUS_MD) -> str:
     """Filled PRIMARY button — main CTA."""
     return (
-        f"QPushButton {{ background: {PRIMARY}; color: white; border: none;"
+        f"QPushButton {{ background: {get_token("$primary")}; color: white; border: none;"
         f"  border-radius: {radius}px; padding: 0 16px; }}"
-        f"QPushButton:hover   {{ background: {PRIMARY_HOVER}; }}"
-        f"QPushButton:pressed {{ background: {PRIMARY_ACTIVE}; }}"
+        f"QPushButton:hover   {{ background: {get_token("$primary-hover")}; }}"
+        f"QPushButton:pressed {{ background: {get_token("$primary-active")}; }}"
     )
 
 
@@ -58,7 +57,7 @@ def btn_outline(radius: int = RADIUS_MD) -> str:
     return (
         f"QPushButton {{ background: transparent; border: 1px solid palette(mid);"
         f"  border-radius: {radius}px; padding: 0 16px; color: palette(windowText); }}"
-        f"QPushButton:hover   {{ border-color: {PRIMARY}; color: {PRIMARY}; }}"
+        f"QPushButton:hover   {{ border-color: {get_token("$primary")}; color: {get_token("$primary")}; }}"
         f"QPushButton:pressed {{ background: palette(midlight); }}"
     )
 
@@ -66,28 +65,28 @@ def btn_outline(radius: int = RADIUS_MD) -> str:
 def btn_outline_primary(radius: int = RADIUS_MD) -> str:
     """Outlined PRIMARY button — confirmatory action (Open, etc.)."""
     return (
-        f"QPushButton {{ border: 1px solid {PRIMARY}; color: {PRIMARY};"
+        f"QPushButton {{ border: 1px solid {get_token("$primary")}; color: {get_token("$primary")};"
         f"  border-radius: {radius}px; padding: 0 20px; background: transparent; }}"
-        f"QPushButton:hover   {{ background: {PRIMARY}; color: white; }}"
-        f"QPushButton:pressed {{ background: {PRIMARY_ACTIVE}; color: white;"
-        f"  border-color: {PRIMARY_ACTIVE}; }}"
+        f"QPushButton:hover   {{ background: {get_token("$primary")}; color: white; }}"
+        f"QPushButton:pressed {{ background: {get_token("$primary-active")}; color: white;"
+        f"  border-color: {get_token("$primary-active")}; }}"
     )
 
 
 def btn_outline_danger(radius: int = RADIUS_MD) -> str:
     """Outlined danger button — destructive action (Delete, etc.)."""
     return (
-        f"QPushButton {{ border: 1px solid {DANGER}; color: {DANGER};"
+        f"QPushButton {{ border: 1px solid {get_token("$danger")}; color: {get_token("$danger")};"
         f"  border-radius: {radius}px; padding: 0 20px; background: transparent; }}"
-        f"QPushButton:hover   {{ background: {DANGER_BG}; }}"
-        f"QPushButton:pressed {{ background: {DANGER_BG_PRESSED}; }}"
+        f"QPushButton:hover   {{ background: {get_token("$danger-bg")}; }}"
+        f"QPushButton:pressed {{ background: {get_token("$danger-bg-pressed")}; }}"
     )
 
 
 def btn_text_primary(radius: int = RADIUS_MD) -> str:
     """Text-only PRIMARY button, left-aligned — nav/return links."""
     return (
-        f"QPushButton {{ color: {PRIMARY}; border: none; background: transparent;"
+        f"QPushButton {{ color: {get_token("$primary")}; border: none; background: transparent;"
         f"  text-align: left; padding-left: 16px; border-radius: {radius}px; }}"
         f"QPushButton:hover {{ background: palette(midlight); }}"
     )
@@ -98,7 +97,7 @@ def btn_ghost(radius: int = RADIUS_MD) -> str:
     return (
         f"QPushButton {{ border: 1px solid palette(mid); border-radius: {radius}px;"
         f"  padding: 0 12px; background: transparent; color: palette(windowText); }}"
-        f"QPushButton:hover {{ border-color: {PRIMARY}; color: {PRIMARY}; }}"
+        f"QPushButton:hover {{ border-color: {get_token("$primary")}; color: {get_token("$primary")}; }}"
     )
 
 
@@ -107,9 +106,9 @@ def btn_ghost_checkable(radius: int = RADIUS_MD) -> str:
     return (
         f"QPushButton {{ border: 1px solid palette(mid); border-radius: {radius}px;"
         f"  padding: 0 10px; background: transparent; color: palette(windowText); }}"
-        f"QPushButton:hover   {{ border-color: {PRIMARY}; color: {PRIMARY}; }}"
-        f"QPushButton:checked {{ background: {PRIMARY}; color: white;"
-        f"  border-color: {PRIMARY}; }}"
+        f"QPushButton:hover   {{ border-color: {get_token("$primary")}; color: {get_token("$primary")}; }}"
+        f"QPushButton:checked {{ background: {get_token("$primary")}; color: white;"
+        f"  border-color: {get_token("$primary")}; }}"
     )
 
 

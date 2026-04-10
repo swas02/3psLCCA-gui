@@ -27,7 +27,6 @@ from PySide6.QtGui import QAction, QColor, QIcon, QPainter, QPalette
 
 from gui.components.utils.icons import make_icon, make_icon_btn
 from gui.theme import (
-    PRIMARY,
     FS_SM, FS_BASE, FS_MD,
     FW_NORMAL, FW_MEDIUM, FW_SEMIBOLD,
     SP4,
@@ -152,7 +151,7 @@ class _SidebarDelegate(QStyledItemDelegate):
             painter.setFont(_f(FS_BASE, FW_NORMAL))
 
         # Text colour — PRIMARY on selected, normal otherwise
-        text_col = QColor(PRIMARY) if is_sel else option.palette.windowText().color()
+        text_col = QColor(get_token("$primary-active")) if is_sel else option.palette.windowText().color()
         painter.setPen(text_col)
 
         extra = 28 if depth >= 2 else 0
@@ -222,10 +221,10 @@ class _SidebarTree(QTreeWidget):
         painter.setBrush(self.palette().window())
         painter.drawRect(full)
         if is_hovered and not is_sel:
-            tint = QColor(PRIMARY); tint.setAlpha(22)
+            tint = QColor(get_token("$primary")); tint.setAlpha(11)
             painter.setBrush(tint); painter.drawRect(full)
         if is_sel:
-            tint = QColor(PRIMARY); tint.setAlpha(55)
+            tint = QColor(get_token("$primary")); tint.setAlpha(22)
             painter.setBrush(tint); painter.drawRect(full)
         painter.restore()
 
@@ -236,7 +235,7 @@ class _SidebarTree(QTreeWidget):
         if is_sel:
             painter.save()
             painter.setPen(Qt.NoPen)
-            painter.setBrush(QColor(PRIMARY))
+            painter.setBrush(QColor(get_token("$primary")))
             painter.drawRect(full.left(), full.top(), _ACCENT_W, full.height())
             painter.restore()
 
