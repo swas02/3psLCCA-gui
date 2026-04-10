@@ -5,6 +5,7 @@ channels:
 dependencies:
   - python>=3.12
   - pip
+  - osdag::osdag_latex_env
   - pip:
     - PySide6
     - psutil

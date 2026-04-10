@@ -1233,11 +1233,18 @@ class OutputsPage(ScrollableForm):
                 pass
             return str(obj)
 
+        inputs_payload = _sanitize(all_data)
+
+        # Analysis period is stored in the Outputs page chunk and is not part of
+        # self._pages (which only includes non-Outputs pages). Include it
+        # explicitly so report exports can distinguish it from bridge design life.
+        inputs_payload.setdefault(CHUNK_AP, _sanitize(self.get_data_dict()))
+
         return {
             "format": "3psLCCAFile",
             "version": "1.0",
             "exported_at": datetime.datetime.now().isoformat(),
-            "inputs": _sanitize(all_data),
+            "inputs": inputs_payload,
             "computed": _sanitize(lcc_breakdown),
             "results": _sanitize(results),
         }
@@ -1252,6 +1259,7 @@ class OutputsPage(ScrollableForm):
             lcc_breakdown=getattr(self, "_last_lcc_breakdown", {}),
             results=getattr(self, "_last_results", {}),
             parent=self,
+            controller=self.controller,
         )
         dlg.exec()
 

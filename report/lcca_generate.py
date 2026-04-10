@@ -5,7 +5,15 @@ import argparse
 
 import sys
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(_PROJECT_ROOT))
+
+_REPORT_ENV_DIR = _PROJECT_ROOT / "core" / "report-env"
+if _REPORT_ENV_DIR.exists() and str(_REPORT_ENV_DIR) not in sys.path:
+    sys.path.insert(0, str(_REPORT_ENV_DIR))
+
+from osdag_latex_env import OsdagLatexEnv
 
 from pylatex import (
     Document,
@@ -94,7 +102,6 @@ class LCCAReportLatex(Document):
         self.packages.append(Package("needspace"))
         self.packages.append(Package("longtable"))
         self.packages.append(Package("array"))
-        self.packages.append(Package("chngcntr"))
         self.packages.append(Package("amsmath"))
         self.packages.append(Package("xcolor", options=["table"]))
         self.packages.append(Package("colortbl"))
@@ -1265,7 +1272,7 @@ IETC = SCC \times \sum_{j=1}^{o} \left[ Q_{j} \times Di_{j} \times (EF_{tp})_{j}
     # ==================================================================
     # METHOD: save_latex — Main entry point (matches CreateLatex API)
     # ==================================================================
-    def save_latex(self, config, data, filename="LCCA_Report", output_dir=None):
+    def save_latex(self, config, data, filename="LCCA_Report", output_dir=None, keep_tex=False):
         """
         Generate the LCCA PDF report.
 
@@ -1274,6 +1281,7 @@ IETC = SCC \times \sum_{j=1}^{o} \left[ Q_{j} \times Di_{j} \times (EF_{tp})_{j}
             data (dict): Data dictionaries keyed by KEY_* constants
             filename (str): Output filename without extension
             output_dir (str): Directory to write the PDF into (defaults to CWD)
+            keep_tex (bool): If True, keep the .tex file after generation
         """
         if config.get("show_introduction", True):
             self.add_introduction(config, data)
@@ -1286,7 +1294,7 @@ IETC = SCC \times \sum_{j=1}^{o} \left[ Q_{j} \times Di_{j} \times (EF_{tp})_{j}
             self.add_lcca_results(config, data)
 
         self.add_full_appendix()
-        self.generate_pdf_output(filename, output_dir=output_dir)
+        self.generate_pdf_output(filename, output_dir=output_dir, keep_tex=keep_tex)
 
     # ==================================================================
     # METHOD: add_introduction — Section 1: Introduction to LCCA
@@ -1721,35 +1729,61 @@ IETC = SCC \times \sum_{j=1}^{o} \left[ Q_{j} \times Di_{j} \times (EF_{tp})_{j}
                     self.append(NoEscape(r"}"))
                     self.append(NoEscape(r"\vspace{4pt}"))
 
-    def generate_pdf_output(self, filename="LCCA_Report", output_dir=None):
+    def generate_pdf_output(self, filename="LCCA_Report", output_dir=None, keep_tex=False):
 
         print("[INFO]: Generating report...")
-        import os as _os
-        _orig_cwd = _os.getcwd()
+
+        requested_base = Path(filename)
+        if requested_base.suffix:
+            requested_base = requested_base.with_suffix("")
+
+        if output_dir:
+            final_output_dir = Path(output_dir).resolve()
+            final_output_dir.mkdir(parents=True, exist_ok=True)
+            tex_base = final_output_dir / requested_base.name
+        else:
+            if requested_base.is_absolute():
+                tex_base = requested_base
+            else:
+                tex_base = (Path.cwd() / requested_base).resolve()
+            tex_base.parent.mkdir(parents=True, exist_ok=True)
+            final_output_dir = tex_base.parent
+
+        tex_path = tex_base.with_suffix(".tex")
+
         try:
-            if output_dir:
-                _os.makedirs(output_dir, exist_ok=True)
-                _os.chdir(output_dir)
-            self.generate_pdf(
-                filename,
-                clean_tex=False,
-                compiler="pdflatex",
-                compiler_args=["-interaction=nonstopmode"],
-            )
-            print(f"[INFO]: Done -> {filename}.pdf")
+            self.generate_tex(str(tex_base))
+
+            env = OsdagLatexEnv()
+            if not env.available:
+                raise FileNotFoundError(
+                    "LaTeX environment not found. Install with "
+                    "`conda install osdag::osdag_latex_env` or run "
+                    "`python core/report-env/setup_assets.py`."
+                )
+
+            pdf_path = env.compile_tex(tex_path, output_dir=final_output_dir, runs=2, quiet=True)
+
+            if not keep_tex:
+                for ext in (".tex", ".aux", ".log", ".out", ".fls", ".fdb_latexmk"):
+                    p = tex_base.with_suffix(ext)
+                    if p.exists():
+                        try:
+                            p.unlink()
+                        except OSError:
+                            pass
+
+            print(f"[INFO]: Done -> {pdf_path}")
         except Exception as e:
             print(f"[ERROR]: PDF compile issue: {e}")
-            self.generate_tex(filename)
-            print(f"[INFO]: TeX saved -> {filename}.tex")
-            print(f"[INFO]: Run: pdflatex {filename}.tex")
-        finally:
-            _os.chdir(_orig_cwd)
-            print(f"[INFO]: Run: pdflatex {filename}.tex")
+            print(f"[INFO]: TeX saved -> {tex_path}")
+            print("[INFO]: Install LaTeX env: conda install osdag::osdag_latex_env")
+            print(f"[INFO]: Or compile manually: pdflatex {tex_path}")
 
 
 
 
-def generate_report(output_filename="LCCA_Report", input_json=None, config_override=None, output_dir=None):
+def generate_report(output_filename="LCCA_Report", input_json=None, config_override=None, output_dir=None, keep_tex=False):
     """
     Wrapper that reads a .3psLCCA JSON file via LCCATemplate and calls save_latex().
 
@@ -1758,6 +1792,7 @@ def generate_report(output_filename="LCCA_Report", input_json=None, config_overr
         input_json (str): Path to the .3psLCCA JSON file
         config_override (dict): Optional {KEY_SHOW_*: bool} to override defaults
         output_dir (str): Directory to write the PDF into (defaults to CWD)
+        keep_tex (bool): If True, keep the .tex file after generation
     """
     if not input_json or not os.path.exists(input_json):
         raise FileNotFoundError(
@@ -1778,7 +1813,7 @@ def generate_report(output_filename="LCCA_Report", input_json=None, config_overr
 
     # Create report and generate
     doc = LCCAReportLatex()
-    doc.save_latex(config, data, output_filename, output_dir=output_dir)
+    doc.save_latex(config, data, output_filename, output_dir=output_dir, keep_tex=keep_tex)
 
 
 

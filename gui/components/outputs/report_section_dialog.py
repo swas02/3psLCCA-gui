@@ -22,6 +22,39 @@ for p in [_report_dir, _project_root]:
     if p not in sys.path:
         sys.path.insert(0, p)
 
+# ─────────────────────────────────────────────────────────────────────────────
+# Theme support
+# ─────────────────────────────────────────────────────────────────────────────
+def _get_theme_colors():
+    """Get current theme colors for styling."""
+    try:
+        from gui.themes import get_token
+        return {
+            "primary": get_token("$primary", "#90af13"),
+            "primary_hover": get_token("$primary-hover", "#7c9811"),
+            "primary_active": get_token("$primary-active", "#6c830e"),
+            "text": get_token("$body-color", "#333333"),
+            "muted": get_token("$secondary", "#6c757d"),
+            "surface": get_token("$surface", "#e9ecef"),
+            "white": get_token("$white", "#fafafa"),
+            "border": get_token("$border", "#dee2e6"),
+            "selection_bg": get_token("$sidebar-sel", "#dee7c0"),
+            "selection_text": get_token("$body-color", "#333333"),
+        }
+    except Exception:
+        return {
+            "primary": "#90af13",
+            "primary_hover": "#7c9811",
+            "primary_active": "#6c830e",
+            "text": "#333333",
+            "muted": "#6c757d",
+            "surface": "#e9ecef",
+            "white": "#fafafa",
+            "border": "#dee2e6",
+            "selection_bg": "#dee7c0",
+            "selection_text": "#333333",
+        }
+
 from PySide6.QtWidgets import (
     QDialog,
     QVBoxLayout,
@@ -256,10 +289,11 @@ class _PdfGenWorker(QThread):
                 # Import here to avoid blocking UI startup
                 from lcca_generate import generate_report
 
-                pdf_path = os.path.join(self._output_dir, "LCCA_Report")
+                pdf_path = os.path.join(self._output_dir, "report")
                 generate_report(
                     pdf_path, input_json=tmp_json, config_override=self._config,
                     output_dir=self._output_dir,
+                    keep_tex=True,
                 )
             finally:
                 if os.path.exists(tmp_json):
@@ -270,17 +304,8 @@ class _PdfGenWorker(QThread):
 
             final_pdf = pdf_path + ".pdf"
             if os.path.exists(final_pdf):
-                # Clean up intermediate files
-                for ext in [".tex", ".aux", ".log", ".out", ".fls", ".fdb_latexmk"]:
-                    f = pdf_path + ext
-                    if os.path.exists(f):
-                        try:
-                            os.remove(f)
-                        except OSError:
-                            pass
                 self.finished.emit(final_pdf)
             else:
-                # Check if .tex was generated instead
                 tex_path = pdf_path + ".tex"
                 if os.path.exists(tex_path):
                     self.errored.emit(
@@ -307,7 +332,7 @@ class ReportSectionDialog(QDialog):
     in the PDF report, then generates it via generate_report().
     """
 
-    def __init__(self, build_export_dict, all_data, lcc_breakdown, results, parent=None):
+    def __init__(self, build_export_dict, all_data, lcc_breakdown, results, parent=None, controller=None):
         super().__init__(parent)
         self.setWindowTitle("LCCA Report Customization")
         self.setObjectName("report_section_dialog")
@@ -317,10 +342,13 @@ class ReportSectionDialog(QDialog):
         self._lcc_breakdown = lcc_breakdown
         self._results = results
         self._worker = None
+        self._controller = controller
+        self._temp_output_dir = self._get_temp_output_dir()
         self._init_ui()
 
     def _init_ui(self):
         """Build the user interface."""
+        theme = _get_theme_colors()
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(20, 20, 20, 20)
         main_layout.setSpacing(10)
@@ -329,7 +357,7 @@ class ReportSectionDialog(QDialog):
         self.lbl_title = QLabel("Select Report Sections to Include")
         self.lbl_title.setObjectName("lbl_title")
         self.lbl_title.setStyleSheet(
-            "font-size: 18px; font-weight: bold; margin-bottom: 10px; color: #285A23;"
+            f"font-size: 18px; font-weight: bold; margin-bottom: 10px; color: {theme['primary']};"
         )
         self.lbl_title.setAlignment(Qt.AlignCenter)
         main_layout.addWidget(self.lbl_title)
@@ -339,34 +367,34 @@ class ReportSectionDialog(QDialog):
         scroll_area.setObjectName("scroll_sections")
         scroll_area.setWidgetResizable(True)
         scroll_area.setStyleSheet(
-            "QScrollArea { border: 1px solid #E0E0E0; border-radius: 5px; "
-            "background-color: #FAFAFA; }"
+            f"QScrollArea {{ border: 1px solid {theme['border']}; border-radius: 5px; "
+            f"background-color: {theme['white']}; }}"
         )
 
         # Tree widget
         self.tree_sections = SectionTreeWidget()
-        self.tree_sections.setStyleSheet("""
-            QTreeWidget {
+        self.tree_sections.setStyleSheet(f"""
+            QTreeWidget {{
                 font-size: 13px;
                 border: none;
-                background-color: #FAFAFA;
-                color: #333333;
-            }
-            QTreeWidget::item {
+                background-color: {theme['white']};
+                color: {theme['text']};
+            }}
+            QTreeWidget::item {{
                 padding: 4px 0;
-                color: #333333;
-            }
-            QTreeWidget::item:selected {
-                background-color: #E8EFC4;
-                color: #333333;
-            }
-            QHeaderView::section {
-                background-color: #99A924;
+                color: {theme['text']};
+            }}
+            QTreeWidget::item:selected {{
+                background-color: {theme['selection_bg']};
+                color: {theme['selection_text']};
+            }}
+            QHeaderView::section {{
+                background-color: {theme['primary']};
                 color: white;
                 font-weight: bold;
                 padding: 6px;
                 border: none;
-            }
+            }}
         """)
         self.tree_sections.build_from_sections(SECTION_MAP, SUBSECTION_TABLE_MAP)
         self.tree_sections.selectionChanged.connect(self.on_selection_changed)
@@ -378,7 +406,7 @@ class ReportSectionDialog(QDialog):
         self.lbl_status = QLabel("")
         self.lbl_status.setObjectName("lbl_status")
         self.lbl_status.setAlignment(Qt.AlignCenter)
-        self.lbl_status.setStyleSheet("font-size: 12px; color: #555555;")
+        self.lbl_status.setStyleSheet(f"font-size: 12px; color: {theme['muted']};")
         main_layout.addWidget(self.lbl_status)
         self.on_selection_changed()
 
@@ -389,46 +417,46 @@ class ReportSectionDialog(QDialog):
         self.btn_save_as.setObjectName("btn_save_as")
         self.btn_save_as.clicked.connect(self.generate_report_with_path)
         self.btn_save_as.setMinimumHeight(45)
-        self.btn_save_as.setStyleSheet("""
-            QPushButton#btn_save_as {
-                background-color: #99A924;
+        self.btn_save_as.setStyleSheet(f"""
+            QPushButton#btn_save_as {{
+                background-color: {theme['primary']};
                 color: white;
                 font-size: 14px;
                 font-weight: bold;
                 border-radius: 5px;
                 padding: 10px 20px;
-            }
-            QPushButton#btn_save_as:hover {
-                background-color: #88951F;
-            }
-            QPushButton#btn_save_as:pressed {
-                background-color: #285A23;
-            }
-            QPushButton#btn_save_as:disabled {
-                background-color: #d0d0d0;
-                color: #888888;
-            }
+            }}
+            QPushButton#btn_save_as:hover {{
+                background-color: {theme['primary_hover']};
+            }}
+            QPushButton#btn_save_as:pressed {{
+                background-color: {theme['primary_active']};
+            }}
+            QPushButton#btn_save_as:disabled {{
+                background-color: {theme['surface']};
+                color: {theme['muted']};
+            }}
         """)
 
         self.btn_cancel = QPushButton("Cancel")
         self.btn_cancel.setObjectName("btn_cancel")
         self.btn_cancel.clicked.connect(self.reject)
         self.btn_cancel.setMinimumHeight(45)
-        self.btn_cancel.setStyleSheet("""
-            QPushButton#btn_cancel {
-                background-color: #d0d0d0;
-                color: #333333;
+        self.btn_cancel.setStyleSheet(f"""
+            QPushButton#btn_cancel {{
+                background-color: {theme['surface']};
+                color: {theme['text']};
                 font-size: 14px;
                 border-radius: 5px;
                 padding: 10px 30px;
-            }
-            QPushButton#btn_cancel:hover {
-                background-color: #c0c0c0;
-            }
-            QPushButton#btn_cancel:disabled {
-                background-color: #e0e0e0;
-                color: #aaa;
-            }
+            }}
+            QPushButton#btn_cancel:hover {{
+                background-color: {theme['border']};
+            }}
+            QPushButton#btn_cancel:disabled {{
+                background-color: {theme['white']};
+                color: {theme['muted']};
+            }}
         """)
 
         btn_layout.addWidget(self.btn_cancel)
@@ -472,24 +500,49 @@ class ReportSectionDialog(QDialog):
 
         self._generate_pdf(os.path.dirname(save_path), os.path.splitext(os.path.basename(save_path))[0])
 
+    def _get_temp_output_dir(self):
+        """Get the temp output directory for the project."""
+        if self._controller and hasattr(self._controller, 'engine') and self._controller.engine:
+            try:
+                project_path = self._controller.engine.project_path
+                display_name = self._controller.engine.display_name
+                if project_path:
+                    temp_dir = os.path.join(_project_root, "temp", "3psLCCA", display_name)
+                    os.makedirs(temp_dir, exist_ok=True)
+                    return temp_dir
+            except Exception as e:
+                print(f"[report] Could not get temp dir: {e}")
+        return None
+
     def _generate_pdf(self, output_dir, filename):
         """Launch background PDF generation."""
+        final_output_dir = self._temp_output_dir if self._temp_output_dir else output_dir
+
         config = self.tree_sections.get_config()
         export = self._build_export_dict(self._all_data, self._lcc_breakdown, self._results)
 
         self._set_ui_enabled(False)
         QApplication.processEvents()
 
-        self._worker = _PdfGenWorker(export, config, output_dir)
-        self._worker.finished.connect(self._on_pdf_success)
+        self._worker = _PdfGenWorker(export, config, final_output_dir)
+        self._worker.finished.connect(lambda pdf_path: self._on_pdf_success(pdf_path, output_dir))
         self._worker.errored.connect(self._on_pdf_error)
         self._worker.finished.connect(self._worker.deleteLater)
         self._worker.errored.connect(self._worker.deleteLater)
         self._worker.start()
 
-    def _on_pdf_success(self, pdf_path):
+    def _on_pdf_success(self, pdf_path, original_output_dir):
         """Handle successful PDF generation."""
         self._set_ui_enabled(True)
+        
+        # If user specified a different output location, copy the PDF there
+        if original_output_dir and original_output_dir != self._temp_output_dir:
+            import shutil
+            final_pdf = os.path.join(original_output_dir, os.path.basename(pdf_path))
+            if os.path.exists(pdf_path):
+                shutil.copy2(pdf_path, final_pdf)
+                pdf_path = final_pdf
+        
         QMessageBox.information(
             self,
             "Success",

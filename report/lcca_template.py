@@ -245,8 +245,8 @@ class LCCATemplate:
                 return str(int(val))
             return str(val)
 
-        # Analysis period = design life (same field used in LCCA)
         design_life = bd.get("design_life", 0)
+        analysis_period = self.inputs.get("analysis_period", {}).get("analysis_period", design_life)
 
         return {
             "Name of bridge":
@@ -282,7 +282,7 @@ class LCCATemplate:
             "Design life (years)":
                 _v(design_life),
             "Analysis period (years)":
-                _v(design_life),
+                _v(analysis_period),
         }
 
     # ─────────────────────────────────────────────────────────────────────────
