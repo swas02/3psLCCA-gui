@@ -45,7 +45,7 @@ from ...utils.remarks_editor import RemarksEditor
 from ...utils.display_format import fmt, fmt_comma, DECIMAL_PLACES
 from ...utils.icons import make_icon
 from ...utils.table_widgets import BaseActionDelegate, TooltipTableMixin
-from ...utils.validation_helpers import freeze_widgets
+from ...utils.validation_helpers import freeze_widgets, confirm_clear_all
 
 CHUNK = "machinery_emissions_data"
 _ACTION_W = 80   # frozen action-column width (edit + delete)
@@ -230,7 +230,7 @@ class _ActionDelegate(BaseActionDelegate):
         self._detail_table = detail_table
         self._btns = [
             (make_icon("edit"), (46, 204, 113), "edit", "Edit"),
-            (make_icon("trash", color=get_token("$icon-danger", "#e74c3c")), (231, 76, 60), "delete", "Remove row"),
+            (make_icon("trash", color=get_token("danger")), (231, 76, 60), "delete", "Remove row"),
         ]
 
     def _get_btns_for_row(self, row) -> list[tuple]:
@@ -679,13 +679,7 @@ class _DetailedTable(QWidget):
 
     def _clear_all(self, confirm=True):
         if confirm and self._table.rowCount() > 0:
-            reply = QMessageBox.question(
-                self,
-                "Clear All",
-                "Remove all equipment rows?",
-                QMessageBox.Yes | QMessageBox.No,
-            )
-            if reply != QMessageBox.Yes:
+            if not confirm_clear_all(self):
                 return
         self._table.setRowCount(0)
         self._frozen_col.setRowCount(0)
@@ -1146,3 +1140,5 @@ class MachineryEmissions(ScrollableForm):
 
     def get_data(self) -> dict:
         return {"chunk": CHUNK, "data": self.get_data_dict()}
+
+

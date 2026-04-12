@@ -21,7 +21,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont, QColor
-from gui.theme import PLACEHOLDER
+from gui.themes import get_token
 
 
 class RollbackDialog(QDialog):
@@ -128,7 +128,7 @@ class RollbackDialog(QDialog):
         if not chunks:
             placeholder = QListWidgetItem("No chunks found.")
             placeholder.setFlags(placeholder.flags() & ~Qt.ItemIsSelectable)
-            placeholder.setForeground(QColor(PLACEHOLDER))
+            placeholder.setForeground(QColor(get_token("text_secondary")))
             self.chunk_list.addItem(placeholder)
             return
         for name in chunks:
@@ -152,7 +152,7 @@ class RollbackDialog(QDialog):
             item.setData(Qt.UserRole, opt)
             # Grey out "Current" slightly to indicate it's already active
             if opt["label"] == "Current":
-                item.setForeground(QColor(PLACEHOLDER))
+                item.setForeground(QColor(get_token("text_secondary")))
             self.version_list.addItem(item)
 
     def _on_version_selected(self, current, _previous):
@@ -178,10 +178,7 @@ class RollbackDialog(QDialog):
         result = QMessageBox.warning(
             self,
             "Confirm Rollback",
-            f"Roll back '{chunk_name}' to:\n\n"
-            f"  {opt['label']} — {opt['saved_at']}\n\n"
-            "This will overwrite the current version of this chunk.\n"
-            "All other chunks are unaffected.",
+            f"Roll back '{chunk_name}' to '{opt['label']}' ({opt['saved_at']})?\n\nThis replaces the current version. Other chunks are not affected.",
             QMessageBox.Ok | QMessageBox.Cancel,
             QMessageBox.Cancel,
         )
@@ -193,8 +190,7 @@ class RollbackDialog(QDialog):
             QMessageBox.information(
                 self,
                 "Rollback Complete",
-                f"'{chunk_name}' has been rolled back to '{opt['label']}'.\n\n"
-                "Reload the relevant page to see the restored data.",
+                f"'{chunk_name}' rolled back to '{opt['label']}'.",
             )
             # Refresh version list to reflect new state
             self._load_chunks()
@@ -204,7 +200,7 @@ class RollbackDialog(QDialog):
             QMessageBox.critical(
                 self,
                 "Rollback Failed",
-                "Could not roll back this chunk. Check the engine logs for details.",
+                "Could not roll back this chunk.",
             )
 
     # ── Helpers ───────────────────────────────────────────────────────────────
@@ -225,3 +221,5 @@ class RollbackDialog(QDialog):
         line.setFrameShape(QFrame.HLine)
         line.setFrameShadow(QFrame.Sunken)
         return line
+
+

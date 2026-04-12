@@ -22,10 +22,10 @@ from PySide6.QtGui import QColor
 from gui.theme import (
     FS_LG, FS_BASE, FS_SM,
     FW_SEMIBOLD, FW_NORMAL,
-    MUTED,
     BTN_MD, BTN_SM,
     SP2, SP3, SP4, SP8, SP10,
 )
+from gui.themes import get_token
 from gui.styles import font as _f
 
 
@@ -99,13 +99,13 @@ class SaveCheckpointDialog(QDialog):
         if zip_name:
             QMessageBox.information(
                 self, "Checkpoint Saved",
-                f"Checkpoint '{label}' saved successfully.\n\nFile: {zip_name}",
+                f"Checkpoint '{label}' saved.\nFile: {zip_name}",
             )
             self.accept()
         else:
             QMessageBox.critical(
                 self, "Save Failed",
-                "Failed to create checkpoint. Check the engine logs for details.",
+                "Could not save the checkpoint.",
             )
             self._save_btn.setEnabled(True)
             self._save_btn.setText("Save")
@@ -231,7 +231,7 @@ class CheckpointManagerDialog(QDialog):
             empty_item = QTableWidgetItem(
                 "No checkpoints yet. Use '+ New Checkpoint' to create one."
             )
-            empty_item.setForeground(QColor(MUTED))
+            empty_item.setForeground(QColor(get_token("text_disabled")))
             empty_item.setFlags(Qt.ItemIsEnabled)
             self.table.setItem(0, 0, empty_item)
             self.table.setSpan(0, 0, 1, 4)
@@ -258,9 +258,7 @@ class CheckpointManagerDialog(QDialog):
             return
         result = QMessageBox.warning(
             self, "Confirm Restore",
-            f"Restore checkpoint '{cp['label']}' from {cp['date']}?\n\n"
-            "This will replace all current project data with this snapshot.\n"
-            "Any unsaved changes will be lost.",
+            f"Restore '{cp['label']}' from {cp['date']}?\n\nAll current data will be replaced. Unsaved changes will be lost.",
             QMessageBox.Ok | QMessageBox.Cancel,
             QMessageBox.Cancel,
         )
@@ -269,14 +267,13 @@ class CheckpointManagerDialog(QDialog):
             if success:
                 QMessageBox.information(
                     self, "Restore Complete",
-                    f"Project restored from '{cp['label']}' successfully.\n"
-                    "The UI will now refresh.",
+                    f"Restored from '{cp['label']}'.",
                 )
                 self.accept()
             else:
                 QMessageBox.critical(
                     self, "Restore Failed",
-                    "Failed to restore the checkpoint. Check the engine logs for details.",
+                    "Could not restore the checkpoint.",
                 )
 
     def _on_delete(self):
@@ -285,7 +282,7 @@ class CheckpointManagerDialog(QDialog):
             return
         result = QMessageBox.warning(
             self, "Confirm Delete",
-            f"Permanently delete checkpoint '{cp['label']}'?\n\nThis cannot be undone.",
+            f"Delete checkpoint '{cp['label']}'?\nThis cannot be undone.",
             QMessageBox.Ok | QMessageBox.Cancel,
             QMessageBox.Cancel,
         )
@@ -297,3 +294,5 @@ class CheckpointManagerDialog(QDialog):
                 QMessageBox.critical(
                     self, "Delete Failed", "Could not delete the checkpoint file.",
                 )
+
+

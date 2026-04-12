@@ -1,50 +1,49 @@
 /* ============================================================
    Bootstrap 5-inspired light theme for 3psLCCA
-   Tokens are defined in gui/theme.py and substituted at runtime.
+   Tokens were defined in gui/theme.py and substituted at runtime. now this removed find alternative way. read gui\themes
 
    $primary         brand green
    $primary-hover   ~13% darker (button hover)
    $primary-active  ~25% darker (button pressed)
-   $white           #ffffff
-   $body-bg         app / sidebar background
-   $body-color      primary text
-   $secondary       muted / secondary text
-   $border          standard border
-   $border-subtle   slightly darker border
-   $muted           disabled / placeholder
+   $base            #ffffff (elevated surface)
+   $window          app / sidebar background
+   $text            primary text
+   $text_secondary  muted / secondary text
+   $surface_mid     standard border
+   $text_disabled   disabled / placeholder
    $surface         neutral hover background
-   $surface-active  neutral pressed background
+   $surface_pressed neutral pressed background
    ============================================================ */
 
 /* ── Base ───────────────────────────────────────────────────────────────── */
 * {
     font-family: "Ubuntu", Arial, sans-serif;
     font-size: 13px;
-    color: $body-color;
+    color: $text;
     outline: none;
 }
 
 QWidget {
-    background-color: $body-bg;
+    background-color: $window;
 }
 
 /* ── Form controls — inputs ─────────────────────────────────────────────── */
 QLineEdit,
 QTextEdit,
 QPlainTextEdit {
-    background-color: $white;
-    border: 1px solid $border;
+    background-color: $base;
+    border: 1px solid $surface_mid;
     border-radius: 6px;
-    padding: 6px 12px;
+    padding: 5px 10px;
     min-height: 32px;
-    color: $body-color;
+    color: $text;
     selection-background-color: $primary;
-    selection-color: #000000;
+    selection-color: $text-on-primary;
 }
 
 QLineEdit:hover,
 QTextEdit:hover {
-    border-color: $border-subtle;
+    border-color: $surface_mid;
 }
 
 QLineEdit:focus,
@@ -57,31 +56,31 @@ QPlainTextEdit:focus {
 QLineEdit:read-only,
 QTextEdit:read-only,
 QPlainTextEdit:read-only {
-    color: $secondary;
+    color: $text_secondary;
 }
 
 QLineEdit:disabled,
 QTextEdit:disabled,
 QPlainTextEdit:disabled {
-    background-color: $body-bg;
-    color: $muted;
-    border-color: $border;
+    background-color: $window;
+    color: $text_disabled;
+    border-color: $surface_mid;
 }
 
 /* ── Form controls — spin boxes ─────────────────────────────────────────── */
 QSpinBox,
 QDoubleSpinBox {
-    background-color: $white;
-    border: 1px solid $border;
+    background-color: $base;
+    border: 1px solid $surface_mid;
     border-radius: 6px;
-    padding: 6px 12px;
+    padding: 5px 10px;
     min-height: 32px;
-    color: $body-color;
+    color: $text;
 }
 
 QSpinBox:hover,
 QDoubleSpinBox:hover {
-    border-color: $border-subtle;
+    border-color: $surface_mid;
 }
 
 QSpinBox:focus,
@@ -92,9 +91,9 @@ QDoubleSpinBox:focus {
 
 QSpinBox:disabled,
 QDoubleSpinBox:disabled {
-    background-color: $body-bg;
-    color: $muted;
-    border-color: $border;
+    background-color: $window;
+    color: $text_disabled;
+    border-color: $surface_mid;
 }
 
 QSpinBox::up-button,
@@ -106,6 +105,30 @@ QDoubleSpinBox::down-button {
     background: transparent;
 }
 
+QSpinBox::up-arrow,
+QDoubleSpinBox::up-arrow {
+    image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpolygon points='12,8 6,16 18,16' fill='$text_secondary-url'/%3E%3C/svg%3E");
+    width: 12px;
+    height: 12px;
+}
+
+QSpinBox::up-arrow:disabled,
+QDoubleSpinBox::up-arrow:disabled {
+    image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpolygon points='12,8 6,16 18,16' fill='$text_disabled-url'/%3E%3C/svg%3E");
+}
+
+QSpinBox::down-arrow,
+QDoubleSpinBox::down-arrow {
+    image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpolygon points='12,16 6,8 18,8' fill='$text_secondary-url'/%3E%3C/svg%3E");
+    width: 12px;
+    height: 12px;
+}
+
+QSpinBox::down-arrow:disabled,
+QDoubleSpinBox::down-arrow:disabled {
+    image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpolygon points='12,16 6,8 18,8' fill='$text_disabled-url'/%3E%3C/svg%3E");
+}
+
 /* ── Table-cell spin boxes (transparent, borderless — cell border highlights on focus) ── */
 TableSpinBox,
 TableDoubleSpinBox {
@@ -115,7 +138,18 @@ TableDoubleSpinBox {
     padding: 0 4px;
     margin: 0;
     min-height: 0;
-    color: $body-color;
+    color: $text;
+}
+
+TableSpinBox[frozen="true"],
+TableDoubleSpinBox[frozen="true"] {
+    color: $text_disabled;
+}
+
+TableSpinBox[invalid="true"],
+TableDoubleSpinBox[invalid="true"] {
+    background-color: $cell-warn-bg;
+    color: $warning;
 }
 
 TableSpinBox:hover,
@@ -136,7 +170,7 @@ TableDoubleSpinBox:focus {
 TableSpinBox:disabled,
 TableDoubleSpinBox:disabled {
     background-color: transparent;
-    color: $muted;
+    color: $text_disabled;
     border: none;
 }
 
@@ -158,9 +192,9 @@ TableLineEdit {
     padding: 0 4px;
     margin: 0;
     min-height: 0;
-    color: $body-color;
+    color: $text;
     selection-background-color: $primary;
-    selection-color: #000000;
+    selection-color: $text-on-primary;
 }
 
 TableLineEdit:hover {
@@ -178,23 +212,22 @@ TableLineEdit:focus {
 
 TableLineEdit:disabled {
     background-color: transparent;
-    color: $muted;
+    color: $text_disabled;
     border: none;
 }
-
 /* ── Form controls — combo box ──────────────────────────────────────────── */
 QComboBox {
-    background-color: $white;
-    border: 1px solid $border;
+    background-color: $base;
+    border: 1px solid $surface_mid;
     border-radius: 6px;
-    padding: 6px 36px 6px 12px;
+    padding: 5px 32px 5px 10px;
     min-height: 32px;
-    color: $body-color;
+    color: $text;
     combobox-popup: 0;
 }
 
 QComboBox:hover {
-    border-color: $border-subtle;
+    border-color: $surface_mid;
 }
 
 QComboBox:focus {
@@ -203,9 +236,9 @@ QComboBox:focus {
 }
 
 QComboBox:disabled {
-    background-color: $body-bg;
-    color: $muted;
-    border-color: $border;
+    background-color: $window;
+    color: $text_disabled;
+    border-color: $surface_mid;
 }
 
 QComboBox[validationState="#dc3545"] {
@@ -216,25 +249,31 @@ QComboBox[validationState="orange"] {
     border: 1px solid orange;
 }
 
+/* Dropdown button */
 QComboBox::drop-down {
     subcontrol-origin: padding;
     subcontrol-position: center right;
     width: 32px;
     border: none;
-    border-left: 1px solid $border;
-    border-top-right-radius: 6px;
-    border-bottom-right-radius: 6px;
     background: transparent;
 }
 
-QComboBox::drop-down:hover {
-    background-color: $surface;
+QComboBox::down-arrow {
+    image: url(gui/assets/themes/arrow_down.svg);
+    width: 14px;
+    height: 14px;
+}
+
+QComboBox::down-arrow:disabled {
+    image: url(gui/assets/themes/arrow_down_disabled.svg);
+    width: 14px;
+    height: 14px;
 }
 
 /* ── Dropdown popup list ────────────────────────────────────────────────── */
 QComboBox QAbstractItemView {
-    background-color: $white;
-    border: 1px solid $border;
+    background-color: $base;
+    border: 1px solid $surface;
     border-radius: 6px;
     padding: 6px 0;
     outline: none;
@@ -244,7 +283,7 @@ QComboBox QAbstractItemView {
 
 QComboBox QAbstractItemView::item {
     padding: 10px 16px;
-    color: $body-color;
+    color: $text;
     border: none;
     border-radius: 4px;
     margin: 1px 6px;
@@ -253,12 +292,12 @@ QComboBox QAbstractItemView::item {
 
 QComboBox QAbstractItemView::item:hover {
     background-color: $surface;
-    color: $body-color;
+    color: $text;
 }
 
 QComboBox QAbstractItemView::item:selected {
-    background-color: $surface-active;
-    color: $body-color;
+    background-color: $surface_pressed;
+    color: $text;
 }
 
 
@@ -266,19 +305,19 @@ QComboBox QAbstractItemView::item:selected {
 /* ── Form controls — check box ──────────────────────────────────────────── */
 QCheckBox {
     spacing: 8px;
-    color: $body-color;
+    color: $text;
 }
 
 QCheckBox::indicator {
     width: 16px;
     height: 16px;
-    border: 1px solid $border;
+    border: 1px solid $surface_mid;
     border-radius: 4px;
-    background-color: $white;
+    background-color: $base;
 }
 
 QCheckBox::indicator:hover {
-    border-color: $border-subtle;
+    border-color: $surface_mid;
 }
 
 QCheckBox::indicator:checked {
@@ -292,30 +331,30 @@ QCheckBox::indicator:checked:hover {
 }
 
 QCheckBox::indicator:disabled {
-    background-color: $body-bg;
-    border-color: $border;
+    background-color: $window;
+    border-color: $surface_mid;
 }
 
 QCheckBox:disabled {
-    color: $muted;
+    color: $text_disabled;
 }
 
 /* ── Form controls — radio button ───────────────────────────────────────── */
 QRadioButton {
     spacing: 8px;
-    color: $body-color;
+    color: $text;
 }
 
 QRadioButton::indicator {
     width: 16px;
     height: 16px;
-    border: 1px solid $border;
+    border: 1px solid $surface_mid;
     border-radius: 8px;
-    background-color: $white;
+    background-color: $base;
 }
 
 QRadioButton::indicator:hover {
-    border-color: $border-subtle;
+    border-color: $surface_mid;
 }
 
 QRadioButton::indicator:checked {
@@ -329,67 +368,67 @@ QRadioButton::indicator:checked:hover {
 }
 
 QRadioButton::indicator:disabled {
-    background-color: $body-bg;
-    border-color: $border;
+    background-color: $window;
+    border-color: $surface_mid;
 }
 
 QRadioButton:disabled {
-    color: $muted;
+    color: $text_disabled;
 }
 
 /* ── Buttons ────────────────────────────────────────────────────────────── */
 QPushButton {
-    background-color: $white;
-    border: 1px solid $border;
+    background-color: $base;
+    border: 1px solid $surface_mid;
     border-radius: 6px;
-    padding: 6px 16px;
+    padding: 5px 12px;
     min-height: 32px;
-    color: $body-color;
-    font-weight: 500;
+    color: $text;
+    font-weight: $weight-medium;
 }
 
 QPushButton:hover {
     background-color: $surface;
-    border-color: $border-subtle;
-    color: $body-color;
+    border-color: $surface_mid;
+    color: $text;
 }
 
 QPushButton:pressed {
-    background-color: $surface-active;
-    border-color: $muted;
+    background-color: $surface_pressed;
+    border-color: $text_disabled;
 }
 
 /* Primary action button (QPushButton::default) */
 QPushButton:default {
     background-color: $primary;
-    color: #000000;
+    color: $text-on-primary;
     border: 1px solid $primary;
-    font-weight: 600;
+    font-weight: $weight-semibold;
 }
 
 QPushButton:default:hover {
     background-color: $primary-hover;
     border-color: $primary-hover;
-    color: #000000;
+    color: $text-on-primary;
 }
 
 QPushButton:default:pressed {
     background-color: $primary-active;
     border-color: $primary-active;
-    color: #000000;
+    color: $text-on-primary;
 }
 
 QPushButton:disabled {
-    background-color: $body-bg;
-    color: $muted;
-    border-color: $border;
+    background-color: $window;
+    color: $text_disabled;
+    border-color: $surface_mid;
 }
 
 /* ── Tab bar ────────────────────────────────────────────────────────────── */
 QTabWidget::pane {
-    background-color: $white;
+    background-color: $base;
     border: none;
-    border-top: 1px solid $border;
+    border-top: 1px solid $surface_mid;
 }
 
 QTabBar {
@@ -400,27 +439,28 @@ QTabBar::tab {
     background: transparent;
     border: none;
     border-bottom: 2px solid transparent;
-    padding: 10px 18px;
+    padding: 8px 14px;
     margin-right: 4px;
-    color: $secondary;
-    font-weight: 500;
+    color: $text;
+    font-weight: $weight-medium;
+    font-size: 13px;
 }
 
 QTabBar::tab:selected {
-    border-bottom: 2px solid $primary;
-    color: $body-color;
-    font-weight: 600;
+    border-bottom: 3px solid $primary;
+    color: $primary;
+    font-weight: $weight-semibold;
 }
 
 QTabBar::tab:hover:!selected {
-    color: $body-color;
+    color: $text;
     background-color: $surface;
     border-radius: 6px 6px 0 0;
 }
 
 /* ── Tree / sidebar ─────────────────────────────────────────────────────── */
 QTreeWidget {
-    background-color: $body-bg;
+    background-color: $window;
     border: none;
 }
 
@@ -431,32 +471,32 @@ QTreeView::branch {
 
 /* ── Table view ─────────────────────────────────────────────────────────── */
 QTableView {
-    background-color: $white;
-    alternate-background-color: $body-bg;
-    gridline-color: $border;
-    border: 1px solid $border;
+    background-color: $base;
+    alternate-background-color: $window;
+    gridline-color: $surface_mid;
+    border: 1px solid $surface_mid;
     border-radius: 6px;
 }
 
 QTableView::item {
-    padding: 8px 12px;
+    padding: 6px 10px;
     border: none;
-    color: $body-color;
+    color: $text;
 }
 
 QTableView::item:hover {
     background-color: $surface;
-    color: $body-color;
+    color: $text;
 }
 
 QTableView::item:selected {
-    background-color: $surface-active;
-    color: $body-color;
+    background-color: $surface_pressed;
+    color: $text;
 }
 
 QTableView::item:selected:active {
-    background-color: $surface-active;
-    color: $body-color;
+    background-color: $surface_pressed;
+    color: $text;
 }
 
 /* All widgets placed inside any table cell are transparent by default */
@@ -465,19 +505,20 @@ QTableView QWidget {
 }
 
 QHeaderView {
-    background-color: $body-bg;
+    background-color: $window;
     border: none;
 }
 
 QHeaderView::section {
-    background-color: $body-bg;
-    color: $secondary;
+    background-color: $surface;
+    color: $text;
     border: none;
-    border-bottom: 2px solid $border;
-    border-right: 1px solid $border;
-    padding: 8px 12px;
-    font-weight: 600;
-    font-size: 12px;
+    border-bottom: 2px solid $surface_mid;
+    border-right: 1px solid $surface_mid;
+    padding: 6px 10px;
+    font-weight: $weight-semibold;
+    font-size: 11px;
+    text-transform: uppercase;
 }
 
 QHeaderView::section:last {
@@ -485,10 +526,10 @@ QHeaderView::section:last {
 }
 
 QTableView QTableCornerButton::section {
-    background-color: $body-bg;
+    background-color: $window;
     border: none;
-    border-bottom: 2px solid $border;
-    border-right: 1px solid $border;
+    border-bottom: 2px solid $surface_mid;
+    border-right: 1px solid $surface_mid;
 }
 
 /* ── Scrollbar ──────────────────────────────────────────────────────────── */
@@ -506,7 +547,7 @@ QScrollBar:horizontal {
 }
 
 QScrollBar::handle {
-    background-color: $border-subtle;
+    background-color: $surface_mid;
     border-radius: 4px;
 }
 
@@ -521,7 +562,7 @@ QScrollBar::handle:horizontal {
 }
 
 QScrollBar::handle:hover {
-    background-color: $muted;
+    background-color: $text_disabled;
 }
 
 QScrollBar::add-line,
@@ -538,60 +579,60 @@ QScrollBar::sub-page {
 
 /* ── Menu bar ───────────────────────────────────────────────────────────── */
 QMenuBar {
-    background-color: $white;
-    color: $body-color;
+    background-color: $base;
+    color: $text;
     spacing: 2px;
 }
 
 QMenuBar::item {
-    padding: 6px 12px;
+    padding: 5px 10px;
     border-radius: 4px;
     background: transparent;
 }
 
 QMenuBar::item:selected {
     background-color: $surface;
-    color: $body-color;
+    color: $text;
 }
 
 /* ── Dropdown menu ──────────────────────────────────────────────────────── */
 QMenu {
-    background-color: $white;
-    border: 1px solid $border;
+    background-color: $base;
+    border: 1px solid $surface_mid;
     border-radius: 8px;
     padding: 6px;
 }
 
 QMenu::item {
     border-radius: 4px;
-    padding: 7px 24px;
-    color: $body-color;
+    padding: 6px 24px;
+    color: $text;
     background: transparent;
 }
 
 QMenu::item:selected {
     background-color: $surface;
-    color: $body-color;
+    color: $text;
 }
 
 QMenu::separator {
     height: 1px;
-    background: $border;
+    background: $surface_mid;
     margin: 6px 8px;
 }
 
 /* ── Status bar ─────────────────────────────────────────────────────────── */
 QStatusBar {
-    background-color: $body-bg;
-    border-top: 1px solid $border;
-    color: $secondary;
+    background-color: $window;
+    border-top: 1px solid $surface_mid;
+    color: $text_secondary;
     font-size: 12px;
 }
 
 /* ── Tooltip ────────────────────────────────────────────────────────────── */
 QToolTip {
-    background-color: $body-color;
-    color: $white;
+    background-color: $text;
+    color: $base;
     border: none;
     border-radius: 4px;
     padding: 6px 10px;
@@ -600,15 +641,15 @@ QToolTip {
 
 /* ── Top bar ────────────────────────────────────────────────────────────── */
 #top_bar {
-    background-color: $white;
-    border-bottom: 1px solid $border;
+    background-color: $base;
+    border-bottom: 1px solid $surface_mid;
 }
 #top_bar QPushButton {
-    padding: 3px 10px;
+    padding: 2px 8px;
 }
 
 /* ── Dialog boxes ───────────────────────────────────────────────────────── */
 QDialog{
-    background-color: $body-bg;
-    color: $body-color;
+    background-color: $window;
+    color: $text;
 }

@@ -12,14 +12,14 @@ class ProjectController(QObject):
     fault_occurred = Signal(str)
     dirty_changed = Signal(bool)
     project_loaded = Signal()
-    chunk_updated = Signal(str)  # emits chunk_name after every save
+    chunk_updated = Signal(str)
 
     def __init__(self):
         super().__init__()
         self.engine = None
         self.active_project_id = None
         self.active_display_name = None
-        self._chunk_cache: dict = {}  # chunk_name → data, cleared on close/restore/rollback
+        self._chunk_cache: dict = {}
 
     # --------------------------------------------------------------------------
     # PROJECT LIFECYCLE
@@ -163,3 +163,5 @@ class ProjectController(QObject):
 
     def get_health_report(self) -> dict:
         return self.engine.get_health_report() if self.engine else {}
+
+

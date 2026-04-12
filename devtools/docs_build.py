@@ -23,6 +23,10 @@ import urllib.request
 import sys
 import shutil
 from pathlib import Path
+import json
+from datetime import date
+import re
+from urllib.parse import urlparse
 
 
 # ── PATHS ─────────────────────────────────────────────────────────────────────
@@ -145,8 +149,6 @@ def copy_404_page(site_dir: Path) -> None:
 
 
 def _generate_sitemap(site_dir: Path) -> None:
-    import json, re
-    from datetime import date
 
     def _clean(html):
         return re.sub(r"<[^>]+>", "", html).strip()
@@ -205,8 +207,6 @@ def export_links_txt(site_dir: Path) -> None:
 
 
 def check_links(site_dir: Path, fix: bool = False):
-    import re
-    from urllib.parse import urlparse
 
     def extract_links(html: str):
         return re.findall(r'href=["\'](.*?)["\']', html, re.IGNORECASE)
@@ -286,3 +286,5 @@ if __name__ == "__main__":
             sys.exit(1)
     else:
         print("✅ All links are valid!")
+
+

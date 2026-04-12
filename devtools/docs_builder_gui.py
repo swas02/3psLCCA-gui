@@ -27,6 +27,7 @@ from PySide6.QtWidgets import (
     QWidget,
     QCheckBox,
 )
+import webbrowser
 
 # ── Paths ───────────────────────────────────────────────────────────
 
@@ -229,8 +230,10 @@ class DocsBuilderDialog(QDialog):
     def open(self):
         p = Path(self.site_in.text()) / "index.html"
         if p.exists():
-            import webbrowser
+            
 
             webbrowser.open(p.as_uri())
         else:
             QMessageBox.warning(self, "Error", "index.html not found")
+
+

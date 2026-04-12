@@ -22,7 +22,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont, QColor
-from gui.theme import PLACEHOLDER
+from gui.themes import get_token
 
 
 class BlobManagerDialog(QDialog):
@@ -105,8 +105,8 @@ class BlobManagerDialog(QDialog):
         self.delete_btn.setFixedHeight(34)
         self.delete_btn.setEnabled(False)
         self.delete_btn.setStyleSheet(
-            "QPushButton:enabled { color: #c0392b; border-color: #c0392b; }"
-            "QPushButton:enabled:hover { background-color: #c0392b; color: white; }"
+            f"QPushButton:enabled {{ color: {get_token('danger')}; border-color: {get_token('danger')}; }}"
+            f"QPushButton:enabled:hover {{ background-color: {get_token('danger')}; color: {get_token('base')}; }}"
         )
         self.delete_btn.clicked.connect(self._delete)
         btn_row.addWidget(self.delete_btn)
@@ -127,7 +127,7 @@ class BlobManagerDialog(QDialog):
         if not blobs:
             self.table.setRowCount(1)
             placeholder = QTableWidgetItem("No blobs stored. Click 'Upload File...' to add one.")
-            placeholder.setForeground(QColor(PLACEHOLDER))
+            placeholder.setForeground(QColor(get_token("text_secondary")))
             self.table.setItem(0, 0, placeholder)
             self.table.setSpan(0, 0, 1, 3)
             return
@@ -224,7 +224,7 @@ class BlobManagerDialog(QDialog):
         result = QMessageBox.warning(
             self,
             "Delete Blob",
-            f"Permanently delete '{blob_name}'?\n\nThis cannot be undone.",
+            f"Delete '{blob_name}'?\nThis cannot be undone.",
             QMessageBox.Ok | QMessageBox.Cancel,
             QMessageBox.Cancel,
         )
@@ -244,3 +244,5 @@ class BlobManagerDialog(QDialog):
         line.setFrameShape(QFrame.HLine)
         line.setFrameShadow(QFrame.Sunken)
         return line
+
+

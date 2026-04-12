@@ -22,6 +22,7 @@ from typing import Any
 
 from PySide6.QtCore import Qt, QRegularExpression
 from PySide6.QtGui import QPixmap, QRegularExpressionValidator
+from gui.themes import get_token
 from PySide6.QtWidgets import (
     QComboBox,
     QDoubleSpinBox,
@@ -36,9 +37,10 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from gui.theme import BORDER
+from gui.themes import get_token
 from .form_definitions import FieldDef, Section
 from .image_utils import compress_image, resolve_img_settings
+from ..validation_helpers import confirm_clear_all
 
 
 # ---------------------------------------------------------------------------
@@ -50,12 +52,12 @@ def _make_section_header(title: str) -> list[QWidget]:
     """Return [header QLabel, divider QWidget] ready to add to a QFormLayout."""
     header = QLabel(title)
     header.setStyleSheet(
-        "font-size: 15px; font-weight: 600; padding-top: 16px; padding-bottom: 4px;"
+        f"font-size: 15px; font-weight: {get_token('weight-semibold')}; padding-top: 16px; padding-bottom: 4px;"
     )
 
     divider = QWidget()
     divider.setFixedHeight(1)
-    divider.setStyleSheet(f"background-color: {BORDER};")
+    divider.setStyleSheet("background-color: palette(mid);")
 
     return [header, divider]
 
@@ -72,9 +74,12 @@ def _make_explanation_label(explanation: str, on_click=None) -> QLabel:
         Pass None to render plain text with no link.
     """
     if on_click:
+        # Use primary color for the icon to ensure visibility
+        icon_col = get_token("primary")
+        weight = get_token("weight-semibold")
         html = (
             explanation
-            + ' <a href="#doc" style="text-decoration:none;font-weight:600;"> ⓘ</a>'
+            + f' <a href="#doc" style="text-decoration:none;font-weight:{weight};color:{icon_col};"> ⓘ</a>'
         )
     else:
         html = explanation
@@ -114,6 +119,7 @@ def _make_upload_img_widget(
     # Hidden QLineEdit stores the base64-encoded image for save/load.
     # Base64 images can be hundreds of KB — raise the default 32767-char cap.
     logo_input = QLineEdit()
+    logo_input.setObjectName(key)   # needed for findChild(QLineEdit, key) lookups
     logo_input.setMaxLength(10_000_000)
     logo_input.setReadOnly(True)
     logo_input.hide()
@@ -121,7 +127,7 @@ def _make_upload_img_widget(
     preview = QLabel("No image selected")
     preview.setFixedSize(120, 120)
     preview.setAlignment(Qt.AlignCenter)
-    preview.setStyleSheet("border: 1px solid #ccc;")
+    preview.setStyleSheet(f"border: 1px solid {get_token('surface_mid')};")
 
     btn_browse = QPushButton("Browse Image")
     btn_browse.setMinimumHeight(30)
@@ -166,6 +172,8 @@ def _make_upload_img_widget(
         _input: QLineEdit = logo_input,
         _preview: QLabel = preview,
     ) -> None:
+        if not confirm_clear_all(host):
+            return
         _input.clear()
         _preview.setPixmap(QPixmap())
         _preview.setText("No image selected")
@@ -272,7 +280,7 @@ def build_form(
 
         # Title
         title_label = QLabel(f"{f.title} *" if f.required else f.title)
-        title_label.setStyleSheet("font-weight: 600;")
+        title_label.setStyleSheet(f"font-weight: {get_token('weight-semibold')};")
         layout.addWidget(title_label)
 
         # Explanation + optional docs link
@@ -351,6 +359,10 @@ def build_form(
                 idx = widget.findText(str(f.default))
                 if idx >= 0:
                     widget.setCurrentIndex(idx)
+            
+            widget.setSizeAdjustPolicy(QComboBox.AdjustToMinimumContentsLengthWithIcon)
+            widget.setMinimumContentsLength(15)
+            
             widget.setMinimumHeight(30)
             setattr(host, f.key, host.field(f.key, widget))
             widget.currentIndexChanged.connect(
@@ -425,3 +437,5 @@ def build_form(
     host.load_data_dict = _load_data_dict_with_previews
 
     return required_keys
+
+

@@ -4,12 +4,13 @@
 DESIGN.md
 dev_notes.md
 startup_perf.md
-
+data/user_db/profile.json
 # ─────────────────────────────────────────────
 # User
 # ─────────────────────────────────────────────
 user_projects/
 debug/
+dev_notes/
 # ─────────────────────────────────────────────
 # 3psLCCA Core (installed from GitHub, not local)
 # ─────────────────────────────────────────────

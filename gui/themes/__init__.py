@@ -5,20 +5,23 @@ Directory layout
 ----------------
 gui/themes/
     light/
-        default.yml     Bootstrap light  (built-in)
         soft_light.yml  Catppuccin Latte (built-in)
         <custom>.yml    drop any .yml here to add your own light theme
         <custom>.py     legacy .py themes still work as a fallback
     dark/
-        default.yml     Default dark     (built-in)
         dracula.yml     Dracula          (built-in)
         <custom>.yml    drop any .yml here to add your own dark theme
         <custom>.py     legacy .py themes still work as a fallback
 
 Each theme YAML must contain:
     name: str                        — human-readable display name
-    palette: map[role, hex]          — QPalette role → hex colour
-    qss_tokens: map[token, hex]      — token → hex map for main.qss substitution
+    palette: map[semantic_key, hex]  — semantic colour → hex
+    state:   map[state_key, float]   — hover/pressed/focus/disabled opacity multipliers (optional)
+
+Semantic palette keys
+---------------------
+    primary, brand, window, base, surface, surface_mid, surface_pressed,
+    text, text_secondary, text_disabled, success, warning, danger, info
 
 If a YAML file is missing, corrupt, or has a schema mismatch the system
 silently falls back to the hardcoded defaults below — the app never crashes.
@@ -37,13 +40,30 @@ import pkgutil
 from pathlib import Path
 
 import yaml
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QObject, Signal
 from PySide6.QtGui import QPalette, QColor
+import sys
+
+
+class _ThemeManager(QObject):
+    """Internal singleton to manage theme change signals."""
+    theme_changed = Signal()
+
+
+_MANAGER = None
+
+
+def theme_manager() -> _ThemeManager:
+    """Return the global ThemeManager instance."""
+    global _MANAGER
+    if _MANAGER is None:
+        _MANAGER = _ThemeManager()
+    return _MANAGER
 
 # ── Fallback defaults (used if no user pref is saved) ────────────────────
 ACTIVE_LIGHT: str = "soft_light"  # built-in: "default" | "soft_light"
-ACTIVE_DARK: str = "dracula"      # built-in: "default" | "dracula"
-APPEARANCE_MODE: str = "auto"     # "auto" | "light" | "dark"
+ACTIVE_DARK: str = "dracula"  # built-in: "default" | "dracula"
+APPEARANCE_MODE: str = "auto"  # "auto" | "light" | "dark"
 # ──────────────────────────────────────────────────────────────────────────
 
 _PKG = "gui.themes"
@@ -58,212 +78,207 @@ _QSS_PATH = os.path.join(
 )
 _prefs_loaded = False
 _current_is_dark: bool = False  # last-known resolved is_dark; set by track_mode()
-_active_tokens: dict[str, str] = {}  # populated by get_light/dark_theme(); read via get_token()
+# populated by get_light/dark_theme(); read via get_token()
+_active_tokens: dict[str, str] = {}
+# populated by get_light/dark_theme(); read via get_state()
+_active_state: dict[str, float] = {}
 
 # ── Hardcoded fallback themes — system NEVER fails even if all YAMLs are gone ──
 #
 # Light fallback: brand green palette (matches gui/theme.py constants)
 _FALLBACK_LIGHT: dict = {
-    "name": "Default Light",
+    "name": "Soft Light",
     "palette": {
-        "accent":           "#90af13",
-        "window":           "#f8f9fa",
-        "alternate_base":   "#ffffff",
-        "base":             "#ffffff",
-        "button":           "#ffffff",
-        "mid":              "#e9ecef",
-        "midlight":         "#ced4da",
-        "light":            "#dee2e6",
-        "highlight":        "#90af13",
-        "highlighted_text": "#000000",
-        "text":             "#212529",
-        "window_text":      "#212529",
-        "button_text":      "#212529",
-        "placeholder_text": "#6c757d",
+        "primary": "#0d6efd",
+        "brand": "#90af13",
+        "window": "#eff1f5",
+        "base": "#ffffff",
+        "surface": "#e6e9ef",
+        "surface_mid": "#ccd0da",
+        "surface_pressed": "#dce0e8",
+        "text": "#4c4f69",
+        "text_secondary": "#6c6f85",
+        "text_disabled": "#9ca0b0",
+        "success": "#22c55e",
+        "warning": "#f97316",
+        "danger": "#ef4444",
+        "info": "#3b82f6",
     },
-    "qss_tokens": {
-        # ── Core (longest prefix first to avoid partial substitution in QSS) ──
-        "$primary-hover":      "#7c9811",
-        "$primary-active":     "#6c830e",
-        "$border-subtle":      "#ced4da",
-        "$surface-active":     "#dee2e6",
-        "$body-color":         "#212529",
-        "$secondary":          "#6c757d",
-        "$primary":            "#90af13",
-        "$body-bg":            "#f8f9fa",
-        "$border":             "#dee2e6",
-        "$surface":            "#e9ecef",
-        "$muted":              "#adb5bd",
-        "$white":              "#fafafa",
-        # ── Semantic status ────────────────────────────────────────────────
-        "$validation-error":   "#dc3545",   # gui/assets/themes/main.qss QComboBox selector
-        "$danger":             "#ef4444",   # gui/theme.py DANGER
-        "$success":            "#22c55e",   # gui/theme.py SUCCESS
-        "$warning":            "#f97316",   # gui/theme.py WARNING_COLOR
-        "$info":               "#3b82f6",   # gui/theme.py INFO
-        "$placeholder":        "#888888",   # gui/theme.py PLACEHOLDER
-        "$card-bg":            "#fafafa",   # gui/theme.py CARD_BG
-        # ── Sidebar chrome ──────────────────────────────────────────────────
-        "$sidebar-hover":      "#ecf0de",   # gui/theme.py SIDEBAR_HOVER
-        "$sidebar-sel":        "#dee7c0",   # gui/theme.py SIDEBAR_SEL
-        # ── Splash screen ───────────────────────────────────────────────────
-        "$splash-progress":    "#2ecc71",   # gui/main.py splash message colour
-        "$splash-bg":          "#1a1a2e",   # gui/main.py _px.fill()
-        # ── Brand icon ──────────────────────────────────────────────────────
-        "$icon-brand":         "#2ecc71",   # gui/project_window.py window icon
-        # ── Log viewer ──────────────────────────────────────────────────────
-        "$log-success":        "#b5cea8",   # gui/components/logs.py green
-        "$log-default":        "#d4d4d4",   # gui/components/logs.py default
-        "$log-warning":        "#dcdcaa",   # gui/components/logs.py yellow
-        "$log-error":          "#f48771",   # gui/components/logs.py red
-        "$log-info":           "#4ec9b0",   # gui/components/logs.py teal
-        # ── Action icons ────────────────────────────────────────────────────
-        "$icon-success":       "#2ecc71",   # include buttons (recycling, carbon, structure)
-        "$icon-danger":        "#e74c3c",   # trash/delete icons everywhere
-        "$icon-muted":         "#aaaaaa",   # disabled/muted icon fallback
-        # ── Table cell validation states ────────────────────────────────────
-        "$cell-warn-row-bg":   "#fff1f0",   # gui/components/carbon_emission/.../transport_emissions.py
-        "$cell-disabled-bg":   "#e9ecef",   # gui/components/carbon_emission/.../material_emissions.py
-        "$cell-invalid-bg":    "#f8d7da",   # material_emissions BG_INVALID, excel_importer ERROR_COLOR
-        "$cell-warn-bg":       "#fff3cd",   # material_emissions BG_SUSPICIOUS, excel_importer WARN_COLOR
-        "$cell-warn-fg":       "#cf1322",   # gui/components/carbon_emission/.../transport_emissions.py
-        # ── Integrity states ────────────────────────────────────────────────
-        "$integrity-mismatch": "#b71c1c",   # gui/components/traffic_data/wpi_selector.py MISMATCH
-        "$integrity-missing":  "#e65100",   # gui/components/traffic_data/wpi_selector.py MISSING
-        "$integrity-ok":       "#2e7d32",   # gui/components/traffic_data/wpi_selector.py OK
-        # ── LCC Plot chart bands ─────────────────────────────────────────────
-        "$chart-initial-tick": "#2c4a75",   # gui/components/outputs/lcc_plot.py Initial Stage tick
-        "$chart-initial-bg":   "#cfd9e8",   # gui/components/outputs/lcc_plot.py Initial Stage band
-        "$chart-use-tick":     "#1f6f66",   # Use Stage tick
-        "$chart-use-bg":       "#cfe8e2",   # Use Stage band
-        "$chart-recon-tick":   "#5a3270",   # Reconstruction Stage tick
-        "$chart-recon-bg":     "#e8d5f0",   # Reconstruction Stage band
-        "$chart-eol-tick":     "#7a3b3b",   # End-of-Life Stage tick
-        "$chart-eol-bg":       "#edd5d5",   # End-of-Life Stage band
-        "$chart-bar-positive": "#8b1a1a",   # positive cost bars
-        "$chart-bar-negative": "#2e7d32",   # negative / savings bars + table text
-    },
+    "state": {"hover": 0.50, "pressed": 0.12, "focus": 0.18, "disabled": 0.38},
 }
 
 # Dark fallback: matches palette_manager.py + theme.py DARK_QSS_TOKENS
 _FALLBACK_DARK: dict = {
-    "name": "Default Dark",
+    "name": "Dracula",
     "palette": {
-        "accent":           "#6B7D20",
-        "window":           "#282828",
-        "alternate_base":   "#333333",
-        "base":             "#3a3a3a",
-        "button":           "#3a3a3a",
-        "mid":              "#505050",
-        "midlight":         "#484848",
-        "light":            "#555555",
-        "highlight":        "#6B7D20",
-        "highlighted_text": "#ffffff",
-        "text":             "#e2e2e2",
-        "window_text":      "#e2e2e2",
-        "button_text":      "#e2e2e2",
-        "placeholder_text": "#888888",
+        "primary": "#bd93f9",
+        "brand": "#90af13",
+        "window": "#282a36",
+        "base": "#21222c",
+        "surface": "#383a4a",
+        "surface_mid": "#44475a",
+        "surface_pressed": "#565869",
+        "text": "#f8f8f2",
+        "text_secondary": "#6272a4",
+        "text_disabled": "#4d5068",
+        "success": "#50fa7b",
+        "warning": "#ffb86c",
+        "danger": "#ff5555",
+        "info": "#8be9fd",
     },
-    "qss_tokens": {
-        # ── Core ────────────────────────────────────────────────────────────
-        "$primary-hover":      "#7c9811",
-        "$primary-active":     "#6c830e",
-        "$border-subtle":      "#5a5a5a",
-        "$surface-active":     "#525252",
-        "$body-color":         "#e2e2e2",
-        "$secondary":          "#a0a0a0",
-        "$primary":            "#90af13",
-        "$body-bg":            "#282828",
-        "$border":             "#505050",
-        "$surface":            "#4a4a4a",
-        "$muted":              "#686868",
-        "$white":              "#3a3a3a",
-        # ── Semantic status ────────────────────────────────────────────────
-        "$validation-error":   "#f87171",
-        "$danger":             "#f87171",
-        "$success":            "#4ade80",
-        "$warning":            "#fb923c",
-        "$info":               "#60a5fa",
-        "$placeholder":        "#888888",
-        "$card-bg":            "#3a3a3a",
-        # ── Sidebar chrome ──────────────────────────────────────────────────
-        "$sidebar-hover":      "#2e3424",
-        "$sidebar-sel":        "#3a4a25",
-        # ── Splash screen ───────────────────────────────────────────────────
-        "$splash-progress":    "#2ecc71",
-        "$splash-bg":          "#1a1a2e",
-        # ── Brand icon ──────────────────────────────────────────────────────
-        "$icon-brand":         "#2ecc71",
-        # ── Log viewer ──────────────────────────────────────────────────────
-        "$log-success":        "#b5cea8",
-        "$log-default":        "#d4d4d4",
-        "$log-warning":        "#dcdcaa",
-        "$log-error":          "#f48771",
-        "$log-info":           "#4ec9b0",
-        # ── Action icons ────────────────────────────────────────────────────
-        "$icon-success":       "#2ecc71",
-        "$icon-danger":        "#e74c3c",
-        "$icon-muted":         "#888888",
-        # ── Table cell validation states ────────────────────────────────────
-        "$cell-warn-row-bg":   "#2a1515",
-        "$cell-disabled-bg":   "#3a3a3a",
-        "$cell-invalid-bg":    "#4a1f22",
-        "$cell-warn-bg":       "#3d3000",
-        "$cell-warn-fg":       "#ff4d4f",
-        # ── Integrity states ────────────────────────────────────────────────
-        "$integrity-mismatch": "#f44336",
-        "$integrity-missing":  "#ff9800",
-        "$integrity-ok":       "#4caf50",
-        # ── LCC Plot chart bands ─────────────────────────────────────────────
-        "$chart-initial-tick": "#6699cc",
-        "$chart-initial-bg":   "#1e2a38",
-        "$chart-use-tick":     "#44aa99",
-        "$chart-use-bg":       "#1a2e28",
-        "$chart-recon-tick":   "#9966cc",
-        "$chart-recon-bg":     "#2a1c35",
-        "$chart-eol-tick":     "#cc6666",
-        "$chart-eol-bg":       "#2e1a1a",
-        "$chart-bar-positive": "#c94040",
-        "$chart-bar-negative": "#4caf50",
-    },
+    "state": {"hover": 0.50, "pressed": 0.12, "focus": 0.18, "disabled": 0.38},
 }
 
 # Required keys for schema validation
-_REQUIRED_KEYS = {"palette", "qss_tokens"}
+_REQUIRED_KEYS = {"palette"}
 
-# ── QPalette role name → attribute map ───────────────────────────────────
-_PALETTE_ROLES: dict[str, QPalette.ColorRole] = {
-    "accent":           QPalette.Accent,
-    "window":           QPalette.Window,
-    "alternate_base":   QPalette.AlternateBase,
-    "base":             QPalette.Base,
-    "button":           QPalette.Button,
-    "mid":              QPalette.Mid,
-    "midlight":         QPalette.Midlight,
-    "light":            QPalette.Light,
-    "highlight":        QPalette.Highlight,
-    "highlighted_text": QPalette.HighlightedText,
-    "text":             QPalette.Text,
-    "window_text":      QPalette.WindowText,
-    "button_text":      QPalette.ButtonText,
-    "placeholder_text": QPalette.PlaceholderText,
+# ── Semantic palette key → one or more QPalette roles ────────────────────
+_SEMANTIC_ROLES: dict[str, list[QPalette.ColorRole]] = {
+    "window":          [QPalette.Window],
+    "base":            [QPalette.Base, QPalette.Button],
+    "surface":         [QPalette.AlternateBase],
+    "surface_mid":     [QPalette.Mid, QPalette.Midlight],
+    "surface_pressed": [QPalette.Light],
+    "text":            [QPalette.Text, QPalette.WindowText, QPalette.ButtonText],
+    "text_secondary":  [QPalette.PlaceholderText],
+    "primary":         [QPalette.Highlight, QPalette.Accent],
 }
 
 
-def get_token(name: str, fallback: str = "") -> str:
-    """Return the current active theme token value (e.g. ``get_token('$log-error')``).
+_FALLBACK_STATE = {"hover": 0.06, "pressed": 0.12, "focus": 0.18, "disabled": 0.38}
 
-    Returns *fallback* if the token is not in the active set yet (e.g. before
-    the first theme apply).  Always call this at render time, not at module
-    level, so you get the live value instead of an import-time snapshot.
+
+def _ensure_tokens() -> None:
+    """Bootstrap _active_tokens / _active_state from fallback if not yet loaded."""
+    global _active_tokens, _active_state
+    if not _active_tokens:
+        data = _FALLBACK_DARK if _current_is_dark else _FALLBACK_LIGHT
+        _active_tokens = {str(k): str(v) for k, v in data["palette"].items()}
+        _active_state = dict(_FALLBACK_STATE)
+        _active_tokens.update(_derive_compat_tokens(_active_tokens, _active_state))
+
+
+_missing_token_cache: set[str] = set()
+
+def get_token(name: str, state: str = "") -> str:
+    """Return the hex colour for a semantic palette key.
+
+    Parameters
+    ----------
+    name  : semantic key, e.g. "primary", "text", "danger"
+    state : optional UI state ("hover", "pressed", "focus", "disabled")
+
+    Returns
+    -------
+    str : "#RRGGBB" or "#AARRGGBB" (for state), or "" if missing
     """
-    return _active_tokens.get(name, fallback)
+    _ensure_tokens()
+    # Support both "primary" and "$primary" (legacy/QSS format)
+    name = name.lstrip("$")
+    
+    # Try derived tokens first (alphas etc.)
+    hex_color = _active_tokens.get(name)
+    
+    # Only treat as state if it's a valid state name
+    is_state = bool(state) and state in _active_state
+
+    if hex_color is None:
+        if name not in _missing_token_cache:
+            _missing_token_cache.add(name)
+            print(f"[THEME WARN] Missing token: {name!r}", file=sys.stderr)
+        return ""
+
+    # No valid state → return base color
+    if not is_state:
+        return hex_color
+
+    # Apply state alpha → #AARRGGBB
+    alpha = _active_state[state]
+    c = QColor(hex_color)
+    aa = round(alpha * 255)
+    return f"#{aa:02x}{c.red():02x}{c.green():02x}{c.blue():02x}"
 
 
-def _build_theme(data: dict) -> tuple[QPalette, dict[str, str]]:
-    """Build (QPalette, qss_tokens) from a raw theme dict.
+def get_state(name: str, fallback: float = 0.0) -> float:
+    """Return a state opacity multiplier by name ('hover', 'pressed', 'focus', 'disabled').
+
+    Values are 0–1 floats used to blend a tint over a base surface colour.
+    Example: hover = 0.06 → overlay text colour at 6 % alpha on the surface.
+    """
+    _ensure_tokens()
+    return _active_state.get(name, fallback)
+
+
+def get_active_theme() -> dict[str, str]:
+    _ensure_tokens()
+    return _active_tokens
+
+
+def _derive_compat_tokens(raw: dict[str, str], state: dict[str, float]) -> dict[str, str]:
+    """Compute specialized or state-derived tokens from the semantic palette.
+    These are tokens that aren't 1:1 mappings of the base palette.
+    """
+
+    def _alpha(key: str, state_name: str) -> str:
+        """Return `key` colour at `state_name` opacity as #AARRGGBB."""
+        hex_color = raw.get(key, "")
+        if not hex_color:
+            return ""
+        alpha = state.get(state_name, 0.0)
+        c = QColor(hex_color)
+        aa = round(alpha * 255)
+        return f"#{aa:02x}{c.red():02x}{c.green():02x}{c.blue():02x}"
+
+    # Start with the base palette
+    tokens = dict(raw)
+    
+    # Calculate primary luminance for text-on-primary contrast
+    primary_hex = raw.get("primary", "#000000")
+    pc = QColor(primary_hex)
+    lum = 0.299 * pc.redF() + 0.587 * pc.greenF() + 0.114 * pc.blueF()
+    text_on_primary = "#ffffff" if lum < 0.5 else "#000000"
+
+    # Add derived state tokens (alphas) and specialized UI identifiers
+    tokens.update({
+        "primary-hover":       _alpha("primary", "hover"),
+        "primary-active":      _alpha("primary", "pressed"),
+        "danger-bg":           _alpha("danger",  "hover"),
+        "danger-bg-pressed":   _alpha("danger",  "pressed"),
+        "sidebar-hover":       _alpha("primary", "hover"),
+        "sidebar-sel":         _alpha("primary", "pressed"),
+        "cell-invalid-bg":     _alpha("danger",  "pressed"),
+        "cell-warn-bg":        _alpha("warning", "pressed"),
+        "cell-editable-bg":    _alpha("primary", "hover"),
+        "cell-warn-row-bg":    _alpha("danger",  "hover"),
+        "icon-brand":          raw.get("brand", raw.get("primary", "")),
+        "splash-bg":           raw.get("window", ""),
+        "splash-progress":     raw.get("success", ""),
+        "text-on-primary":     text_on_primary,
+    })
+
+    # Add centralized font weights
+    from gui.theme import QSS_WEIGHTS
+    tokens.update(QSS_WEIGHTS)
+    
+    # Add URL-encoded versions of all color tokens for safe use in SVG data URIs
+    # e.g., $primary-url will be %23RRGGBB
+    url_tokens = {}
+    for k, v in tokens.items():
+        if isinstance(v, str) and v.startswith("#"):
+            url_tokens[f"{k}-url"] = v.replace("#", "%23")
+    tokens.update(url_tokens)
+
+    return tokens
+
+
+def _build_theme(data: dict) -> tuple[QPalette, dict[str, str], dict[str, float]]:
+    """Build (QPalette, semantic_palette, state) from a raw theme dict.
 
     Validates schema — raises ValueError on mismatch so callers can fall back.
+    Returns:
+      palette  — QPalette populated from semantic colour keys
+      raw      — flat str→str palette map (used by get_token() and QSS substitution)
+      state    — float multipliers for hover/pressed/focus/disabled
     """
     if not isinstance(data, dict):
         raise ValueError("Theme data is not a mapping")
@@ -272,22 +287,35 @@ def _build_theme(data: dict) -> tuple[QPalette, dict[str, str]]:
         raise ValueError(f"Theme missing required keys: {missing}")
     if not isinstance(data["palette"], dict):
         raise ValueError("'palette' must be a mapping")
-    if not isinstance(data["qss_tokens"], dict):
-        raise ValueError("'qss_tokens' must be a mapping")
+
+    raw: dict[str, str] = {str(k): str(v) for k, v in data["palette"].items()}
 
     palette = QPalette()
-    for role_name, hex_color in data["palette"].items():
-        role = _PALETTE_ROLES.get(role_name)
-        if role is not None:
-            palette.setColor(role, QColor(str(hex_color)))
+    for sem_key, roles in _SEMANTIC_ROLES.items():
+        hex_color = raw.get(sem_key)
+        if hex_color is None:
+            continue
+        color = QColor(hex_color)
+        for role in roles:
+            palette.setColor(role, color)
 
-    qss_tokens: dict[str, str] = {
-        str(k): str(v) for k, v in data["qss_tokens"].items()
-    }
-    return palette, qss_tokens
+    # State multipliers — fall back to defaults for any missing key
+    raw_state = data.get("state", {})
+    state: dict[str, float] = {**_FALLBACK_STATE, **{str(k): float(v) for k, v in raw_state.items()}}
+
+    # Merge $-prefixed compat tokens so legacy callers keep working
+    # This also populates text-on-primary based on the primary color luminance
+    derived = _derive_compat_tokens(raw, state)
+    raw.update(derived)
+
+    # HighlightedText (text ON a primary/highlight background): pick white or
+    # black based on primary luminance so contrast is always readable.
+    palette.setColor(QPalette.HighlightedText, QColor(derived["text-on-primary"]))
+
+    return palette, raw, state
 
 
-def _fallback(variant: str) -> tuple[QPalette, dict[str, str]]:
+def _fallback(variant: str) -> tuple[QPalette, dict[str, str], dict[str, float]]:
     """Return the hardcoded fallback theme — guaranteed to never fail."""
     data = _FALLBACK_DARK if variant == "dark" else _FALLBACK_LIGHT
     return _build_theme(data)
@@ -315,8 +343,8 @@ def _ensure_prefs() -> None:
         pass
 
 
-def _load_yaml_theme(path: Path) -> tuple[QPalette, dict[str, str]]:
-    """Parse a .yml theme file → (QPalette, QSS_TOKENS).
+def _load_yaml_theme(path: Path) -> tuple[QPalette, dict[str, str], dict[str, float]]:
+    """Parse a .yml theme file → (QPalette, semantic_palette, state).
 
     Raises ValueError/yaml.YAMLError on parse or schema failure.
     """
@@ -325,7 +353,7 @@ def _load_yaml_theme(path: Path) -> tuple[QPalette, dict[str, str]]:
     return _build_theme(data)
 
 
-def _load(variant: str, name: str) -> tuple[QPalette, dict[str, str]]:
+def _load(variant: str, name: str) -> tuple[QPalette, dict[str, str], dict[str, float]]:
     """Load a theme by variant ('light'|'dark') and name.
 
     Resolution order:
@@ -339,37 +367,43 @@ def _load(variant: str, name: str) -> tuple[QPalette, dict[str, str]]:
         try:
             return _load_yaml_theme(yml_path)
         except Exception as e:
-            print(f"[themes] Warning: '{yml_path.name}' failed to load ({e}); using built-in fallback.")
+            print(
+                f"[themes] Warning: '{yml_path.name}' failed to load ({e}); using built-in fallback."
+            )
             return _fallback(variant)
 
-    # 2. Legacy .py module
+    # 2. Legacy .py module — no state dict; use defaults
     try:
         mod = importlib.import_module(f"{_PKG}.{variant}.{name}")
-        return mod.palette, mod.QSS_TOKENS
+        return mod.palette, mod.QSS_TOKENS, dict(_FALLBACK_STATE)
     except Exception:
         pass
 
     # 3. Hardcoded fallback — YAML missing and no .py module found
-    print(f"[themes] Warning: theme '{variant}/{name}' not found; using built-in fallback.")
+    print(
+        f"[themes] Warning: theme '{variant}/{name}' not found; using built-in fallback."
+    )
     return _fallback(variant)
 
 
-def get_light_theme() -> tuple[QPalette, dict[str, str]]:
-    """Return (palette, QSS_TOKENS) for the active light theme."""
-    global _active_tokens
+def get_light_theme() -> tuple[QPalette, dict[str, str], dict[str, float]]:
+    """Return (palette, semantic_palette, state) for the active light theme."""
+    global _active_tokens, _active_state
     _ensure_prefs()
-    result = _load("light", ACTIVE_LIGHT)
-    _active_tokens = result[1]
-    return result
+    palette, tokens, state = _load("light", ACTIVE_LIGHT)
+    _active_tokens = tokens
+    _active_state = state
+    return palette, tokens, state
 
 
-def get_dark_theme() -> tuple[QPalette, dict[str, str]]:
-    """Return (palette, QSS_TOKENS) for the active dark theme."""
-    global _active_tokens
+def get_dark_theme() -> tuple[QPalette, dict[str, str], dict[str, float]]:
+    """Return (palette, semantic_palette, state) for the active dark theme."""
+    global _active_tokens, _active_state
     _ensure_prefs()
-    result = _load("dark", ACTIVE_DARK)
-    _active_tokens = result[1]
-    return result
+    palette, tokens, state = _load("dark", ACTIVE_DARK)
+    _active_tokens = tokens
+    _active_state = state
+    return palette, tokens, state
 
 
 def set_active_theme(variant: str, name: str) -> None:
@@ -418,6 +452,11 @@ def track_mode(is_dark: bool) -> None:
     _current_is_dark = is_dark
 
 
+def is_dark() -> bool:
+    """Return True if the current active theme is a dark variant."""
+    return _current_is_dark
+
+
 def _detect_os_dark(app=None) -> bool:
     """Read the current OS dark/light state directly — never uses cached values.
 
@@ -436,26 +475,61 @@ def _detect_os_dark(app=None) -> bool:
             if scheme == Qt.ColorScheme.Light:
                 print(f"[themes] _detect_os_dark → Light (Qt.ColorScheme.Light)")
                 return False
-            print(f"[themes] _detect_os_dark: Qt.ColorScheme returned Unknown ({scheme}), trying registry …")
+            print(
+                f"[themes] _detect_os_dark: Qt.ColorScheme returned Unknown ({scheme}), trying registry …"
+            )
         except AttributeError:
-            print("[themes] _detect_os_dark: Qt.ColorScheme not available, trying registry …")
+            print(
+                "[themes] _detect_os_dark: Qt.ColorScheme not available, trying registry …"
+            )
 
     # 2. Windows registry
     try:
         import winreg
+
         key = winreg.OpenKey(
             winreg.HKEY_CURRENT_USER,
             r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize",
         )
         val, _ = winreg.QueryValueEx(key, "AppsUseLightTheme")
         winreg.CloseKey(key)
-        result = (val == 0)
-        print(f"[themes] _detect_os_dark → {'Dark' if result else 'Light'} (registry AppsUseLightTheme={val})")
+        result = val == 0
+        print(
+            f"[themes] _detect_os_dark → {'Dark' if result else 'Light'} (registry AppsUseLightTheme={val})"
+        )
         return result
     except Exception as e:
-        print(f"[themes] _detect_os_dark: registry read failed ({e}), defaulting to Light")
+        print(
+            f"[themes] _detect_os_dark: registry read failed ({e}), defaulting to Light"
+        )
 
     return False
+
+
+def _write_arrow_svgs(tokens: dict[str, str]) -> None:
+    """Write theme-colored down-arrow SVG files used by QComboBox::down-arrow."""
+    _assets = os.path.join(os.path.dirname(_QSS_PATH))
+    # Use standard text tokens (text for normal, text_secondary for disabled)
+    normal_color   = tokens.get("text", "#4c4f69")
+    disabled_color = tokens.get("text_secondary", "#9ca0b0")
+
+    def _svg(color: str) -> str:
+        # Convert hex to valid SVG color (ensure # is present)
+        if not color.startswith("#"):
+            color = f"#{color}"
+        return (
+            f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">'
+            f'<path fill="{color}" d="M7 10l5 5 5-5z"/>'
+            f'</svg>'
+        )
+
+    try:
+        with open(os.path.join(_assets, "arrow_down.svg"), "w", encoding="utf-8") as f:
+            f.write(_svg(normal_color))
+        with open(os.path.join(_assets, "arrow_down_disabled.svg"), "w", encoding="utf-8") as f:
+            f.write(_svg(disabled_color))
+    except Exception as e:
+        print(f"[themes] Could not write arrow SVGs: {e}")
 
 
 def reapply(app=None) -> None:
@@ -475,24 +549,33 @@ def reapply(app=None) -> None:
         os_is_dark = _current_is_dark
 
     is_dark = resolve_is_dark(os_is_dark)
-    print(f"[themes] reapply: APPEARANCE_MODE={APPEARANCE_MODE!r}, os_is_dark={os_is_dark}, resolved is_dark={is_dark}")
+    print(
+        f"[themes] reapply: APPEARANCE_MODE={APPEARANCE_MODE!r}, os_is_dark={os_is_dark}, resolved is_dark={is_dark}"
+    )
     track_mode(is_dark)
-    palette, tokens = get_dark_theme() if is_dark else get_light_theme()
+    palette, tokens, _ = get_dark_theme() if is_dark else get_light_theme()
 
     app.setPalette(palette)
+    _write_arrow_svgs(tokens)
 
     if os.path.exists(_QSS_PATH):
         try:
             with open(_QSS_PATH, encoding="utf-8") as f:
                 qss = f.read()
-            for token, value in tokens.items():
-                qss = qss.replace(token, value)
+            
+            # Sort tokens by length (longest first) to avoid partial replacements
+            # e.g., substituting 'primary' shouldn't break '$primary-hover'.
+            # We also prepend '$' to match the syntax used in main.qss.
+            sorted_tokens = sorted(tokens.items(), key=lambda x: len(x[0]), reverse=True)
+            for token, value in sorted_tokens:
+                qss = qss.replace(f"${token}", value)
+                
             # Clear first — forces Qt to fully re-evaluate all style rules
             # on every existing widget, including window backgrounds.
             app.setStyleSheet("")
             app.setStyleSheet(qss)
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"[themes] Error applying stylesheet: {e}")
 
     # Force every top-level window (and its children) to repaint immediately.
     # Without this, palette(window) backgrounds stay stale until the next
@@ -501,6 +584,9 @@ def reapply(app=None) -> None:
         w.style().unpolish(w)
         w.style().polish(w)
         w.update()
+
+    # Notify all subscribed listeners
+    theme_manager().theme_changed.emit()
 
 
 def list_themes(variant: str) -> list[str]:
@@ -535,3 +621,5 @@ def get_theme_name(variant: str, module_name: str) -> str:
         pass
 
     return module_name
+
+

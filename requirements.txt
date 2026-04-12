@@ -6,4 +6,5 @@ pandas
 numpy
 openpyxl
 PyYAML
+pylatex
 -e ./3psLCCA-core

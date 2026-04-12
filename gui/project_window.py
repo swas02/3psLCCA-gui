@@ -27,7 +27,6 @@ from PySide6.QtGui import QAction, QColor, QIcon, QPainter, QPalette
 
 from gui.components.utils.icons import make_icon, make_icon_btn
 from gui.theme import (
-    PRIMARY,
     FS_SM, FS_BASE, FS_MD,
     FW_NORMAL, FW_MEDIUM, FW_SEMIBOLD,
     SP4,
@@ -35,7 +34,7 @@ from gui.theme import (
 from gui.styles import font as _f
 from PySide6.QtWidgets import QToolTip
 from gui.project_controller import ProjectController
-from gui.themes import get_token
+from gui.themes import get_token, theme_manager
 from gui.components.home_page import HomePage
 from gui.components.save_status_bar import SaveStatusBar
 from gui.components.logs import Logs
@@ -144,15 +143,16 @@ class _SidebarDelegate(QStyledItemDelegate):
             p = p.parent()
 
         # Font by depth — size stays at FS_MD; weight carries the hierarchy
+        # Bump weight if selected
         if depth == 0:
-            painter.setFont(_f(FS_MD, FW_MEDIUM))
+            painter.setFont(_f(FS_MD, FW_SEMIBOLD if is_sel else FW_MEDIUM))
         elif depth == 1:
-            painter.setFont(_f(FS_MD, FW_MEDIUM))
+            painter.setFont(_f(FS_MD, FW_SEMIBOLD if is_sel else FW_MEDIUM))
         else:
-            painter.setFont(_f(FS_BASE, FW_NORMAL))
+            painter.setFont(_f(FS_BASE, FW_MEDIUM if is_sel else FW_NORMAL))
 
         # Text colour — PRIMARY on selected, normal otherwise
-        text_col = QColor(PRIMARY) if is_sel else option.palette.windowText().color()
+        text_col = QColor(get_token("primary")) if is_sel else option.palette.windowText().color()
         painter.setPen(text_col)
 
         extra = 28 if depth >= 2 else 0
@@ -192,7 +192,10 @@ class _SidebarTree(QTreeWidget):
         self.setItemDelegate(_SidebarDelegate(self))
         self.setRootIsDecorated(True)
         self.setIndentation(16)
+        self._refresh_theme()
+        theme_manager().theme_changed.connect(self._refresh_theme)
 
+    def _refresh_theme(self):
         # Sync Base/AlternateBase → Window so the viewport background matches
         p = self.palette()
         p.setColor(QPalette.Base, p.color(QPalette.Window))
@@ -201,6 +204,7 @@ class _SidebarTree(QTreeWidget):
         p.setColor(QPalette.Highlight, p.color(QPalette.Window))
         p.setColor(QPalette.HighlightedText, p.color(QPalette.WindowText))
         self.setPalette(p)
+        self.viewport().update()
 
     def _row_state(self, index):
         """Return (is_selected, is_hovered) for a model index."""
@@ -222,10 +226,10 @@ class _SidebarTree(QTreeWidget):
         painter.setBrush(self.palette().window())
         painter.drawRect(full)
         if is_hovered and not is_sel:
-            tint = QColor(PRIMARY); tint.setAlpha(22)
+            tint = QColor(get_token("primary")); tint.setAlpha(11)
             painter.setBrush(tint); painter.drawRect(full)
         if is_sel:
-            tint = QColor(PRIMARY); tint.setAlpha(55)
+            tint = QColor(get_token("primary")); tint.setAlpha(22)
             painter.setBrush(tint); painter.drawRect(full)
         painter.restore()
 
@@ -236,7 +240,7 @@ class _SidebarTree(QTreeWidget):
         if is_sel:
             painter.save()
             painter.setPen(Qt.NoPen)
-            painter.setBrush(QColor(PRIMARY))
+            painter.setBrush(QColor(get_token("primary")))
             painter.drawRect(full.left(), full.top(), _ACCENT_W, full.height())
             painter.restore()
 
@@ -271,20 +275,26 @@ class _HoverHandle(QSplitterHandle):
         super().leaveEvent(event)
 
     def paintEvent(self, event):
-        # Always let Qt draw the base handle first
-        super().paintEvent(event)
-        if not self._hovered:
-            return
         painter = QPainter(self)
-        painter.setPen(Qt.NoPen)
-        painter.setBrush(self.palette().color(QPalette.Accent))
         r = self.rect()
-        if self.orientation() == Qt.Horizontal:
-            x = (r.width() - 6) // 2
-            painter.drawRect(x, 0, 6, r.height())
+        # Clear background to match window
+        painter.fillRect(r, self.palette().window())
+
+        painter.setPen(Qt.NoPen)
+        if self._hovered:
+            # Theme-consistent highlight: 2px primary @ 'focus' alpha (18%)
+            painter.setBrush(QColor(get_token("primary", "focus")))
+            if self.orientation() == Qt.Horizontal:
+                painter.drawRect((r.width() - 2) // 2, 0, 2, r.height())
+            else:
+                painter.drawRect(0, (r.height() - 2) // 2, r.width(), 2)
         else:
-            y = (r.height() - 3) // 2
-            painter.drawRect(0, y, r.width(), 3)
+            # Very dim idle line: 1px divider @ 'hover' alpha (6%)
+            painter.setBrush(QColor(get_token("primary", "hover")))
+            if self.orientation() == Qt.Horizontal:
+                painter.drawRect(r.width() // 2, 0, 1, r.height())
+            else:
+                painter.drawRect(0, r.height() // 2, r.width(), 1)
         painter.end()
 
 
@@ -311,7 +321,9 @@ class ProjectWindow(QMainWindow):
         self.project_id = None
 
         self.setWindowTitle("LCCA - Home")
-        self.setWindowIcon(make_icon("bridge", color=get_token("$icon-brand", "#2ecc71"), size=64))
+        _icon_path = os.path.join("gui", "assets", "logo", "logo-3psLCCA.ico")
+        if os.path.exists(_icon_path):
+            self.setWindowIcon(QIcon(_icon_path))
         self.resize(1100, 750)
 
         self.main_stack = QStackedWidget()
@@ -425,7 +437,7 @@ class ProjectWindow(QMainWindow):
         action_feedback.triggered.connect(
             lambda: QMessageBox.information(
                 self, "Feedback",
-                "We'd love to hear from you!\nPlease email:\nfeedback@3pslcca.com"
+                "We'd love to hear from you!\nSend feedback to:\nfeedback@3pslcca.com"
             )
         )
         self.menuHelp.addAction(action_feedback)
@@ -458,8 +470,8 @@ class ProjectWindow(QMainWindow):
             "QPushButton               { border-radius:15px; padding:0px; border:none; background:transparent; }"
             "QPushButton:hover         { border-radius:15px; padding:0px; background:palette(midlight); }"
             "QPushButton:pressed       { border-radius:15px; padding:0px; background:palette(mid); }"
-            "QPushButton:checked       { border-radius:15px; padding:0px; background:rgba(241,196,15,180); }"
-            "QPushButton:checked:hover { border-radius:15px; padding:0px; background:rgba(241,196,15,220); }"
+            f"QPushButton:checked       {{ border-radius:15px; padding:0px; background:{get_token('primary')}; }}"
+            f"QPushButton:checked:hover {{ border-radius:15px; padding:0px; background:{get_token('primary')}; }}"
         )
         self.btn_lock.setCheckable(True)
         self.btn_lock.installEventFilter(self)
@@ -587,13 +599,24 @@ class ProjectWindow(QMainWindow):
         # Direct page item — show it
         widget = self._get_or_create_widget(header)
         if widget:
+            # If we are navigating AWAY from Construction Work Data or TO it directly, 
+            # ensure Trash view is reset.
+            for w in self.widget_map.values():
+                if isinstance(w, StructureTabView):
+                    w.reset_view()
+            
             self.content_stack.setCurrentWidget(widget)
             return
 
         # Leaf item under a tabbed page — show parent page and select tab
         if parent is not None:
-            w = self._get_or_create_widget(parent.text(0))
+            parent_name = parent.text(0)
+            w = self._get_or_create_widget(parent_name)
             if w and hasattr(w, "select_tab"):
+                # If this is Structure, reset the trash view before showing the tab
+                if isinstance(w, StructureTabView):
+                    w.reset_view()
+                
                 self.content_stack.setCurrentWidget(w)
                 w.select_tab(header)
 
@@ -673,9 +696,7 @@ class ProjectWindow(QMainWindow):
             reply = QMessageBox.warning(
                 self,
                 "Unlock Project",
-                "Unlocking will clear the current calculation results.\n\n"
-                "All inputs will become editable again and the output will be reset.\n\n"
-                "Continue?",
+                "Unlocking will clear the current results and reset all inputs.\n\nContinue?",
                 QMessageBox.Yes | QMessageBox.No,
                 QMessageBox.No,
             )
@@ -746,8 +767,7 @@ class ProjectWindow(QMainWindow):
         QMessageBox.critical(
             self,
             "Engine Error — Data may not be saved",
-            f"A critical storage error occurred:\n\n{error_message}\n\n"
-            "Save a checkpoint immediately if possible, then restart.",
+            f"Storage error:\n\n{error_message}\n\nSave a checkpoint now if possible, then restart.",
         )
 
     def _close_project(self):
@@ -866,3 +886,5 @@ class ProjectWindow(QMainWindow):
         self.manager.remove_window(self)
         self.manager.refresh_all_home_screens()
         event.accept()
+
+

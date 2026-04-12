@@ -65,8 +65,20 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+from PySide6.QtWidgets import QButtonGroup, QRadioButton, QGroupBox
 from gui.themes import get_token
 from .widgets.material_dialog import build_excel_snapshot
+import sys
+from ..utils.unit_resolver import (
+    get_unit_info as _gui,
+    get_known_units as _gku,
+)
+from ..utils.unit_resolver import get_known_units as _gku
+from ..utils.unit_resolver import get_unit_info
+from PySide6.QtWidgets import QPlainTextEdit
+import traceback
+import json
+import datetime as _dt
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -145,14 +157,14 @@ SHEET_TO_CHUNK: dict[str, str] = {
 FALLBACK_CHUNK = "str_misc"
 
 
-ERROR_COLOR = QColor(get_token("$cell-invalid-bg", "#f8d7da"))
-WARN_COLOR = QColor(get_token("$cell-warn-bg", "#fff3cd"))
+ERROR_COLOR = QColor(get_token("danger"))
+WARN_COLOR = QColor(get_token("warning"))
 DUP_FG = QColor(
-    get_token("$muted", "#adb5bd")
+    get_token("text_secondary")
 )  # dimmed text foreground for duplicate-name rows
 # No OK_COLOR — default background is left untouched (inherits theme)
 
-_DARK_TEXT = QColor("#1a1a1a")
+_DARK_TEXT = QColor("#000000")
 _LIGHT_TEXT = QColor("#ffffff")
 
 
@@ -160,7 +172,9 @@ def _text_color(bg: QColor) -> QColor:
     """Return dark or light text so it contrasts against *bg*."""
     # Perceived luminance (0–255)
     lum = 0.299 * bg.red() + 0.587 * bg.green() + 0.114 * bg.blue()
-    return _DARK_TEXT if lum > 128 else _LIGHT_TEXT
+    if lum > 128:
+        return QColor(_DARK_TEXT)
+    return QColor(_LIGHT_TEXT)
 
 
 # ---------------------------------------------------------------------------
@@ -221,7 +235,7 @@ def parse_excel(path: str) -> dict[str, list[dict]]:
     except PermissionError:
         raise ValueError(
             "Could not open the file — it may be open in Excel or another application. "
-            "Please close it and try again."
+            "Close it and try again."
         )
     except Exception as exc:
         raise ValueError(f"Could not open file: {exc}") from exc
@@ -381,10 +395,6 @@ def verify_schema(parsed: dict[str, list[dict]]) -> dict[str, list[dict]]:
             unit = record.get("unit", "").strip()
             if unit:
                 try:
-                    from ..utils.unit_resolver import (
-                        get_unit_info as _gui,
-                        get_known_units as _gku,
-                    )
 
                     _si, _ = _gui(unit)
                     if _si is None:
@@ -395,7 +405,6 @@ def verify_schema(parsed: dict[str, list[dict]]) -> dict[str, list[dict]]:
                 except Exception:
                     # unit_resolver not available (standalone mode) — derive from definitions
                     try:
-                        from ..utils.unit_resolver import get_known_units as _gku
 
                         _known = _gku()
                     except Exception:
@@ -477,8 +486,6 @@ def record_to_material_dict(record: dict) -> dict:
             return float(record.get(key, 0) or 0)
         except (ValueError, TypeError):
             return 0.0
-
-    from ..utils.unit_resolver import get_unit_info  # noqa: PLC0415
 
     raw_unit = record.get("unit", "").strip()
     carbon_ef = _float("carbon_emission")
@@ -1042,7 +1049,7 @@ class ComponentBlock(QGroupBox):
     ):
         super().__init__(comp_name, parent)
         self.setStyleSheet(
-            "QGroupBox { font-weight: bold; font-size: 12px; color: #888; }"
+            f"QGroupBox {{ font-weight: bold; font-size: 12px; color: {get_token('text_disabled')}; }}"
             if is_uncat
             else "QGroupBox { font-weight: bold; font-size: 12px; }"
         )
@@ -1065,7 +1072,7 @@ class ComponentBlock(QGroupBox):
         hl.addStretch()
 
         self._count_lbl = QLabel()
-        self._count_lbl.setStyleSheet("font-size: 11px; color: #777;")
+        self._count_lbl.setStyleSheet(f"font-size: 11px; color: {get_token('text_secondary')};")
         hl.addWidget(self._count_lbl)
 
         bl.addWidget(hdr)
@@ -1078,7 +1085,7 @@ class ComponentBlock(QGroupBox):
         self._empty_lbl = QLabel(
             "All rows hidden by filter (missing/zero Name, Qty, Rate, or Unit)."
         )
-        self._empty_lbl.setStyleSheet("color: #888; font-style: italic; padding: 4px;")
+        self._empty_lbl.setStyleSheet(f"color: {get_token('text_disabled')}; font-style: italic; padding: 4px;")
         self._empty_lbl.setVisible(False)
         bl.addWidget(self._empty_lbl)
 
@@ -1166,7 +1173,7 @@ class SheetPreviewWidget(QWidget):
         # EC2: sheet had headers but no data rows
         if not rows:
             lbl = QLabel("This sheet has no data rows.")
-            lbl.setStyleSheet("color: #888; font-style: italic; padding: 12px;")
+            lbl.setStyleSheet(f"color: {get_token('text_disabled')}; font-style: italic; padding: 12px;")
             outer.addWidget(lbl)
             return
 
@@ -1338,7 +1345,6 @@ class DuplicateComponentDialog(QDialog):
         desc.setWordWrap(True)
         layout.addWidget(desc)
 
-        from PySide6.QtWidgets import QButtonGroup, QRadioButton, QGroupBox
 
         for comp in conflicts:
             box = QGroupBox(comp)
@@ -1661,7 +1667,7 @@ class ImportPreviewWindow(QDialog):
     def _show_import_result(self, imported: int, skipped: int, failures: list[str]):
         if not failures:
             QMessageBox.information(
-                self, "Import Complete", f"{imported} row(s) imported successfully."
+                self, "Import Complete", f"{imported} row(s) imported."
             )
             return
 
@@ -1684,7 +1690,6 @@ class ImportPreviewWindow(QDialog):
         )
         layout.addWidget(summary)
 
-        from PySide6.QtWidgets import QPlainTextEdit
 
         txt = QPlainTextEdit()
         txt.setReadOnly(True)
@@ -1721,8 +1726,6 @@ def _emit_result(
     If *manager* is None (standalone / test mode), falls back to printing.
     """
     if manager is None:
-        import json
-
         print("\n===== IMPORT RESULT =====")
         for chunk_key, components in data.items():
             print(f"\n[chunk: {chunk_key}]")
@@ -1807,7 +1810,6 @@ def _emit_result(
                     # --- Write to engine -------------------------------------
                     if force_overwrite:
                         # Update the existing entry in-place (overwrite)
-                        import datetime as _dt
                         from .material_dialog import build_excel_snapshot
 
                         included_carbon = values_dict.pop(
@@ -1906,7 +1908,6 @@ def _emit_result(
                     imported += 1
 
                 except Exception as exc:
-                    import traceback
 
                     failures.append(
                         f'[{comp_name}] "{mat_name}" failed — {exc}\n'
@@ -1929,7 +1930,6 @@ def _emit_result(
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    import sys
 
     app = QApplication.instance() or QApplication(sys.argv)
     path, _ = QFileDialog.getOpenFileName(
@@ -1940,3 +1940,5 @@ if __name__ == "__main__":
         preview = ImportPreviewWindow(parsed)
         preview.showMaximized()
         preview.exec()
+
+

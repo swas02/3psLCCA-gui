@@ -19,7 +19,7 @@ from PySide6.QtGui import QPixmap
 from ..base_widget import ScrollableForm
 from ..utils.form_builder.form_definitions import FieldDef, Section
 from ..utils.form_builder.form_builder import build_form, _IMG_PREVIEWS_ATTR, freeze_img_uploads
-from ..utils.validation_helpers import clear_field_styles, freeze_form, freeze_widgets, validate_form
+from ..utils.validation_helpers import clear_field_styles, freeze_form, freeze_widgets, validate_form, confirm_clear_all
 from ..utils.countries_data import CURRENCIES, COUNTRIES
 
 
@@ -27,7 +27,9 @@ from ..utils.doc_handler import make_doc_opener
 _DOC_OPENER = make_doc_opener("general")
 
 
-GENERAL_FIELDS = [
+GENERAL_FIELDS = []
+
+PROJECT_INFO_FIELDS = [
     # ── Project Information ──────────────────────────────────────────────
     Section("Project Information"),
     FieldDef(
@@ -55,8 +57,17 @@ GENERAL_FIELDS = [
         "Additional notes or observations. Does not affect any calculations.",
         "textarea",
     ),
-    # ── Evaluating Agency ────────────────────────────────────────────────
+]
+
+AGENCY_FIELDS = [
     Section("Evaluating Agency"),
+    FieldDef(
+        "agency_logo",
+        "Agency Logo",
+        "Appears on the report cover page. PNG or JPG recommended.",
+        "upload_img",
+        options="default",
+    ),
     FieldDef(
         "agency_name",
         "Agency Name",
@@ -73,7 +84,7 @@ GENERAL_FIELDS = [
     FieldDef(
         "agency_address",
         "Agency Address",
-        "(Appears in the report footer).",
+        "Appears in the report footer.",
         "text",
     ),
     FieldDef(
@@ -95,13 +106,9 @@ GENERAL_FIELDS = [
         "",
         "phone",
     ),
-    FieldDef(
-        "agency_logo",
-        "Agency Logo",
-        "Upload agency logo (JPG or PNG). Auto-resized to fit a 3 cm × 3 cm print area. Transparent PNG recommended.",
-        "upload_img",
-        options="default",
-    ),
+]
+
+GENERAL_FIELDS = PROJECT_INFO_FIELDS + AGENCY_FIELDS + [
     # ── Project Settings ─────────────────────────────────────────────────
     Section("Project Settings"),
     FieldDef(
@@ -167,8 +174,63 @@ class GeneralInfo(ScrollableForm):
         btn_layout.addWidget(self.btn_clear_all)
         self.form.addRow(btn_row)
 
+        # ── Insert Load Profile button under Evaluating Agency ───────────
+        self.btn_load_profile = QPushButton("Load Agency Profile")
+        self.btn_load_profile.setMinimumHeight(28)
+        self.btn_load_profile.clicked.connect(self._load_agency_profile_dialog)
+        
+        from PySide6.QtWidgets import QFormLayout
+        for i in range(self.form.rowCount()):
+            item = self.form.itemAt(i, QFormLayout.SpanningRole)
+            if item and item.widget():
+                w = item.widget()
+                if isinstance(w, QLabel) and "Evaluating Agency" in w.text():
+                    btn_container = QWidget()
+                    lay = QHBoxLayout(btn_container)
+                    lay.setContentsMargins(0, 0, 0, 8)
+                    lay.addStretch()
+                    lay.addWidget(self.btn_load_profile)
+                    
+                    self.form.insertRow(i + 2, btn_container)
+                    break
+
+    def _load_agency_profile_dialog(self):
+        import os, json
+        from PySide6.QtWidgets import QInputDialog, QMessageBox
+        
+        dir_path = os.path.join("data", "user_db")
+        file_path = os.path.join(dir_path, "profile.json")
+        
+        profiles = {}
+        if os.path.exists(file_path):
+            try:
+                with open(file_path, "r", encoding="utf-8") as f:
+                    content = f.read()
+                    if content.strip():
+                        profiles = json.loads(content)
+            except Exception:
+                pass
+                
+        if not profiles:
+            QMessageBox.information(self, "No Profiles", "No saved agency profiles found.")
+            return
+            
+        profile_names = list(profiles.keys())
+        item, ok = QInputDialog.getItem(
+            self, "Load Profile", "Select a profile to load:", profile_names, 0, False
+        )
+        if ok and item:
+            data = profiles[item]
+            # Preserve current form data for non-agency fields
+            current_data = self.get_data_dict()
+            current_data.update(data)
+            self.load_data_dict(current_data)
+
     # ── Clear All ────────────────────────────────────────────────────────
     def clear_all(self):
+        if not confirm_clear_all(self):
+            return
+
         for entry in GENERAL_FIELDS:
             if isinstance(entry, Section):
                 continue
@@ -260,3 +322,5 @@ class GeneralInfo(ScrollableForm):
     def _on_field_changed(self):
         super()._on_field_changed()
         self.created.emit()
+
+

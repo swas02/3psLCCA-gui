@@ -1265,7 +1265,7 @@ IETC = SCC \times \sum_{j=1}^{o} \left[ Q_{j} \times Di_{j} \times (EF_{tp})_{j}
     # ==================================================================
     # METHOD: save_latex — Main entry point (matches CreateLatex API)
     # ==================================================================
-    def save_latex(self, config, data, filename="LCCA_Report"):
+    def save_latex(self, config, data, filename="LCCA_Report", output_dir=None):
         """
         Generate the LCCA PDF report.
 
@@ -1273,14 +1273,20 @@ IETC = SCC \times \sum_{j=1}^{o} \left[ Q_{j} \times Di_{j} \times (EF_{tp})_{j}
             config (dict): Boolean flags keyed by KEY_SHOW_* constants
             data (dict): Data dictionaries keyed by KEY_* constants
             filename (str): Output filename without extension
+            output_dir (str): Directory to write the PDF into (defaults to CWD)
         """
-        self.add_introduction(config, data)
-        self.append(NewPage())
+        if config.get("show_introduction", True):
+            self.add_introduction(config, data)
+            self.append(NewPage())
+
         self.add_input_data(config, data)
-        self.append(NewPage())
-        self.add_lcca_results(config, data)
+
+        if config.get("show_lcca_results", True):
+            self.append(NewPage())
+            self.add_lcca_results(config, data)
+
         self.add_full_appendix()
-        self.generate_pdf_output(filename)
+        self.generate_pdf_output(filename, output_dir=output_dir)
 
     # ==================================================================
     # METHOD: add_introduction — Section 1: Introduction to LCCA
@@ -1715,10 +1721,15 @@ IETC = SCC \times \sum_{j=1}^{o} \left[ Q_{j} \times Di_{j} \times (EF_{tp})_{j}
                     self.append(NoEscape(r"}"))
                     self.append(NoEscape(r"\vspace{4pt}"))
 
-    def generate_pdf_output(self, filename="LCCA_Report"):
+    def generate_pdf_output(self, filename="LCCA_Report", output_dir=None):
 
         print("[INFO]: Generating report...")
+        import os as _os
+        _orig_cwd = _os.getcwd()
         try:
+            if output_dir:
+                _os.makedirs(output_dir, exist_ok=True)
+                _os.chdir(output_dir)
             self.generate_pdf(
                 filename,
                 clean_tex=False,
@@ -1731,11 +1742,14 @@ IETC = SCC \times \sum_{j=1}^{o} \left[ Q_{j} \times Di_{j} \times (EF_{tp})_{j}
             self.generate_tex(filename)
             print(f"[INFO]: TeX saved -> {filename}.tex")
             print(f"[INFO]: Run: pdflatex {filename}.tex")
+        finally:
+            _os.chdir(_orig_cwd)
+            print(f"[INFO]: Run: pdflatex {filename}.tex")
 
 
 
 
-def generate_report(output_filename="LCCA_Report", input_json=None, config_override=None):
+def generate_report(output_filename="LCCA_Report", input_json=None, config_override=None, output_dir=None):
     """
     Wrapper that reads a .3psLCCA JSON file via LCCATemplate and calls save_latex().
 
@@ -1743,6 +1757,7 @@ def generate_report(output_filename="LCCA_Report", input_json=None, config_overr
         output_filename (str): Output PDF filename without extension
         input_json (str): Path to the .3psLCCA JSON file
         config_override (dict): Optional {KEY_SHOW_*: bool} to override defaults
+        output_dir (str): Directory to write the PDF into (defaults to CWD)
     """
     if not input_json or not os.path.exists(input_json):
         raise FileNotFoundError(
@@ -1763,7 +1778,7 @@ def generate_report(output_filename="LCCA_Report", input_json=None, config_overr
 
     # Create report and generate
     doc = LCCAReportLatex()
-    doc.save_latex(config, data, output_filename)
+    doc.save_latex(config, data, output_filename, output_dir=output_dir)
 
 
 

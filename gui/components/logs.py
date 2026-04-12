@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import QTimer, Qt
 from PySide6.QtGui import QFont, QColor, QTextCharFormat, QTextCursor
+from .utils.validation_helpers import confirm_clear_all
 
 
 class Logs(QWidget):
@@ -86,17 +87,17 @@ class Logs(QWidget):
                 # Colour-code by severity
                 from gui.themes import get_token
                 if "CRITICAL" in entry or "FAULT" in entry or "FAILED" in entry:
-                    fmt.setForeground(QColor(get_token("$log-error", "#f48771")))
+                    fmt.setForeground(QColor(get_token("danger")))
                 elif "ERROR" in entry or "corrupt" in entry or "loss" in entry:
-                    fmt.setForeground(QColor(get_token("$log-error", "#f48771")))
+                    fmt.setForeground(QColor(get_token("danger")))
                 elif "WARN" in entry or "stale" in entry or "DENIED" in entry:
-                    fmt.setForeground(QColor(get_token("$log-warning", "#dcdcaa")))
+                    fmt.setForeground(QColor(get_token("warning")))
                 elif "Checkpoint" in entry or "Restored" in entry or "saved" in entry.lower():
-                    fmt.setForeground(QColor(get_token("$log-info", "#4ec9b0")))
+                    fmt.setForeground(QColor(get_token("info")))
                 elif "attached" in entry or "SUCCESS" in entry:
-                    fmt.setForeground(QColor(get_token("$log-success", "#b5cea8")))
+                    fmt.setForeground(QColor(get_token("success")))
                 else:
-                    fmt.setForeground(QColor(get_token("$log-default", "#d4d4d4")))
+                    fmt.setForeground(QColor(get_token("text_secondary")))
 
                 cursor.setCharFormat(fmt)
                 cursor.insertText(entry + "\n")
@@ -121,9 +122,13 @@ class Logs(QWidget):
 
     def _clear_display(self):
         """Clears the display (does not clear the engine's log_history)."""
+        if not confirm_clear_all(self):
+            return
         self.log_view.clear()
         self._last_log_count = 0
         if self.controller:
             # Reset to current length so we don't re-display old entries
             logs = self.controller.get_engine_logs()
             self._last_log_count = len(logs)
+
+

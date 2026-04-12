@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt, QObject, QThread, QTimer, Signal
 from PySide6.QtGui import QFont
-from gui.theme import VALIDATION_ERROR
+from gui.themes import get_token
 
 from gui.components.base_widget import ScrollableForm
 from gui.components.utils.form_builder.form_definitions import (
@@ -31,6 +31,36 @@ from gui.components.utils.validation_helpers import (
 )
 from .lcc_plot import LCCBreakdownTable, LCCChartWidget, LCCDetailsTable
 from .Pie import LCCPieWidget
+
+
+from three_ps_lcca_core.inputs.input import (
+    InputMetaData,
+    GeneralParameters,
+    TrafficAndRoadData,
+    VehicleData,
+    VehicleMetaData,
+    AccidentSeverityDistribution,
+    AdditionalInputs,
+    MaintenanceAndStageParameters,
+    UseStageCost,
+    Routine,
+    RoutineInspection,
+    RoutineMaintenance,
+    Major,
+    MajorInspection,
+    MajorRepair,
+    ReplacementCost,
+    EndOfLifeStageCosts,
+    DemolitionDisposal,
+)
+from three_ps_lcca_core.inputs.input_global import (
+    InputGlobalMetaData,
+    DailyRoadUserCost,
+    TotalCarbonEmission,
+)
+from three_ps_lcca_core.core.main import run_full_lcc_analysis
+from three_ps_lcca_core.inputs.wpi import WPIMetaData
+
 
 CHUNK = "outputs_data"
 CHUNK_AP = "analysis_period"
@@ -73,8 +103,8 @@ class _LCCAWorker(QObject):
 
     Signals
     -------
-    finished(results)   – emitted with the raw results dict on success.
-    errored(exc, tb)    – emitted with the exception and formatted traceback on failure.
+    finished(results)   - emitted with the raw results dict on success.
+    errored(exc, tb)    - emitted with the exception and formatted traceback on failure.
     """
 
     finished = Signal(object)  # results dict
@@ -107,7 +137,7 @@ class _LCCAWorker(QObject):
             )
 
             _dbg("Worker: calling run_full_lcc_analysis …")
-            from three_ps_lcca_core.core.main import run_full_lcc_analysis
+            
 
             results = run_full_lcc_analysis(
                 data_object,
@@ -147,13 +177,13 @@ class OutputsPage(ScrollableForm):
         super().__init__(controller=controller, chunk_name=CHUNK)
         self._pages = {}
         self._has_results = False  # True while calculation results are displayed
-        self._calc_thread = None  # QThread – kept alive during calculation
+        self._calc_thread = None  # QThread - kept alive during calculation
         self._calc_worker = None  # _LCCAWorker
         self._timeout_timer = (
-            None  # QTimer – fires if calculation exceeds CALC_TIMEOUT_MS
+            None  # QTimer - fires if calculation exceeds CALC_TIMEOUT_MS
         )
         self._elapsed_timer = (
-            None  # QTimer – ticks every second to update elapsed label
+            None  # QTimer - ticks every second to update elapsed label
         )
         self._elapsed_secs = 0  # seconds since calculation started
         self._build_ui()
@@ -349,11 +379,11 @@ class OutputsPage(ScrollableForm):
         if all_errors:
             banner = QGroupBox()
             banner.setStyleSheet(
-                f"QGroupBox {{ border: 2px solid {VALIDATION_ERROR}; padding: 8px; }}"
+                f"QGroupBox {{ border: 2px solid {get_token("danger")}; padding: 8px; }}"
             )
             layout = QVBoxLayout(banner)
-            title = QLabel("🛑  Calculation Blocked — Please fix the errors below.")
-            title.setStyleSheet("color: #b02a37; font-weight: bold;")
+            title = QLabel("🛑  Calculation Blocked — Fix the errors below to continue.")
+            title.setStyleSheet(f"color: {get_token('danger')}; font-weight: {get_token('weight-bold')};")
             layout.addWidget(title)
             self._status_layout.addWidget(banner)
             self._status_layout.addSpacing(10)
@@ -366,7 +396,7 @@ class OutputsPage(ScrollableForm):
                 self._status_layout.addSpacing(12)
             banner = QGroupBox()
             banner.setStyleSheet(
-                "QGroupBox { border: 2px solid #ffc107; padding: 8px; }"
+                f"QGroupBox {{ border: 2px solid {get_token('warning')}; padding: 8px; }}"
             )
             layout = QVBoxLayout(banner)
             label = (
@@ -375,7 +405,7 @@ class OutputsPage(ScrollableForm):
                 else "⚠️  Warnings — Data looks unusual but you can proceed."
             )
             title = QLabel(label)
-            title.setStyleSheet("color: #856404; font-weight: bold;")
+            title.setStyleSheet(f"color: {get_token('warning')}; font-weight: {get_token('weight-bold')};")
             layout.addWidget(title)
             self._status_layout.addWidget(banner)
             self._status_layout.addSpacing(10)
@@ -421,7 +451,7 @@ class OutputsPage(ScrollableForm):
         ap = self.analysis_period.value()
         if ap <= 0:
             self.analysis_period.setStyleSheet(
-                f"border: 1.5px solid {VALIDATION_ERROR};"
+                f"border: 1.5px solid {get_token("danger")};"
             )
             all_errors["Analysis Period"] = [
                 "Analysis Period is required — please enter a value greater than zero."
@@ -517,13 +547,13 @@ class OutputsPage(ScrollableForm):
         self._clear_status()
         banner = QGroupBox()
         banner.setStyleSheet(
-            f"QGroupBox {{ border: 2px solid {VALIDATION_ERROR}; padding: 8px; }}"
+            f"QGroupBox {{ border: 2px solid {get_token("danger")}; padding: 8px; }}"
         )
         layout = QVBoxLayout(banner)
 
         # ── Short summary ──────────────────────────────────────────────────
         title = QLabel(f"🛑  {type(error).__name__}")
-        title.setStyleSheet("color: #b02a37; font-weight: bold; font-size: 13px;")
+        title.setStyleSheet(f"color: {get_token('danger')}; font-weight: {get_token('weight-bold')}; font-size: 13px;")
         layout.addWidget(title)
 
         # Show only the first line of the error message
@@ -592,6 +622,13 @@ class OutputsPage(ScrollableForm):
         dl_btn.setToolTip("Export all inputs and LCC results as a .3psLCCAFile file")
         dl_btn.clicked.connect(self._download_report)
         banner_row.addWidget(dl_btn)
+
+        pdf_btn = QPushButton("📄  Generate PDF Report")
+        pdf_btn.setFixedHeight(30)
+        pdf_btn.setFixedWidth(180)
+        pdf_btn.setToolTip("Generate a customizable PDF report")
+        pdf_btn.clicked.connect(self._generate_pdf_report)
+        banner_row.addWidget(pdf_btn)
 
         self._status_layout.addWidget(banner)
 
@@ -723,8 +760,6 @@ class OutputsPage(ScrollableForm):
         This function creates a WPI object using the data from saved chunks.
         """
         _dbg("=== _prepare_wpi_object START ===")
-        from three_ps_lcca_core.inputs.wpi import WPIMetaData
-
         wpi_data = data.get("traffic_and_road_data").get("wpi")
         _dbg(f"  wpi_data keys: {list(wpi_data.keys()) if wpi_data else 'MISSING'}")
         wpi_dict = wpi_data.get("data_snapshot").get("ratio")
@@ -744,31 +779,6 @@ class OutputsPage(ScrollableForm):
         This function creates Core Data Object using the data from saved chunks.
         To be passed to 3psLCCAFile-core for calculation.
         """
-        from three_ps_lcca_core.inputs.input import (
-            InputMetaData,
-            GeneralParameters,
-            TrafficAndRoadData,
-            VehicleData,
-            VehicleMetaData,
-            AccidentSeverityDistribution,
-            AdditionalInputs,
-            MaintenanceAndStageParameters,
-            UseStageCost,
-            Routine,
-            RoutineInspection,
-            RoutineMaintenance,
-            Major,
-            MajorInspection,
-            MajorRepair,
-            ReplacementCost,
-            EndOfLifeStageCosts,
-            DemolitionDisposal,
-        )
-        from three_ps_lcca_core.inputs.input_global import (
-            InputGlobalMetaData,
-            DailyRoadUserCost,
-            TotalCarbonEmission,
-        )
 
         # --------------Prepare-General-Parameters-Start-------------------------------------------------
         _dbg("=== _prepare_data_object START ===")
@@ -779,7 +789,7 @@ class OutputsPage(ScrollableForm):
         if _financial_data is None:
             raise ValueError(
                 "Financial Data is missing from the calculation inputs.\n"
-                "Please fill in the Financial Data page and try again."
+                "Fill in the Financial Data page and try again."
             )
 
         analysis_period_years = int(self.analysis_period.value())
@@ -793,14 +803,18 @@ class OutputsPage(ScrollableForm):
 
         # cost_of_carbon_local is in local_currency/kgCO2e (user-selected source).
         # The engine expects social_cost_of_carbon_per_mtco2e in local_currency/mtCO2e,
-        # so multiply by 1000. currency_conversion is 1.0 — cost is already in local currency.
-        _result = data.get("carbon_emission_data").get("social_cost_data").get("result")
-        _dbg(f"  social_cost_data result: {_result!r}")
-        social_cost_of_carbon_per_mtco2e = (
-            float(_result.get("cost_of_carbon_local")) * 1000
-        )
-        currency_conversion = 1.0
-        _dbg(f"  social_cost_of_carbon_per_mtco2e={social_cost_of_carbon_per_mtco2e}")
+        # so multiply by 1000.
+        scc_from_fin = _financial_data.get("social_cost_of_carbon")
+        if scc_from_fin is not None:
+            social_cost_of_carbon_per_mtco2e = float(scc_from_fin) * 1000
+        else:
+            _result = data.get("carbon_emission_data", {}).get("social_cost_data", {}).get("result", {})
+            social_cost_of_carbon_per_mtco2e = (
+                float(_result.get("cost_of_carbon_local", 0.0)) * 1000
+            )
+        
+        currency_conversion = float(_financial_data.get("currency_conversion", 1.0))
+        _dbg(f"  social_cost_of_carbon_per_mtco2e={social_cost_of_carbon_per_mtco2e}  currency_conversion={currency_conversion}")
 
         _bridge_data = data.get("bridge_data")
         _dbg(f"  bridge_data: {_bridge_data!r}")
@@ -1232,6 +1246,19 @@ class OutputsPage(ScrollableForm):
             "results": _sanitize(results),
         }
 
+    def _generate_pdf_report(self):
+        """Open the section selection dialog and generate a PDF report."""
+        from .report_section_dialog import ReportSectionDialog
+
+        dlg = ReportSectionDialog(
+            build_export_dict=self._build_export_dict,
+            all_data=getattr(self, "_last_all_data", {}),
+            lcc_breakdown=getattr(self, "_last_lcc_breakdown", {}),
+            results=getattr(self, "_last_results", {}),
+            parent=self,
+        )
+        dlg.exec()
+
     def _on_proceed(self):
         self.run_calculation()
 
@@ -1290,3 +1317,5 @@ class OutputsPage(ScrollableForm):
             self.show_success()
         else:
             self._show_idle()
+
+
