@@ -73,23 +73,25 @@ def _make_explanation_label(explanation: str, on_click=None) -> QLabel:
         Called when the user clicks the ⓘ icon.  Opens the offline doc page.
         Pass None to render plain text with no link.
     """
-    if on_click:
-        # Use primary color for the icon to ensure visibility
-        icon_col = get_token("primary")
-        weight = get_token("weight-semibold")
-        html = (
-            explanation
-            + f' <a href="#doc" style="text-decoration:none;font-weight:{weight};color:{icon_col};"> ⓘ</a>'
-        )
-    else:
-        html = explanation
+    # # TODO: re-enable ⓘ doc link when doc system is ready
+    # if on_click:
+    #     # Use primary color for the icon to ensure visibility
+    #     icon_col = get_token("primary")
+    #     weight = get_token("weight-semibold")
+    #     html = (
+    #         explanation
+    #         + f' <a href="#doc" style="text-decoration:none;font-weight:{weight};color:{icon_col};"> ⓘ</a>'
+    #     )
+    # else:
+    #     html = explanation
+    html = explanation
 
     label = QLabel(html)
     label.setWordWrap(True)
     label.setTextFormat(Qt.RichText)
     label.setOpenExternalLinks(False)
-    if on_click:
-        label.linkActivated.connect(lambda _href: on_click())
+    # if on_click:
+    #     label.linkActivated.connect(lambda _href: on_click())
     return label
 
 
@@ -283,12 +285,12 @@ def build_form(
         title_label.setStyleSheet(f"font-weight: {get_token('weight-semibold')};")
         layout.addWidget(title_label)
 
-        # Explanation + optional docs link
+        # Explanation (doc slug / ⓘ button disabled for now)
         if f.explanation:
-            on_click = (
-                (lambda s=f.doc_slug: doc_opener(s)) if doc_opener and f.doc_slug else None
-            )
-            layout.addWidget(_make_explanation_label(f.explanation, on_click))
+            # on_click = (
+            #     (lambda s=f.doc_slug: doc_opener(s)) if doc_opener and f.doc_slug else None
+            # )
+            layout.addWidget(_make_explanation_label(f.explanation, on_click=None))
 
         # ── text ──────────────────────────────────────────────────────────
         if f.field_type == "text":

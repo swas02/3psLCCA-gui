@@ -473,12 +473,13 @@ class ProjectWindow(QMainWindow):
         self._lock_tooltip = "Click to lock this project and prevent accidental edits."
         self.btn_lock = make_icon_btn("lock-open", tooltip=self._lock_tooltip, size=30)
         self.btn_lock.setFixedSize(30, 30)
+        _r = "border-radius:15px; min-width:30px; min-height:30px; padding:0px; border:none;"
         self.btn_lock.setStyleSheet(
-            "QPushButton               { border-radius:15px; padding:0px; border:none; background:transparent; }"
-            "QPushButton:hover         { border-radius:15px; padding:0px; background:palette(midlight); }"
-            "QPushButton:pressed       { border-radius:15px; padding:0px; background:palette(mid); }"
-            f"QPushButton:checked       {{ border-radius:15px; padding:0px; background:{get_token('primary')}; }}"
-            f"QPushButton:checked:hover {{ border-radius:15px; padding:0px; background:{get_token('primary')}; }}"
+            f"QPushButton               {{ {_r} background:transparent; }}"
+            f"QPushButton:hover         {{ {_r} background:palette(midlight); }}"
+            f"QPushButton:pressed       {{ {_r} background:palette(mid); }}"
+            f"QPushButton:checked       {{ {_r} background:{get_token('primary')}; }}"
+            f"QPushButton:checked:hover {{ {_r} background:{get_token('primary')}; }}"
         )
         self.btn_lock.setCheckable(True)
         self.btn_lock.installEventFilter(self)
