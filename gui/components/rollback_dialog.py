@@ -27,8 +27,8 @@ from gui.themes import get_token
 class RollbackDialog(QDialog):
     """
     Two-panel dialog:
-      Left  — list of all chunks in the project
-      Right — available rollback copies for the selected chunk
+      Left  - list of all chunks in the project
+      Right - available rollback copies for the selected chunk
     """
 
     def __init__(self, controller, parent=None):
@@ -60,7 +60,7 @@ class RollbackDialog(QDialog):
 
         desc = QLabel(
             "Select a chunk on the left, then choose which saved version to restore on the right.\n"
-            "Only the selected chunk is affected — all other data stays unchanged."
+            "Only the selected chunk is affected - all other data stays unchanged."
         )
         desc.setWordWrap(True)
         desc.setEnabled(False)
@@ -147,7 +147,7 @@ class RollbackDialog(QDialog):
         self._options = options
 
         for opt in options:
-            text = f"{opt['label']}  —  {opt['saved_at']}"
+            text = f"{opt['label']}  -  {opt['saved_at']}"
             item = QListWidgetItem(text)
             item.setData(Qt.UserRole, opt)
             # Grey out "Current" slightly to indicate it's already active
@@ -160,7 +160,7 @@ class RollbackDialog(QDialog):
             self.rollback_btn.setEnabled(False)
             return
         opt = current.data(Qt.UserRole)
-        # Can't "roll back" to current — it's already the current state
+        # Can't "roll back" to current - it's already the current state
         is_current = opt and opt.get("label") == "Current"
         self.rollback_btn.setEnabled(not is_current)
 

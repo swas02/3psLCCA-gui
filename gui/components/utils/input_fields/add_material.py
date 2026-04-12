@@ -44,7 +44,7 @@ FIELD_DEFINITIONS = {
         "label": "Carbon Unit",
         "explanation": (
             "Unit in which the emission factor is expressed, taken from the standard reference. "
-            "Format: kgCO₂e/<unit> — e.g. kgCO₂e/kg, kgCO₂e/m3."
+            "Format: kgCO₂e/<unit> - e.g. kgCO₂e/kg, kgCO₂e/m3."
         ),
         "doc_slug": "carbon-unit",
         "required": False,
@@ -59,7 +59,7 @@ FIELD_DEFINITIONS = {
         "label": "Conversion Factor",
         "explanation": (
             "Converts your site unit (Unit A) to the standard reference unit (Unit B). "
-            "Example: quantity in m³ but emission factor is per kg — enter density, e.g. 2400 for concrete. "
+            "Example: quantity in m³ but emission factor is per kg - enter density, e.g. 2400 for concrete. "
             "Formula: Carbon = Quantity × Conversion Factor × Emission Factor."
         ),
         "doc_slug": "conversion-factor",

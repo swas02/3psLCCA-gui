@@ -1,7 +1,7 @@
 """
 gui/components/utils/unit_resolver.py
 ======================================
-Pure-dict unit analysis — mirrors the logic in material_dialog.py.
+Pure-dict unit analysis - mirrors the logic in material_dialog.py.
 
 No SymPy dependency. All lookups use the same UNIT_TO_SI / UNIT_DIMENSION
 tables from definitions.py that drive the MaterialDialog UI, so the two
@@ -50,15 +50,15 @@ def get_known_units() -> set[str]:
     """Return the full set of recognised unit codes (canonical + aliases + custom).
 
     Derived from UNIT_TO_SI, _UNIT_ALIASES, and the custom units cache so
-    there is a single source of truth — no hardcoded lists elsewhere.
+    there is a single source of truth - no hardcoded lists elsewhere.
     """
     custom = {c["symbol"] for c in _custom_units_cache if c.get("symbol")}
     return set(UNIT_TO_SI.keys()) | set(_UNIT_ALIASES.keys()) | custom
 
 
 # ---------------------------------------------------------------------------
-# Aliases — normalise SOR / registry strings to canonical unit codes.
-# Flattened from units.json at import time — no hardcoded entries here.
+# Aliases - normalise SOR / registry strings to canonical unit codes.
+# Flattened from units.json at import time - no hardcoded entries here.
 # Covers both simple codes (sqm, cum) and SOR strings (Sqm., M.T., Nos.)
 # ---------------------------------------------------------------------------
 
@@ -76,7 +76,7 @@ _UNIT_ALIASES: dict[str, str] = _build_aliases()
 
 
 # ---------------------------------------------------------------------------
-# Core helper — mirrors MaterialDialog._get_unit_info
+# Core helper - mirrors MaterialDialog._get_unit_info
 # ---------------------------------------------------------------------------
 
 def get_unit_info(
@@ -136,7 +136,7 @@ def get_unit_info(
         if code.endswith(suffix):
             return get_unit_info(code[: -len(suffix)], custom_units)
 
-    # ── Case 6: power notation (m^2, kg^1) — no slash or dash ─────────────────
+    # ── Case 6: power notation (m^2, kg^1) - no slash or dash ─────────────────
     if "^" in code and "/" not in code and "-" not in code:
         base, _, exp_str = code.partition("^")
         try:
@@ -147,7 +147,7 @@ def get_unit_info(
         except (ValueError, TypeError):
             pass
 
-    # ── Case 7: ratio — split on first "/" ─────────────────────────────────────
+    # ── Case 7: ratio - split on first "/" ─────────────────────────────────────
     # Numerator and denominator may themselves be products or power expressions.
     # e.g.  kg/mm  →  1.0 / 0.001 = 1000   (dim "Mass/Length")
     #       kg-mm/m-m^2  →  (1.0*0.001) / (1.0*1.0) = 0.001
@@ -162,7 +162,7 @@ def get_unit_info(
             return num_si / den_si, combined_dim
         return None, None
 
-    # ── Case 8: product — dash-separated parts ─────────────────────────────────
+    # ── Case 8: product - dash-separated parts ─────────────────────────────────
     # Each part is resolved independently (may itself be a power expression).
     # e.g.  sqm-mm  →  1.0 * 0.001 = 0.001   (dim "Area*Length")
     #       kg-mm-m →  1.0 * 0.001 * 1.0 = 0.001
@@ -183,7 +183,7 @@ def get_unit_info(
 
 
 # ---------------------------------------------------------------------------
-# CF suggestion — mirrors MaterialDialog._update_cf
+# CF suggestion - mirrors MaterialDialog._update_cf
 # ---------------------------------------------------------------------------
 
 def suggest_cf(
@@ -212,7 +212,7 @@ def suggest_cf(
 
 
 # ---------------------------------------------------------------------------
-# Main analysis — replaces the old SymPy-based analyze_conversion_sympy
+# Main analysis - replaces the old SymPy-based analyze_conversion_sympy
 # ---------------------------------------------------------------------------
 
 def analyze_conversion_sympy(
@@ -262,7 +262,7 @@ def analyze_conversion_sympy(
 
     res["debug_dim_match"] = (mat_dim is not None) and (mat_dim == denom_dim)
 
-    # ── Case 6: unknown unit(s) — string-equality fallback ───────────────────
+    # ── Case 6: unknown unit(s) - string-equality fallback ───────────────────
     if mat_si is None or denom_si is None:
         if mat_unit == carbon_unit_denom:
             res["comment"] = "Unknown unit, but units match by string."
@@ -285,7 +285,7 @@ def analyze_conversion_sympy(
             kg_factor=(mat_si if mat_dim == "Mass" else None),
             is_suspicious=suspicious,
             comment=(
-                "Same unit — CF should be 1."
+                "Same unit - CF should be 1."
                 if suspicious
                 else "Same unit, CF=1 correct."
             ),
@@ -315,7 +315,7 @@ def analyze_conversion_sympy(
         )
         return res
 
-    # ── Case 4: denominator is mass — CF converts material quantity → mass ────
+    # ── Case 4: denominator is mass - CF converts material quantity → mass ────
     if denom_dim == "Mass":
         # 1 mat_unit = cf denom_units; 1 denom_unit = denom_si kg
         kg_factor = cf * denom_si
@@ -344,7 +344,7 @@ def analyze_conversion_sympy(
 
 
 # ---------------------------------------------------------------------------
-# Simple CF validation (validate_cf_simple) — improved to use registry
+# Simple CF validation (validate_cf_simple) - improved to use registry
 # ---------------------------------------------------------------------------
 
 def validate_cf_simple(mat_unit: str, carbon_unit_denom: str, cf: float) -> dict:
@@ -373,7 +373,7 @@ def validate_cf_simple(mat_unit: str, carbon_unit_denom: str, cf: float) -> dict
         sus = abs(cf - expected) / max(abs(expected), 1e-12) > 0.01
         return {"sus": sus, "suggest": f"{expected:g}" if sus else None}
 
-    # Different or unknown dimensions — CF=1 is suspicious
+    # Different or unknown dimensions - CF=1 is suspicious
     sus = abs(cf - 1.0) < 1e-6
     return {"sus": sus, "suggest": "!1" if sus else None}
 

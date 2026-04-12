@@ -1,5 +1,5 @@
 # ═══════════════════════════════════════════════════════════════════════════════
-# gui/themes/sample.yaml — Fully annotated theme template.
+# gui/themes/sample.yaml - Fully annotated theme template.
 #
 # HOW TO USE
 # ──────────
@@ -18,7 +18,7 @@ name: My Custom Theme
 
 palette:
   # Brand identity
-  primary:         "#90af13"   # brand green — main action color
+  primary:         "#90af13"   # brand green - main action color
   brand:           "#90af13"   # used for logos and marks
 
   # Neutrals (Surfaces)

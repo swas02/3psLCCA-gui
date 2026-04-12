@@ -7,13 +7,13 @@ name: Dracula
 #   Red         #ff5555   Yellow        #f1fa8c
 
 palette:
-  primary:         "#bd93f9"   # Dracula Purple — theme accent
+  primary:         "#bd93f9"   # Dracula Purple - theme accent
   brand:           "#90af13"   # app signature green
 
   window:          "#282a36"   # Background
   base:            "#21222c"   # elevated surface (inputs, cards)
   surface:         "#383a4a"   # hover bg (between Background and Current Line)
-  surface_mid:     "#44475a"   # Current Line — border / divider
+  surface_mid:     "#44475a"   # Current Line - border / divider
   surface_pressed: "#565869"   # pressed bg
 
   text:            "#f8f8f2"   # Foreground

@@ -1,7 +1,7 @@
 """
 gui/components/outputs/Pie.py
 
-Interactive nested pie chart — LCC cost distribution by stage (inner ring)
+Interactive nested pie chart - LCC cost distribution by stage (inner ring)
 and pillar (outer ring).  Embeds as a Qt widget via LCCPieWidget(results).
 """
 
@@ -30,13 +30,13 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-# change — import FS_* tokens from theme.py for consistent font sizes
+# change - import FS_* tokens from theme.py for consistent font sizes
 from gui.theme import (
     FONT_FAMILY,
     FS_SM, FS_BASE, FS_LG, FS_XL,
 )
 
-# change — register Ubuntu .ttf files with matplotlib so it finds the font
+# change - register Ubuntu .ttf files with matplotlib so it finds the font
 _UBUNTU_FONT_DIR = os.path.join("gui", "assets", "themes", "Ubuntu_font")
 for _ttf in [
     "Ubuntu-Light.ttf", "Ubuntu-LightItalic.ttf",
@@ -48,7 +48,7 @@ for _ttf in [
     if os.path.exists(_path):
         _fm.fontManager.addfont(_path)
 
-# change — set Ubuntu as default matplotlib font family for all pie chart text
+# change - set Ubuntu as default matplotlib font family for all pie chart text
 matplotlib.rcParams["font.family"] = FONT_FAMILY
 
 
@@ -70,14 +70,14 @@ COLORS = {
         "Environmental": "#89E88B",   # pastel green
         "Social":        "#FF9800",   # amber orange
     },
-    # change — stage_cost_tints: mirrors stages colors (same palette, used for cost-in-time col)
+    # change - stage_cost_tints: mirrors stages colors (same palette, used for cost-in-time col)
     "stage_cost_tints": {
-        "Initial":        "#CCCCCC",   # light grey — same as stages
-        "Use":            "#00C49A",   # teal green — same as stages
-        "Reconstruction": "#F5B041",   # orange — same as stages
-        "End-of-Life":    "#EA9E9E",   # soft pink — same as stages
+        "Initial":        "#CCCCCC",   # light grey - same as stages
+        "Use":            "#00C49A",   # teal green - same as stages
+        "Reconstruction": "#F5B041",   # orange - same as stages
+        "End-of-Life":    "#EA9E9E",   # soft pink - same as stages
     },
-    # change — summary_neutral: colors for Stage col, Stage Total col, and Grand Total row
+    # change - summary_neutral: colors for Stage col, Stage Total col, and Grand Total row
     "summary_neutral": {
         "stage_col":        "#BDC3C7",   # silver grey
         "total_col":        "#F0B27A",   # warm orange
@@ -297,7 +297,7 @@ def _label_center(ax, wedge, value, r):
         f"{value:.2f}",
         ha="center",
         va="center",
-        fontsize=FS_SM,     # change — use FS_SM token instead of hardcoded 8
+        fontsize=FS_SM,     # change - use FS_SM token instead of hardcoded 8
         fontweight="bold",
     )
 
@@ -309,7 +309,7 @@ def _label_arrow(ax, theta1, theta2, text):
         xy=(0.92 * np.cos(ang), 0.92 * np.sin(ang)),
         xytext=(1.28 * np.cos(ang), 1.28 * np.sin(ang)),
         arrowprops=dict(arrowstyle="-", lw=0.8),
-        fontsize=FS_SM,     # change — use FS_SM token instead of hardcoded 8
+        fontsize=FS_SM,     # change - use FS_SM token instead of hardcoded 8
         ha="center",
         va="center",
     )
@@ -327,7 +327,7 @@ def _build_pie_figure(data: dict):
         "show_negative": False,
     }
 
-    # Shared mutable hover state — rebuilt on every _draw()
+    # Shared mutable hover state - rebuilt on every _draw()
     _hover = {"annot": None, "items": []}  # items: [(wedge, title, value_M_INR)]
 
     # Force white background and dark text for the graph
@@ -428,21 +428,21 @@ def _build_pie_figure(data: dict):
             f"Net Total\n{total:.2f} M INR",
             ha="center",
             va="center",
-            fontsize=FS_LG,     # change — use FS_LG token instead of hardcoded 11
+            fontsize=FS_LG,     # change - use FS_LG token instead of hardcoded 11
             fontweight="bold",
             color=fg,
         )
-        ax.set_title("LCC Cost Distribution (M INR)", fontsize=FS_XL, color=fg)  # change — use FS_XL token instead of hardcoded 12
+        ax.set_title("LCC Cost Distribution (M INR)", fontsize=FS_XL, color=fg)  # change - use FS_XL token instead of hardcoded 12
         ax.axis("off")
 
-        # Recreate annotation — ax.clear() destroys it
+        # Recreate annotation - ax.clear() destroys it
         _hover["annot"] = ax.annotate(
             "",
             xy=(0, 0),
             xytext=(18, 18),
             textcoords="offset points",
             bbox=dict(boxstyle="round,pad=0.45", fc=bg, ec="#888888", alpha=0.95, lw=1),
-            fontsize=FS_BASE,   # change — use FS_BASE token instead of hardcoded 9
+            fontsize=FS_BASE,   # change - use FS_BASE token instead of hardcoded 9
             color=fg,
             zorder=10,
         )
@@ -488,7 +488,7 @@ def _build_pie_figure(data: dict):
 
     for a, title in [(ax_view, "View"), (ax_stage, "Stages"), (ax_pillar, "Pillars")]:
         a.set_facecolor(bg)
-        a.set_title(title, fontsize=FS_BASE, color=fg)  # change — use FS_BASE token instead of hardcoded 9
+        a.set_title(title, fontsize=FS_BASE, color=fg)  # change - use FS_BASE token instead of hardcoded 9
 
     radio_view = RadioButtons(ax_view, ["Combined", "Only Internal", "Only External"])
     check_stage = CheckButtons(ax_stage, stages_list, [True] * len(stages_list))
@@ -544,7 +544,7 @@ def _build_pie_figure(data: dict):
     check_pillar.on_clicked(on_pillar)
     btn_neg.on_clicked(toggle_negative)
 
-    # Keep widget references alive — matplotlib won't keep them otherwise
+    # Keep widget references alive - matplotlib won't keep them otherwise
     fig._lcca_controls = (radio_view, check_stage, check_pillar, btn_neg)
 
     _draw()
@@ -567,7 +567,7 @@ class _WheelForwarder(QObject):
 
 
 class LCCPieWidget(QWidget):
-    """Interactive nested pie chart — inner ring = stage, outer ring = pillar."""
+    """Interactive nested pie chart - inner ring = stage, outer ring = pillar."""
 
     def __init__(self, results: dict, parent=None):
         super().__init__(parent)
@@ -577,7 +577,7 @@ class LCCPieWidget(QWidget):
             layout.addWidget(QLabel("No data available for pie chart."))
             return
 
-        # Check for any negative net values — pie chart cannot represent them.
+        # Check for any negative net values - pie chart cannot represent them.
         negative_items = [
             (stage, pillar, d["positive"] - d["negative"])
             for stage, pillars in data.items()

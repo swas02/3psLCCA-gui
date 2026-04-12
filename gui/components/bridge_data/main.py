@@ -200,26 +200,26 @@ BRIDGE_FIELDS = [
 
 
 BRIDGE_WARN_RULES = {
-    "span": (None, 5000.0, None, "Span exceeds 5000 m — please verify"),
+    "span": (None, 5000.0, None, "Span exceeds 5000 m - please verify"),
     "carriageway_width": (
         1.5,
         50.0,
-        "Carriageway width is very small — verify",
-        "Carriageway width exceeds 50 m — please verify",
+        "Carriageway width is very small - verify",
+        "Carriageway width exceeds 50 m - please verify",
     ),
-    "num_lanes": (None, 16, None, "Number of lanes exceeds 16 — please verify"),
-    "wind_speed": (None, 80.0, None, "Wind speed exceeds 80 m/s — please verify"),
+    "num_lanes": (None, 16, None, "Number of lanes exceeds 16 - please verify"),
+    "wind_speed": (None, 80.0, None, "Wind speed exceeds 80 m/s - please verify"),
     "design_life": (
         10,
         200,
-        "Design life below 10 years — verify",
-        "Design life exceeds 200 years — verify",
+        "Design life below 10 years - verify",
+        "Design life exceeds 200 years - verify",
     ),
     "duration_construction_months": (
         None,
         240,
         None,
-        "Construction duration exceeds 240 months — verify",
+        "Construction duration exceeds 240 months - verify",
     ),
     "working_days_per_month": (None, 31, None, "Working days per month exceeds 31"),
 }
@@ -233,7 +233,7 @@ class BridgeData(ScrollableForm):
 
         self.required_keys = build_form(self, BRIDGE_FIELDS, _DOC_OPENER)
 
-        # location_country is set at project creation — lock it
+        # location_country is set at project creation - lock it
 
         self.required_keys = [k for k in self.required_keys if k not in self._LOCKED]
         for key in self._LOCKED:
@@ -316,7 +316,7 @@ class BridgeData(ScrollableForm):
             and wd.value() > dm.value()
         ):
             result["warnings"].append(
-                "Working days per month exceeds days per month — please verify"
+                "Working days per month exceeds days per month - please verify"
             )
             wd.setStyleSheet("border: 1px solid orange;")
         # year_of_construction should be >= current year
@@ -324,7 +324,7 @@ class BridgeData(ScrollableForm):
         if yoc is not None and yoc.value() < date.today().year:
             result["warnings"].append(
                 f"Year of construction ({yoc.value()}) is before "
-                f"{date.today().year} — verify this is intentional"
+                f"{date.today().year} - verify this is intentional"
             )
             yoc.setStyleSheet("border: 1px solid orange;")
         return result

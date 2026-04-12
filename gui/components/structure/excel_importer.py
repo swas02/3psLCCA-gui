@@ -7,7 +7,7 @@ Flow:
   1. User picks an .xlsx file via ExcelImportDialog
   2. Parser reads every sheet (sheet name = structural category)
   3. Schema verifier checks columns and flags row-level errors
-  4. ImportPreviewWindow opens — one tab per sheet
+  4. ImportPreviewWindow opens - one tab per sheet
      - Invalid cells highlighted red
      - "Issues" column summarises problems per row
      - User can edit cells inline before confirming
@@ -108,7 +108,7 @@ CID_FIELDS: set[str] = {
     "Component",
 }
 
-# All keys are lowercase — lookup uses field_part.lower() for case-insensitive matching.
+# All keys are lowercase - lookup uses field_part.lower() for case-insensitive matching.
 # Required columns: name, unit, rate.  All others (including id) are optional.
 CID_TO_INTERNAL: dict[str, str] = {
     "id": "id",  # optional
@@ -162,7 +162,7 @@ WARN_COLOR = QColor(get_token("warning"))
 DUP_FG = QColor(
     get_token("text_secondary")
 )  # dimmed text foreground for duplicate-name rows
-# No OK_COLOR — default background is left untouched (inherits theme)
+# No OK_COLOR - default background is left untouched (inherits theme)
 
 _DARK_TEXT = QColor("#000000")
 _LIGHT_TEXT = QColor("#ffffff")
@@ -178,7 +178,7 @@ def _text_color(bg: QColor) -> QColor:
 
 
 # ---------------------------------------------------------------------------
-# Step 1 — Raw parse
+# Step 1 - Raw parse
 # ---------------------------------------------------------------------------
 
 
@@ -189,7 +189,7 @@ def _normalise_header(h: str) -> str:
 def _parse_cid_header(raw: str) -> str | None:
     """
     Return the internal key if raw header is a valid CID# column, else None.
-    Entire header is lowercased before matching — case-insensitive throughout.
+    Entire header is lowercased before matching - case-insensitive throughout.
     e.g. "CID#Name" → "name",  "cid#rate" → "rate",  "Name" → None
     """
     stripped = str(raw).strip().lower()
@@ -234,7 +234,7 @@ def parse_excel(path: str) -> dict[str, list[dict]]:
         )
     except PermissionError:
         raise ValueError(
-            "Could not open the file — it may be open in Excel or another application. "
+            "Could not open the file - it may be open in Excel or another application. "
             "Close it and try again."
         )
     except Exception as exc:
@@ -246,17 +246,17 @@ def parse_excel(path: str) -> dict[str, list[dict]]:
         if df.empty:
             continue
 
-        # Find header row — first row that contains at least one CID# column
+        # Find header row - first row that contains at least one CID# column
         header_row_idx = _find_header_row(df)
         if header_row_idx is None:
-            # No CID# headers found — not a material sheet, skip silently
+            # No CID# headers found - not a material sheet, skip silently
             continue
 
         headers = [str(c) for c in df.iloc[header_row_idx].tolist()]
         col_map, unrecognised_hdrs, duplicate_hdrs = _build_column_map(headers)
         data_rows = df.iloc[header_row_idx + 1 :].reset_index(drop=True)
 
-        # EC2: header-only sheet — add a placeholder so the tab still appears
+        # EC2: header-only sheet - add a placeholder so the tab still appears
         if data_rows.empty or data_rows.shape[0] == 0:
             result[sheet_name] = []
             continue
@@ -269,7 +269,7 @@ def parse_excel(path: str) -> dict[str, list[dict]]:
             )
         if duplicate_hdrs:
             sheet_warns.append(
-                f"Duplicate CID# column(s) — first occurrence used: {', '.join(duplicate_hdrs)}"
+                f"Duplicate CID# column(s) - first occurrence used: {', '.join(duplicate_hdrs)}"
             )
 
         rows: list[dict] = []
@@ -293,7 +293,7 @@ def parse_excel(path: str) -> dict[str, list[dict]]:
                 # EC4: flag formula strings in numeric fields
                 if val.startswith("=") and field in NUMERIC_FIELDS:
                     record["_warnings"].append(
-                        f"'{field}' contains a formula '{val}' — replace with a plain number"
+                        f"'{field}' contains a formula '{val}' - replace with a plain number"
                     )
                     val = ""
                 record[field] = val
@@ -326,7 +326,7 @@ def _clean_value(raw: Any) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Step 2 — Schema verification
+# Step 2 - Schema verification
 # ---------------------------------------------------------------------------
 
 
@@ -390,7 +390,7 @@ def verify_schema(parsed: dict[str, list[dict]]) -> dict[str, list[dict]]:
                     except ValueError:
                         errs.append(f"'{field}' must be a number (got '{val}')")
 
-            # Unit validation — use get_unit_info which covers canonical,
+            # Unit validation - use get_unit_info which covers canonical,
             # aliases (rmt→rm, t→tonne etc.) and custom units from DB
             unit = record.get("unit", "").strip()
             if unit:
@@ -399,18 +399,18 @@ def verify_schema(parsed: dict[str, list[dict]]) -> dict[str, list[dict]]:
                     _si, _ = _gui(unit)
                     if _si is None:
                         warns.append(
-                            f"Unknown unit '{unit}' — not in standard list or "
+                            f"Unknown unit '{unit}' - not in standard list or "
                             f"custom units. Verify before importing."
                         )
                 except Exception:
-                    # unit_resolver not available (standalone mode) — derive from definitions
+                    # unit_resolver not available (standalone mode) - derive from definitions
                     try:
 
                         _known = _gku()
                     except Exception:
                         _known = set()
                     if _known and unit.lower() not in _known:
-                        warns.append(f"Unknown unit '{unit}' — verify before importing")
+                        warns.append(f"Unknown unit '{unit}' - verify before importing")
 
             # EC8: rate = 0 warning
             rate_str = record.get("rate", "")
@@ -418,9 +418,9 @@ def verify_schema(parsed: dict[str, list[dict]]) -> dict[str, list[dict]]:
                 try:
                     rate_val = float(rate_str)
                     if rate_val < 0:
-                        warns.append("Rate is negative — please verify")
+                        warns.append("Rate is negative - please verify")
                     elif rate_val == 0:
-                        warns.append("Rate is zero — likely a data entry mistake")
+                        warns.append("Rate is zero - likely a data entry mistake")
                 except ValueError:
                     pass
 
@@ -437,7 +437,7 @@ def verify_schema(parsed: dict[str, list[dict]]) -> dict[str, list[dict]]:
                 try:
                     if float(ef_str) == 0:
                         warns.append(
-                            "Carbon emission factor is zero — carbon calc will produce 0"
+                            "Carbon emission factor is zero - carbon calc will produce 0"
                         )
                 except ValueError:
                     pass
@@ -448,7 +448,7 @@ def verify_schema(parsed: dict[str, list[dict]]) -> dict[str, list[dict]]:
                 loc = f"{sheet_name}:row {record.get('_row_num', '?')}"
                 if id_val in seen_ids:
                     warns.append(
-                        f"CID#ID '{id_val}' already seen at {seen_ids[id_val]} — may cause conflicts"
+                        f"CID#ID '{id_val}' already seen at {seen_ids[id_val]} - may cause conflicts"
                     )
                 else:
                     seen_ids[id_val] = loc
@@ -460,7 +460,7 @@ def verify_schema(parsed: dict[str, list[dict]]) -> dict[str, list[dict]]:
                 if key in seen_chunk_comps and seen_chunk_comps[key] != sheet_name:
                     warns.append(
                         f"Component '{comp}' also appears in sheet "
-                        f"'{seen_chunk_comps[key]}' under the same chunk — "
+                        f"'{seen_chunk_comps[key]}' under the same chunk - "
                         f"rows will be merged on import"
                     )
                 else:
@@ -470,14 +470,14 @@ def verify_schema(parsed: dict[str, list[dict]]) -> dict[str, list[dict]]:
 
 
 # ---------------------------------------------------------------------------
-# Step 3 — Convert to final dict format
+# Step 3 - Convert to final dict format
 # ---------------------------------------------------------------------------
 
 
 def record_to_material_dict(record: dict) -> dict:
     """
     Convert a verified record into the exact dict format that
-    StructureManagerWidget.add_material() expects — i.e. the same
+    StructureManagerWidget.add_material() expects - i.e. the same
     structure produced by MaterialDialog.get_values().
     """
 
@@ -495,7 +495,7 @@ def record_to_material_dict(record: dict) -> dict:
     has_carbon = carbon_ef > 0 and bool(carbon_denom)
     has_recycle = scrap > 0 or recovery > 0
 
-    # Resolve unit via get_unit_info — handles canonical, aliases, custom units.
+    # Resolve unit via get_unit_info - handles canonical, aliases, custom units.
     # If unknown, unit_to_si defaults to 1.0 (safe fallback).
     unit_to_si, _ = get_unit_info(raw_unit)
     if unit_to_si is None:
@@ -543,7 +543,7 @@ def record_to_material_dict(record: dict) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Step 4 — Pre-write engine validation
+# Step 4 - Pre-write engine validation
 # ---------------------------------------------------------------------------
 
 
@@ -559,12 +559,12 @@ def _validate_for_engine(
     and StructureManagerWidget.open_dialog(). No more, no less.
 
     Mutates values_dict in-place for auto-exclusions.
-    Returns a list of block reasons — empty = safe to call add_material().
+    Returns a list of block reasons - empty = safe to call add_material().
 
     HARD BLOCKS (row skipped entirely):
-      1. material_name empty                  — validate_and_accept critical
-      2. quantity <= 0                        — validate_and_accept critical
-      3. duplicate material_name in component — open_dialog warning block
+      1. material_name empty                  - validate_and_accept critical
+      2. quantity <= 0                        - validate_and_accept critical
+      3. duplicate material_name in component - open_dialog warning block
 
     AUTO-EXCLUSIONS (row imports, flag silently set to False):
       4. _included_in_carbon_emission → False if EF <= 0 or CF <= 0
@@ -595,7 +595,7 @@ def _validate_for_engine(
     # ── 2b. unit ─────────────────────────────────────────────────────────────
     unit = str(values_dict.get("unit", "")).strip()
     if not unit:
-        reasons.append("unit is empty — every material must have a unit")
+        reasons.append("unit is empty - every material must have a unit")
 
     # ── 2c. rate ─────────────────────────────────────────────────────────────
     rate_raw = values_dict.get("rate", None)
@@ -605,7 +605,7 @@ def _validate_for_engine(
         rate = 0.0
     if rate <= 0:
         reasons.append(
-            f"rate must be > 0 (got {rate_raw!r}) — "
+            f"rate must be > 0 (got {rate_raw!r}) - "
             "zero, empty, or non-numeric rate is not allowed"
         )
 
@@ -621,13 +621,13 @@ def _validate_for_engine(
             }
             if name.lower() in taken:
                 reasons.append(
-                    f'"{name}" already exists in "{comp_name}" — '
+                    f'"{name}" already exists in "{comp_name}" - '
                     f"use a different name or choose Merge"
                 )
         except Exception:
             pass  # can't check → allow through
 
-    # Return early if hard blocks found — no point running auto-exclusions
+    # Return early if hard blocks found - no point running auto-exclusions
     if reasons:
         return reasons
 
@@ -681,7 +681,7 @@ IMPORT_COLUMNS: list[tuple[str, str, bool]] = [
     ("_issues", "Issues", False),
 ]
 
-# Column widths — tuned to content, not header length
+# Column widths - tuned to content, not header length
 #  ID   Name   Qty   Unit  Rate  RateSrc  CEF  CUnit  CF  CESrc  Scrap  Rec%  Grade  Type  Issues
 _COL_WIDTHS = [55, 200, 55, 65, 80, 140, 80, 110, 90, 140, 75, 80, 70, 90, 200]
 
@@ -689,7 +689,7 @@ _COL_WIDTHS = [55, 200, 55, 65, 80, 140, 80, 110, 90, 140, 75, 80, 70, 90, 200]
 _CB_COL = 0
 _DATA_START = 1
 
-# Issues column index — +1 because col 0 is the checkbox
+# Issues column index - +1 because col 0 is the checkbox
 _ISSUES_COL = (
     next(i for i, (f, _, _n) in enumerate(IMPORT_COLUMNS) if f == "_issues")
     + _DATA_START
@@ -697,7 +697,7 @@ _ISSUES_COL = (
 
 
 # ---------------------------------------------------------------------------
-# Delegate — enforces numeric-only input on designated columns
+# Delegate - enforces numeric-only input on designated columns
 # ---------------------------------------------------------------------------
 
 
@@ -716,7 +716,7 @@ class _NumericDelegate(QStyledItemDelegate):
 
 
 # ---------------------------------------------------------------------------
-# ImportComponentTable — one per component group box
+# ImportComponentTable - one per component group box
 # ---------------------------------------------------------------------------
 
 
@@ -724,7 +724,7 @@ class ImportComponentTable(QTableWidget):
     """
     Table for one component's rows inside the preview window.
     - Col 0 is a selection checkbox (disabled for error rows).
-    - Numeric columns use QDoubleValidator via a delegate — alpha input is blocked.
+    - Numeric columns use QDoubleValidator via a delegate - alpha input is blocked.
     - Inline double-click editing with live re-validation.
     """
 
@@ -826,7 +826,7 @@ class ImportComponentTable(QTableWidget):
         # Full detail shown as tooltip on hover
         all_issues = errs + warns
         dup_note = (
-            "Name already exists in this component — unchecked by default. Check to force-import."
+            "Name already exists in this component - unchecked by default. Check to force-import."
             if is_dup
             else ""
         )
@@ -835,7 +835,7 @@ class ImportComponentTable(QTableWidget):
         ) + ([dup_note] if dup_note else [])
         tooltip = "\n".join(tooltip_parts)
 
-        # Col 0 — selection checkbox
+        # Col 0 - selection checkbox
         cb_item = QTableWidgetItem()
         if has_error:
             # Error rows: visible but not checkable
@@ -862,7 +862,7 @@ class ImportComponentTable(QTableWidget):
                 item.setBackground(QBrush(color))
                 item.setForeground(QBrush(_text_color(color)))
             elif is_dup:
-                # Dim the text — no background change, just muted foreground
+                # Dim the text - no background change, just muted foreground
                 item.setForeground(QBrush(DUP_FG))
 
             if tooltip:
@@ -873,7 +873,7 @@ class ImportComponentTable(QTableWidget):
     # -- edit sync ------------------------------------------------------------
 
     def _on_item_changed(self, item: QTableWidgetItem):
-        # Checkbox column — only notify selection change
+        # Checkbox column - only notify selection change
         if item.column() == _CB_COL:
             self.selection_changed.emit()
             return
@@ -892,7 +892,7 @@ class ImportComponentTable(QTableWidget):
 
     def _revalidate_row(self, table_row: int, rows_idx: int):
         record = self._rows[rows_idx]
-        # Preserve routing keys set during initial parse — don't let the
+        # Preserve routing keys set during initial parse - don't let the
         # synthetic sheet name "_" overwrite them with the fallback chunk.
         saved_chunk = record.get("_chunk_key")
         saved_fallback = record.get("_is_fallback_chunk")
@@ -1027,7 +1027,7 @@ class ImportComponentTable(QTableWidget):
 
 
 # ---------------------------------------------------------------------------
-# ComponentBlock — group box with a select-all header and one ImportComponentTable
+# ComponentBlock - group box with a select-all header and one ImportComponentTable
 # ---------------------------------------------------------------------------
 
 
@@ -1149,7 +1149,7 @@ class ComponentBlock(QGroupBox):
 
 
 # ---------------------------------------------------------------------------
-# SheetPreviewWidget — scroll area containing one group box per component
+# SheetPreviewWidget - scroll area containing one group box per component
 # ---------------------------------------------------------------------------
 
 
@@ -1295,7 +1295,7 @@ class SheetPreviewWidget(QWidget):
         return result
 
     def get_valid_records(self) -> list[dict]:
-        """Kept for backward compatibility — returns all non-error records."""
+        """Kept for backward compatibility - returns all non-error records."""
         result = []
         for block in self._component_blocks.values():
             for rec in block._tbl._rows:
@@ -1397,7 +1397,7 @@ class ImportPreviewWindow(QDialog):
 
     One tab per sheet.  Footer shows error / warning summary.
     "Import Valid Rows" skips rows that still have errors.
-    "Import All" imports everything (errors included — user accepted risk).
+    "Import All" imports everything (errors included - user accepted risk).
     """
 
     def __init__(
@@ -1408,7 +1408,7 @@ class ImportPreviewWindow(QDialog):
         parent=None,
     ):
         super().__init__(parent)
-        self.setWindowTitle("Import Preview — Review & Correct")
+        self.setWindowTitle("Import Preview - Review & Correct")
         self.setMinimumSize(900, 500)
         self.setWindowFlags(
             self.windowFlags()
@@ -1472,7 +1472,7 @@ class ImportPreviewWindow(QDialog):
             for _rows in parsed.values():
                 for rec in _rows:
                     if rec.get("_errors"):
-                        continue  # already invalid — skip
+                        continue  # already invalid - skip
                     _chunk_key = rec.get("_chunk_key", FALLBACK_CHUNK)
                     _comp = rec.get("component", "").strip()
                     _name = rec.get("name", "").strip().lower()
@@ -1493,7 +1493,7 @@ class ImportPreviewWindow(QDialog):
                     if _name in _taken:
                         rec["_duplicate_name"] = True
 
-        # ── Tabs — one per sheet ─────────────────────────────────────────────
+        # ── Tabs - one per sheet ─────────────────────────────────────────────
         self.tabs = QTabWidget()
         root.addWidget(self.tabs, stretch=1)
 
@@ -1517,7 +1517,7 @@ class ImportPreviewWindow(QDialog):
         self._import_valid_btn = QPushButton("Import Rows")
         self._import_valid_btn.setMinimumHeight(34)
         self._import_valid_btn.setToolTip(
-            "Import selected rows — error rows are always skipped, warnings are included"
+            "Import selected rows - error rows are always skipped, warnings are included"
         )
         self._import_valid_btn.clicked.connect(self._on_import_valid)
 
@@ -1538,7 +1538,7 @@ class ImportPreviewWindow(QDialog):
         self._on_selection_changed()
 
     def _on_selection_changed(self):
-        """Called whenever any row checkbox changes — update top-level state."""
+        """Called whenever any row checkbox changes - update top-level state."""
         self._refresh_summary()
 
     def _on_select_all_clicked(self):
@@ -1625,7 +1625,7 @@ class ImportPreviewWindow(QDialog):
                 return None
             choices = dlg.get_choices()
 
-        # Apply rename choices — auto-suffix with " (Imported)"
+        # Apply rename choices - auto-suffix with " (Imported)"
         # and increment if that also clashes
         result: dict[str, dict[str, list[dict]]] = {}
         for chunk_key, components in raw.items():
@@ -1711,7 +1711,7 @@ class ImportPreviewWindow(QDialog):
 
 
 # ---------------------------------------------------------------------------
-# Output — replace print() with your controller / engine write call
+# Output - replace print() with your controller / engine write call
 # ---------------------------------------------------------------------------
 
 
@@ -1784,7 +1784,7 @@ def _emit_result(
                     # --- Within-batch duplicate check ------------------------
                     if mat_name.strip().lower() in _batch_seen[batch_key]:
                         failures.append(
-                            f'[{comp_name}] "{mat_name}" skipped — '
+                            f'[{comp_name}] "{mat_name}" skipped - '
                             f"duplicate name in this import batch"
                         )
                         skipped += 1
@@ -1801,7 +1801,7 @@ def _emit_result(
                     )
                     if reasons:
                         failures.append(
-                            f'[{comp_name}] "{mat_name}" skipped — '
+                            f'[{comp_name}] "{mat_name}" skipped - '
                             + "; ".join(reasons)
                         )
                         skipped += 1
@@ -1896,7 +1896,7 @@ def _emit_result(
 
                         _SMW.add_material(proxy, comp_name, dict(values_dict))
                     else:
-                        # Suppress per-row on_refresh — do one batch refresh after
+                        # Suppress per-row on_refresh - do one batch refresh after
                         _orig_refresh = manager.on_refresh
                         manager.on_refresh = lambda: None
                         try:
@@ -1910,7 +1910,7 @@ def _emit_result(
                 except Exception as exc:
 
                     failures.append(
-                        f'[{comp_name}] "{mat_name}" failed — {exc}\n'
+                        f'[{comp_name}] "{mat_name}" failed - {exc}\n'
                         + traceback.format_exc(limit=3)
                     )
                     skipped += 1
@@ -1920,7 +1920,7 @@ def _emit_result(
         manager.save_current_state()
         manager.on_refresh()
     except Exception as exc:
-        failures.append(f"Warning: post-import refresh failed — {exc}")
+        failures.append(f"Warning: post-import refresh failed - {exc}")
 
     return imported, skipped, failures
 

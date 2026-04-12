@@ -1,7 +1,7 @@
 """
 devtools/custom_db_viewer_gui.py
 
-Custom DB Viewer — browse all user-created custom material databases (SOR).
+Custom DB Viewer - browse all user-created custom material databases (SOR).
 Reads directly from data/user.db via sqlite3.
 """
 
@@ -218,7 +218,7 @@ class CustomDbViewerDialog(QDialog):
         self._db_combo.clear()
         conn = self._connect()
         if conn is None:
-            self._set_status("user.db not found — no custom databases yet.")
+            self._set_status("user.db not found - no custom databases yet.")
             self._db_combo.blockSignals(False)
             return
         try:
@@ -276,7 +276,7 @@ class CustomDbViewerDialog(QDialog):
 
         self._count_lbl.setText(f"{len(rows)} item(s)")
         self._set_status(
-            f"Loaded {len(rows)} material(s) from '{db_name}'  —  {_DB_PATH}"
+            f"Loaded {len(rows)} material(s) from '{db_name}'  -  {_DB_PATH}"
         )
 
     # ── Slots ─────────────────────────────────────────────────────────────

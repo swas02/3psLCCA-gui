@@ -2,17 +2,17 @@
 SafeChunkEngine v3.0
 
 Project structure:
-  chunks/x.lcca              — current save
-  chunks_bak/x.lcca.bak      — previous save
-  chunks_bak/x.lcca.ebak     — one before that
-  manifest.json              — chunk registry + SHA256 hashes
-  version.json               — project metadata
-  project_meta.json          — author / editor history (always plain JSON)
-  wal.log                    — crash protection, cleared on clean close
+  chunks/x.lcca              - current save
+  chunks_bak/x.lcca.bak      - previous save
+  chunks_bak/x.lcca.ebak     - one before that
+  manifest.json              - chunk registry + SHA256 hashes
+  version.json               - project metadata
+  project_meta.json          - author / editor history (always plain JSON)
+  wal.log                    - crash protection, cleared on clean close
   checkpoints/
-    manual/                  — user-created checkpoints, last 10
-    auto/                    — auto on clean close if content changed, last 5
-  .lock                      — pid lock
+    manual/                  - user-created checkpoints, last 10
+    auto/                    - auto on clean close if content changed, last 5
+  .lock                      - pid lock
 """
 
 import json
@@ -51,8 +51,8 @@ def _encode(data: dict, readable: bool = False) -> bytes:
     """
     Pure encoding utility.
 
-    readable=True  — plain UTF-8 JSON
-    readable=False — MAGIC + zlib compressed JSON (binary)
+    readable=True  - plain UTF-8 JSON
+    readable=False - MAGIC + zlib compressed JSON (binary)
     """
     if readable:
         return json.dumps(data, indent=4).encode("utf-8")
@@ -140,9 +140,9 @@ class SafeChunkEngine:
 
         # ── Optimize mode ─────────────────────────────────────────────────────
         # When True (default):
-        #   - WAL fsync is skipped (flush only) — reduces per-write disk stall
-        #   - Integrity check is skipped on clean close — faster attach
-        #   - WAL removes are batched per commit — fewer file rewrites
+        #   - WAL fsync is skipped (flush only) - reduces per-write disk stall
+        #   - Integrity check is skipped on clean close - faster attach
+        #   - WAL removes are batched per commit - fewer file rewrites
         # When False: original safe behaviour, every fsync is honoured.
         self.optimize = optimize
 
@@ -182,7 +182,7 @@ class SafeChunkEngine:
         self.attach()
 
     # --------------------------------------------------------------------------
-    # ADMIN FILE I/O  (manifest, version, meta — always plain JSON, never encrypted)
+    # ADMIN FILE I/O  (manifest, version, meta - always plain JSON, never encrypted)
     # --------------------------------------------------------------------------
 
     def _write_admin(self, path: Path, data: dict) -> None:
@@ -292,7 +292,7 @@ class SafeChunkEngine:
         """
         Returns True only if the lock belongs to a process that is STILL running
         AND has the same creation time as when the lock was written.
-        Pure PID existence is not enough — PIDs are recycled after power failures.
+        Pure PID existence is not enough - PIDs are recycled after power failures.
         """
         try:
             text = lock_path.read_text()
@@ -309,7 +309,7 @@ class SafeChunkEngine:
             return abs(actual_created - stored_created) < 2.0
 
         except Exception:
-            # If we can't parse/verify, treat as stale — safer than blocking forever
+            # If we can't parse/verify, treat as stale - safer than blocking forever
             return False
 
     def attach(self):
@@ -333,7 +333,7 @@ class SafeChunkEngine:
             if existing_version.pop("_corrupted", False):
                 self._log(
                     "WARNING: version.json is corrupt and could not be parsed. "
-                    "Treating session as unclean — integrity check will run."
+                    "Treating session as unclean - integrity check will run."
                 )
                 existing_version["clean_close"] = False
 
@@ -382,12 +382,12 @@ class SafeChunkEngine:
             last_clean = existing_version.get("clean_close", True)
             if not last_clean:
                 self._log(
-                    "Last session was unclean — running integrity check after WAL replay."
+                    "Last session was unclean - running integrity check after WAL replay."
                 )
             skip_check = self.optimize and last_clean and not replayed
             if skip_check:
                 self._log(
-                    "Optimize: clean close detected — skipping full integrity check."
+                    "Optimize: clean close detected - skipping full integrity check."
                 )
                 damaged = []
             else:
@@ -395,7 +395,7 @@ class SafeChunkEngine:
             if damaged:
                 self._log(
                     f"Integrity: {len(damaged)} chunk(s) failed hash check "
-                    f"{damaged} — restoring from backup."
+                    f"{damaged} - restoring from backup."
                 )
                 unrecovered = []
                 for name in damaged:
@@ -421,7 +421,7 @@ class SafeChunkEngine:
                     _m["chunks"] = _c
                     self._save_manifest(_m)
                     self._handle_error(
-                        f"Could not restore {len(unrecovered)} chunk(s) — "
+                        f"Could not restore {len(unrecovered)} chunk(s) - "
                         f"no valid backup found: {unrecovered}. "
                         f"Data for these chunks is permanently lost."
                     )
@@ -432,7 +432,7 @@ class SafeChunkEngine:
             # optimize=False: always runs.
             if skip_check:
                 self._log(
-                    "Optimize: clean close detected — skipping blob integrity check."
+                    "Optimize: clean close detected - skipping blob integrity check."
                 )
                 damaged_blobs = []
             else:
@@ -586,7 +586,7 @@ class SafeChunkEngine:
     def _update_manifest_hashes(self):
         """
         Computes SHA256 of every .lcca file and writes to manifest.json.
-        Called on detach() — enables integrity check on next open.
+        Called on detach() - enables integrity check on next open.
         """
         manifest = self._load_manifest()
         chunks = manifest.get("chunks", {})
@@ -622,7 +622,7 @@ class SafeChunkEngine:
     def _verify_chunks(self) -> list[str]:
         """
         Verifies each .lcca file against stored SHA256 in manifest.
-        Returns list of chunk names that failed — empty list means all good.
+        Returns list of chunk names that failed - empty list means all good.
         """
         manifest = self._load_manifest()
         chunks = manifest.get("chunks", {})
@@ -667,7 +667,7 @@ class SafeChunkEngine:
                 self._log(f"{label} invalid/corrupt for {chunk_name}: {e}")
 
         self._handle_error(
-            f"No valid backup found for '{chunk_name}' — "
+            f"No valid backup found for '{chunk_name}' - "
             f".bak and .ebak are both missing or corrupt. "
             f"This chunk's data is permanently lost."
         )
@@ -680,9 +680,9 @@ class SafeChunkEngine:
     def _wal_append(self, chunk_name: str, data: dict):
         """Synchronously appends a WAL entry before any disk write.
 
-        optimize=True  — flush only (no fsync). Faster; tiny crash window
+        optimize=True  - flush only (no fsync). Faster; tiny crash window
                          between flush and the OS writing through to disk.
-        optimize=False — full fsync, original safe behaviour.
+        optimize=False - full fsync, original safe behaviour.
         """
         try:
             entry = json.dumps(
@@ -706,9 +706,9 @@ class SafeChunkEngine:
     def _wal_remove_batch(self, chunk_names: list):
         """Removes committed entries for multiple chunks in a single WAL rewrite.
 
-        optimize=True  — called once after all chunks in a commit are written,
+        optimize=True  - called once after all chunks in a commit are written,
                          avoiding O(n) rewrites per chunk.
-        optimize=False — behaviour is identical; batching is always safe.
+        optimize=False - behaviour is identical; batching is always safe.
         """
         if not self.wal_path.exists():
             return
@@ -751,7 +751,7 @@ class SafeChunkEngine:
                     raw = rec["e"]
                     actual_crc = zlib.crc32(raw.encode()) & 0xFFFFFFFF
                     if actual_crc != rec["crc"]:
-                        self._log("WAL: CRC mismatch — skipping corrupt entry.")
+                        self._log("WAL: CRC mismatch - skipping corrupt entry.")
                         continue
                     entry = json.loads(raw)
                     chunk_name = entry.get("chunk", "").strip()
@@ -795,7 +795,7 @@ class SafeChunkEngine:
             self._staged_data[chunk_name] = copy.deepcopy(data)
             self._wal_append(chunk_name, data)
 
-            # Debounce — resets on every call
+            # Debounce - resets on every call
             if self._debounce_timer:
                 self._debounce_timer.cancel()
             self._debounce_timer = threading.Timer(
@@ -804,7 +804,7 @@ class SafeChunkEngine:
             self._debounce_timer.daemon = True
             self._debounce_timer.start()
 
-            # Force-save — fires once per burst, guaranteed
+            # Force-save - fires once per burst, guaranteed
             if self._force_save_timer is None:
                 self._force_save_timer = threading.Timer(
                     self.force_save_delay, self._force_save_from_timer
@@ -849,7 +849,7 @@ class SafeChunkEngine:
                 data = _decode(src.read_bytes())
                 if label != ".lcca":
                     self._handle_error(
-                        f"'{chunk_name}.lcca' is missing or unreadable at runtime — "
+                        f"'{chunk_name}.lcca' is missing or unreadable at runtime - "
                         f"serving data from {label}. "
                         f"Data may be one save behind."
                     )
@@ -862,7 +862,7 @@ class SafeChunkEngine:
         try:
             lcca.write_bytes(_encode({}, self.readable))
             self._log(
-                f"All copies of '{chunk_name}' were missing — "
+                f"All copies of '{chunk_name}' were missing - "
                 f"wrote empty placeholder. Data for this chunk is lost."
             )
         except Exception as _e:
@@ -894,9 +894,9 @@ class SafeChunkEngine:
     def _commit_to_disk(self):
         """Writes all staged chunks to disk atomically with rotation.
 
-        optimize=True  — collects all successfully written chunk names and
+        optimize=True  - collects all successfully written chunk names and
                          removes them from the WAL in a single rewrite pass.
-        optimize=False — removes each chunk from WAL individually after write
+        optimize=False - removes each chunk from WAL individually after write
                          (original behaviour, one rewrite per chunk).
         """
         with self._write_lock:
@@ -917,7 +917,7 @@ class SafeChunkEngine:
                     failed.append(chunk_name)
                     self._log(f"Commit failed for {chunk_name}: {e}")
 
-            # Batched WAL remove — single file rewrite for all committed chunks
+            # Batched WAL remove - single file rewrite for all committed chunks
             if self.optimize and committed:
                 self._wal_remove_batch(committed)
 
@@ -959,14 +959,14 @@ class SafeChunkEngine:
             except Exception:
                 pass
 
-        # Current lcca → ebak before overwriting (only if valid — never rotate a corrupt file)
+        # Current lcca → ebak before overwriting (only if valid - never rotate a corrupt file)
         if lcca.exists():
             try:
                 _decode(lcca.read_bytes())
                 shutil.copy2(lcca, ebak)
             except Exception:
                 self._log(
-                    f"WARNING: existing {chunk_name}.lcca is corrupt — skipping rotation to ebak."
+                    f"WARNING: existing {chunk_name}.lcca is corrupt - skipping rotation to ebak."
                 )
 
         # Atomic write: tmp → fsync → rename
@@ -987,7 +987,7 @@ class SafeChunkEngine:
     def _checkpoint_needed(self) -> bool:
         """
         Returns True if current chunk state differs from last auto checkpoint.
-        Compares manifest hashes — cheap and accurate.
+        Compares manifest hashes - cheap and accurate.
         Always returns True if no checkpoint exists yet.
         """
         last_cps = sorted(
@@ -1021,7 +1021,7 @@ class SafeChunkEngine:
 
     def _create_auto_checkpoint(self) -> str | None:
         """Creates an auto checkpoint in checkpoints/auto/.
-        Never includes blobs — must stay fast for clean close."""
+        Never includes blobs - must stay fast for clean close."""
         return self._write_checkpoint(
             folder=self.checkpoint_auto,
             label="auto_close",
@@ -1038,8 +1038,8 @@ class SafeChunkEngine:
         Creates a manual checkpoint in checkpoints/manual/.
         Keeps last MANUAL_CHECKPOINT_RETENTION checkpoints.
 
-        include_blobs=False (default): chunks only — fast, small ZIP.
-        include_blobs=True: chunks + blobs — full snapshot, can be large.
+        include_blobs=False (default): chunks only - fast, small ZIP.
+        include_blobs=True: chunks + blobs - full snapshot, can be large.
           Use for a true point-in-time backup before major changes.
           Blob hashes are always recorded in checkpoint_meta.json regardless,
           so mismatches can be detected even when blobs are not included.
@@ -1064,8 +1064,8 @@ class SafeChunkEngine:
         Core checkpoint writer.
         Writes ZIP + SHA256 to specified folder, enforces retention.
 
-        include_blobs=False: chunks only — fast, no blob data in ZIP.
-        include_blobs=True: chunks + blobs — full snapshot.
+        include_blobs=False: chunks only - fast, no blob data in ZIP.
+        include_blobs=True: chunks + blobs - full snapshot.
 
         Blob hashes are always written into checkpoint_meta.json regardless
         of include_blobs, so restore can detect blob mismatches even when
@@ -1164,7 +1164,7 @@ class SafeChunkEngine:
 
         sha_path = zip_path.parent / f"{zip_name}.sha256"
         if not sha_path.exists():
-            return True  # legacy — no hash file, trust it
+            return True  # legacy - no hash file, trust it
 
         try:
             stored = sha_path.read_text().strip()
@@ -1220,7 +1220,7 @@ class SafeChunkEngine:
                         f"Archive is too large to extract "
                         f"({total / 1024 / 1024:.0f} MB, limit 512 MB)."
                     )
-                # ── ZIP Slip check — safe member-by-member extraction ─────
+                # ── ZIP Slip check - safe member-by-member extraction ─────
                 staging_resolved = staging.resolve()
                 for member in zf.infolist():
                     target = (staging / member.filename).resolve()
@@ -1233,7 +1233,7 @@ class SafeChunkEngine:
                     shutil.rmtree(self.chunks_path)
                 shutil.move(str(staging / "chunks"), str(self.chunks_path))
 
-            # Clear stale bak files — they'll rebuild naturally on next save
+            # Clear stale bak files - they'll rebuild naturally on next save
             if self.chunks_bak_path.exists():
                 shutil.rmtree(self.chunks_bak_path)
             self.chunks_bak_path.mkdir(parents=True, exist_ok=True)
@@ -1251,7 +1251,7 @@ class SafeChunkEngine:
                     pass
 
             if (staging / "blobs").exists():
-                # Full blob restore — checkpoint was created with include_blobs=True
+                # Full blob restore - checkpoint was created with include_blobs=True
                 if self.blobs_path.exists():
                     shutil.rmtree(self.blobs_path)
                 shutil.move(str(staging / "blobs"), str(self.blobs_path))
@@ -1262,7 +1262,7 @@ class SafeChunkEngine:
                     )
                 self._log("Blobs restored from checkpoint.")
             else:
-                # Blobs not in checkpoint — check for mismatches and warn
+                # Blobs not in checkpoint - check for mismatches and warn
                 cp_blob_hashes = meta.get("blob_hashes", {})
                 if cp_blob_hashes:
                     current_blob_manifest = self._load_blob_manifest()
@@ -1446,9 +1446,9 @@ class SafeChunkEngine:
 
     # --------------------------------------------------------------------------
     # BLOB STORAGE  (binary files: images, PDFs, ZIPs, etc.)
-    # No WAL, no memory staging, no deep copy — streamed directly to disk.
-    # No backup copies — blobs are uploaded once and re-uploaded if lost.
-    # Checkpoint stores blob hashes only — not the blobs themselves.
+    # No WAL, no memory staging, no deep copy - streamed directly to disk.
+    # No backup copies - blobs are uploaded once and re-uploaded if lost.
+    # Checkpoint stores blob hashes only - not the blobs themselves.
     # --------------------------------------------------------------------------
 
     def _load_blob_manifest(self) -> dict:
@@ -1503,7 +1503,7 @@ class SafeChunkEngine:
     def _verify_blobs(self) -> list[str]:
         """
         Verifies each .blob file against stored SHA256 in blob_manifest.json.
-        Returns list of blob names that failed — empty list means all good.
+        Returns list of blob names that failed - empty list means all good.
         """
         manifest = self._load_blob_manifest()
         blobs = manifest.get("blobs", {})
@@ -1538,8 +1538,8 @@ class SafeChunkEngine:
         Stores a binary file (image, PDF, ZIP, etc.) as a managed blob.
 
         data can be:
-          - bytes        — raw binary data (blob_name required)
-          - str / Path   — path to a file on disk (streamed, never fully loaded)
+          - bytes        - raw binary data (blob_name required)
+          - str / Path   - path to a file on disk (streamed, never fully loaded)
 
         blob_name (optional):
           - If omitted and data is a path, the filename is used automatically.
@@ -1590,7 +1590,7 @@ class SafeChunkEngine:
                 counter += 1
             if candidate != blob_name:
                 self._log(
-                    f"Blob '{blob_name}' already exists — "
+                    f"Blob '{blob_name}' already exists - "
                     f"storing as '{candidate}' instead."
                 )
             blob_name = candidate
@@ -1599,7 +1599,7 @@ class SafeChunkEngine:
         tmp = self.blobs_path / f"{blob_name}.tmp"
 
         try:
-            # Stream from path or write from bytes — atomic tmp → fsync → rename
+            # Stream from path or write from bytes - atomic tmp → fsync → rename
             if isinstance(data, (str, Path)):
                 src = Path(data)
                 if not src.exists():
@@ -1652,7 +1652,7 @@ class SafeChunkEngine:
         except Exception as e:
             self._handle_error(
                 f"Blob '{blob_name}' could not be read: {e}. "
-                f"The file may be corrupt — re-upload it."
+                f"The file may be corrupt - re-upload it."
             )
             return None
 
@@ -1817,7 +1817,7 @@ class SafeChunkEngine:
     @staticmethod
     def list_all_projects(base_dir: str = "user_projects") -> list[dict]:
         """
-        Lightweight scan — reads only version.json and filesystem metadata.
+        Lightweight scan - reads only version.json and filesystem metadata.
         Safe to call frequently from the home screen.
         """
         root = Path(base_dir)
@@ -1993,7 +1993,7 @@ class SafeChunkEngine:
         if not name or not name.strip():
             return False
         p = Path(name)
-        # Must be a plain filename — no directory components
+        # Must be a plain filename - no directory components
         if p.name != name:
             return False
         # Reject traversal sequences explicitly

@@ -1,5 +1,5 @@
 """
-Material Design Icons — Apache 2.0 License — https://fonts.google.com/icons
+Material Design Icons - Apache 2.0 License - https://fonts.google.com/icons
 Inline SVG icon renderer for PySide6.  No external files required.
 
 Icons are rendered via a QIconEngine subclass, so they:
@@ -17,8 +17,8 @@ from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import QApplication, QGraphicsOpacityEffect, QPushButton
 
 # ---------------------------------------------------------------------------
-# Filled SVG body fragments — viewBox="0 0 24 24", fill-based
-# Source: Material Design Icons (Apache 2.0) — https://fonts.google.com/icons
+# Filled SVG body fragments - viewBox="0 0 24 24", fill-based
+# Source: Material Design Icons (Apache 2.0) - https://fonts.google.com/icons
 # Custom: "bridge" (original)
 # ---------------------------------------------------------------------------
 
@@ -135,7 +135,7 @@ _ICONS: dict[str, str] = {
 }
 
 # ---------------------------------------------------------------------------
-# SVG wrapper — filled style
+# SVG wrapper - filled style
 # ---------------------------------------------------------------------------
 
 _TEMPLATE = (
@@ -152,14 +152,14 @@ _TEMPLATE = (
 
 class _SvgIconEngine(QIconEngine):
     """Renders an SVG icon at whatever size Qt requests and in the current
-    palette's foreground color — crisp on HiDPI, works on light and dark themes.
+    palette's foreground color - crisp on HiDPI, works on light and dark themes.
 
     Pixmaps are cached by (body, color, w, h) so each unique combination is
     rendered only once.  The cache is cleared on QApplication.paletteChanged
     so theme switches re-render cleanly without flooding the event loop.
     """
 
-    # Cache keyed by (body, color, w, h) — dark and light entries coexist,
+    # Cache keyed by (body, color, w, h) - dark and light entries coexist,
     # so theme switches are instant after the first render of each color.
     _cache: dict = {}
 

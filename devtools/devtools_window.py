@@ -1,17 +1,17 @@
 """
 devtools/devtools_window.py
 
-3psLCCA Developer Tools — focused inspection and repair tool.
+3psLCCA Developer Tools - focused inspection and repair tool.
 
 Purpose:
   Something broke. Open the project, find the bad chunk,
   fix it, export a new .3psLCCA, reshare.
 
 Workflow:
-  1. Open  — project folder or .3psLCCA archive
-  2. Inspect — view chunks / metadata / blobs; run integrity check
-  3. Fix   — edit chunk JSON directly in the tool, validate, save
-  4. Share — create a binary .3psLCCA (with or without blobs)
+  1. Open  - project folder or .3psLCCA archive
+  2. Inspect - view chunks / metadata / blobs; run integrity check
+  3. Fix   - edit chunk JSON directly in the tool, validate, save
+  4. Share - create a binary .3psLCCA (with or without blobs)
 """
 
 import hashlib
@@ -307,7 +307,7 @@ class DevToolsWindow(QMainWindow):
         lst.setMaximumHeight(140)
         return lst
 
-    # Fix: _side_list used as instance method accidentally — use static pattern
+    # Fix: _side_list used as instance method accidentally - use static pattern
     def _side_list(self, _title: str = "") -> QListWidget:  # noqa: F811
         lst = QListWidget()
         lst.setStyleSheet(
@@ -402,7 +402,7 @@ class DevToolsWindow(QMainWindow):
         self.btn_share.setEnabled(bool(self._chunk_raw or self._meta_raw))
 
         self._set_status(
-            f"{label}  —  {len(self._chunk_raw)} chunk(s), "
+            f"{label}  -  {len(self._chunk_raw)} chunk(s), "
             f"{len(self._meta_raw)} metadata file(s), {len(self._blob_paths)} blob(s)"
         )
 
@@ -549,7 +549,7 @@ class DevToolsWindow(QMainWindow):
         sha = hashlib.sha256(path.read_bytes()).hexdigest()
         self.viewer_title.setText(f"{name}  [binary blob]")
         self.viewer.setPlainText(
-            f"// Binary blob — cannot display content.\n"
+            f"// Binary blob - cannot display content.\n"
             f"//\n"
             f"// Name  : {name}\n"
             f"// Size  : {size:,} bytes  ({size / 1024:.1f} KB)\n"
@@ -614,7 +614,7 @@ class DevToolsWindow(QMainWindow):
         self._update_chunk_item(name)
         self._stop_edit()
         self._show_chunk(name)
-        self._set_status(f"Saved edits to '{name}' — will be encoded to binary on export.")
+        self._set_status(f"Saved edits to '{name}' - will be encoded to binary on export.")
 
     def _revert_chunk(self):
         if self._active_kind != "chunk":
@@ -669,7 +669,7 @@ class DevToolsWindow(QMainWindow):
                     self._chunk_status[name] = "mismatch"
                     mismatch += 1
             else:
-                # No hash to compare — at least it decodes
+                # No hash to compare - at least it decodes
                 self._chunk_status[name] = "clean"
                 clean += 1
 
@@ -685,7 +685,7 @@ class DevToolsWindow(QMainWindow):
         if corrupt:
             summary += f", {corrupt} corrupt"
         if not expected:
-            summary += "  (no manifest hashes — checked decodability only)"
+            summary += "  (no manifest hashes - checked decodability only)"
 
         self._set_status(summary)
         QMessageBox.information(self, "Integrity Check Complete", summary)
@@ -719,7 +719,7 @@ class DevToolsWindow(QMainWindow):
         try:
             with zipfile.ZipFile(out_path, "w", zipfile.ZIP_DEFLATED) as zf:
 
-                # Chunks — encode to chosen format; track bytes for hash rebuild
+                # Chunks - encode to chosen format; track bytes for hash rebuild
                 chunk_encoded: dict[str, bytes] = {}
                 for name, raw in self._chunk_raw.items():
                     try:
@@ -738,7 +738,7 @@ class DevToolsWindow(QMainWindow):
                     except Exception as e:
                         errors.append(f"{name}.lcca: {e}")
 
-                # Metadata — copy as-is except manifest and checkpoint_meta
+                # Metadata - copy as-is except manifest and checkpoint_meta
                 # (manifest rebuilt below if requested)
                 for name, text in self._meta_raw.items():
                     if name in ("checkpoint_meta.json", "manifest.json"):
@@ -753,7 +753,7 @@ class DevToolsWindow(QMainWindow):
                         continue
                     zf.writestr(name, text)
 
-                # Manifest — rebuild with fresh hashes or copy original
+                # Manifest - rebuild with fresh hashes or copy original
                 if recreate_integrity and chunk_encoded:
                     orig_manifest = {}
                     try:
@@ -765,7 +765,7 @@ class DevToolsWindow(QMainWindow):
                     for name, encoded in chunk_encoded.items():
                         sha = hashlib.sha256(encoded).hexdigest()
                         # Use "hash" key (what SafeChunkEngine._verify_chunks reads).
-                        # Strip any stale "hash"/"sha256" from orig_entry — chunks are
+                        # Strip any stale "hash"/"sha256" from orig_entry - chunks are
                         # re-encoded so those values are no longer valid.
                         orig_entry = orig_manifest.get("chunks", {}).get(name, {})
                         if isinstance(orig_entry, dict):
@@ -810,9 +810,9 @@ class DevToolsWindow(QMainWindow):
                     **orig_meta,
                     "label": orig_meta.get("label", "devtools-share"),
                     "notes": (
-                        f"Created by 3psLCCA Developer Tools — "
+                        f"Created by 3psLCCA Developer Tools - "
                         f"{time.strftime('%Y-%m-%d %H:%M:%S')}"
-                        + (f" — {modified_count} chunk(s) modified" if modified_count else "")
+                        + (f" - {modified_count} chunk(s) modified" if modified_count else "")
                     ),
                     "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
                     "engine_ver": orig_meta.get("engine_ver", "3.0.0"),
@@ -850,7 +850,7 @@ class DevToolsWindow(QMainWindow):
         if modified_count:
             msg_parts.append(f"\n{modified_count} chunk(s) contain your fixes.")
         if recreate_integrity:
-            msg_parts.append(f"\nIntegrity hashes rebuilt — all chunks will pass verification.")
+            msg_parts.append(f"\nIntegrity hashes rebuilt - all chunks will pass verification.")
         if errors:
             msg_parts.append(f"\n\n{len(errors)} error(s):\n" + "\n".join(errors))
 

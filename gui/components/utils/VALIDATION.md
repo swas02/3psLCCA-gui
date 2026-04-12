@@ -11,12 +11,12 @@ How to add errors and warnings to any data-entry page.
 | **Error** | Field is required and left blank (text fields only) | Red border + blocks calculation |
 | **Warning** | Value is filled but looks unusual | Orange border + allows proceed |
 
-> Numeric fields (`QSpinBox`, `QDoubleSpinBox`) are **never** considered "missing" —
+> Numeric fields (`QSpinBox`, `QDoubleSpinBox`) are **never** considered "missing" -
 > `0` is a valid value. Use `warn_rules` to catch unusual numeric values including `0`.
 
 ---
 
-## Step 1 — Mark required fields
+## Step 1 - Mark required fields
 
 Set `required=True` on a `FieldDef` to make it mandatory.
 Only applies to `QLineEdit` fields (text input).
@@ -33,7 +33,7 @@ FieldDef(
 
 ---
 
-## Step 2 — Define warn_rules
+## Step 2 - Define warn_rules
 
 `warn_rules` is a dict that maps a field key to a tuple:
 
@@ -54,35 +54,35 @@ All elements after `high` are optional. If a message is omitted, a generic one i
 Use `None` to skip one side of the range check:
 
 ```python
-# No messages — generic fallback for both
+# No messages - generic fallback for both
 "rate": (0.01, 40.0)
 
-# One message — used for both low and high violations
+# One message - used for both low and high violations
 "rate": (0.01, 40.0, "Rate looks unusual")
 
-# Two messages — separate message per direction
+# Two messages - separate message per direction
 "rate": (0.01, 40.0, "Rate cannot be 0", "Rate seems too high")
 
 # Only low bound
 "cost": (0.01, None, "Cost cannot be 0")
 ```
 
-### Example — Demolition
+### Example - Demolition
 
 ```python
 WARNING_RULES = {
     "demolition_disposal_cost": (0.01, 40.0,
-        "Demolition & Disposal Cost is 0 — cost will not be included",
-        "Demolition & Disposal Cost exceeds 40% — please verify"),
+        "Demolition & Disposal Cost is 0 - cost will not be included",
+        "Demolition & Disposal Cost exceeds 40% - please verify"),
     "time_required": (1, 36,
-        "Time Required is 0 — duration will not be included",
-        "Time Required exceeds 36 months — please verify"),
+        "Time Required is 0 - duration will not be included",
+        "Time Required exceeds 36 months - please verify"),
 }
 ```
 
 ---
 
-## Step 3 — Call validate_form
+## Step 3 - Call validate_form
 
 ```python
 from gui.components.utils.validation_helpers import validate_form
@@ -106,7 +106,7 @@ def validate(self) -> dict:
 
 ---
 
-## Step 4 — Custom cross-field checks
+## Step 4 - Custom cross-field checks
 
 For checks that span multiple fields (e.g. "severity must sum to 100%"), extend the result manually after calling `validate_form`:
 
@@ -123,7 +123,7 @@ def validate(self) -> dict:
 
     # Custom warning example
     if self.some_field.value() == 0:
-        warnings.append("Some Field is 0 — this may affect results")
+        warnings.append("Some Field is 0 - this may affect results")
 
     return {"errors": errors, "warnings": warnings}
 ```

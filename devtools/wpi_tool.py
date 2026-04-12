@@ -1,7 +1,7 @@
 """
 devtools/wpi_tool.py
 
-WPI Database Tool — create, edit, verify, and rehash wpi_db.json entries.
+WPI Database Tool - create, edit, verify, and rehash wpi_db.json entries.
 
 Workflow:
   1. Open wpi_db.json (auto-loaded from default path) or browse a folder
@@ -94,8 +94,8 @@ def _validate_schema(data: dict) -> tuple[list[str], list[str]]:
     """
     Validate a data block against the flat vehicle-grouped schema.
     Returns (errors, warnings).
-      errors   — missing required keys (blocks hashing)
-      warnings — present but zero values (suggest updating)
+      errors   - missing required keys (blocks hashing)
+      warnings - present but zero values (suggest updating)
     """
     errors: list[str] = []
     warnings: list[str] = []
@@ -206,7 +206,7 @@ class _SuggestionsDialog(QDialog):
         layout.setSpacing(10)
 
         if errors:
-            err_hdr = QLabel(f"❌  {len(errors)} error(s) — required fields missing:")
+            err_hdr = QLabel(f"❌  {len(errors)} error(s) - required fields missing:")
             err_hdr.setStyleSheet("color:#f38ba8; font-weight:bold;")
             layout.addWidget(err_hdr)
 
@@ -226,7 +226,7 @@ class _SuggestionsDialog(QDialog):
             layout.addWidget(scroll)
 
         if warnings:
-            warn_hdr = QLabel(f"⚠  {len(warnings)} warning(s) — values are still 0:")
+            warn_hdr = QLabel(f"⚠  {len(warnings)} warning(s) - values are still 0:")
             warn_hdr.setStyleSheet("color:#f9e2af; font-weight:bold;")
             layout.addWidget(warn_hdr)
 
@@ -246,7 +246,7 @@ class _SuggestionsDialog(QDialog):
             layout.addWidget(scroll2)
 
         if not errors and not warnings:
-            ok = QLabel("✓  Schema looks good — all fields present and non-zero.")
+            ok = QLabel("✓  Schema looks good - all fields present and non-zero.")
             ok.setStyleSheet("color:#a6e3a1;")
             layout.addWidget(ok)
 
@@ -704,7 +704,7 @@ class WpiDatabaseDialog(QDialog):
         self._update_status()
         self._set_status(
             f"Data updated for '{self._entries[row]['metadata'].get('name', '?')}' "
-            "— hash cleared, click Rehash All then Save."
+            "- hash cleared, click Rehash All then Save."
         )
 
     # ── Actions ────────────────────────────────────────────────────────────────
@@ -726,7 +726,7 @@ class WpiDatabaseDialog(QDialog):
         self._start_edit()
         self._update_status()
         self._set_status(
-            f"Created '{entry['metadata']['name']}' with 0.0 values — "
+            f"Created '{entry['metadata']['name']}' with 0.0 values - "
             "edit the JSON and click Apply."
         )
 
@@ -749,7 +749,7 @@ class WpiDatabaseDialog(QDialog):
         if 0 <= row < len(self._entries):
             self._show_entry(row)
         self._set_status(
-            f"Rehashed: {updated} updated, {unchanged} already correct — click Save to write."
+            f"Rehashed: {updated} updated, {unchanged} already correct - click Save to write."
         )
 
     def _delete_entry(self):

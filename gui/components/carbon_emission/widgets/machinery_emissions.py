@@ -5,7 +5,7 @@ Chunk: machinery_emissions_data
 
 Two modes toggled by radio buttons:
   - Detailed Equipment List  (table with per-row calculation)
-  - Lump Sum                 (electricity + fuel — built via build_form)
+  - Lump Sum                 (electricity + fuel - built via build_form)
 
 Grand total shown at top and bottom.
 Currency label pulled from general_info chunk.
@@ -138,7 +138,7 @@ DEFAULT_MACHINERY_DATA = [
     },
 ]
 
-# ── Field definitions — passed to build_form ──────────────────────────────────
+# ── Field definitions - passed to build_form ──────────────────────────────────
 
 LUMPSUM_ELEC_FIELDS = [
     Section("Electricity Consumption"),
@@ -217,7 +217,7 @@ DETAILED_FIELDS = [
 ]
 
 
-# ── Action delegate — paints edit + delete icon buttons ───────────────────────
+# ── Action delegate - paints edit + delete icon buttons ───────────────────────
 
 
 class _ActionDelegate(BaseActionDelegate):
@@ -418,8 +418,8 @@ class _DetailedTable(QWidget):
         ("EF (kg CO₂e/unit)",   Qt.AlignRight  | Qt.AlignVCenter),  # 5
         ("Consumption",         Qt.AlignRight  | Qt.AlignVCenter),  # 6
         ("Emissions (kg CO₂e)", Qt.AlignRight  | Qt.AlignVCenter),  # 7
-        ("Action",              Qt.AlignCenter | Qt.AlignVCenter),  # 8 hidden — frozen overlay
-        ("",                    Qt.AlignCenter | Qt.AlignVCenter),  # 9 placeholder — reserves _ACTION_W
+        ("Action",              Qt.AlignCenter | Qt.AlignVCenter),  # 8 hidden - frozen overlay
+        ("",                    Qt.AlignCenter | Qt.AlignVCenter),  # 9 placeholder - reserves _ACTION_W
     ]
     _ROW_H = 36
     _HEADER_H = 38  # fallback if header not yet painted
@@ -434,7 +434,7 @@ class _DetailedTable(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(6)
 
-        # Table — no fixed height; grows/shrinks via sizeHint override
+        # Table - no fixed height; grows/shrinks via sizeHint override
         self._table = _MachineryTable(0, len(self.HEADERS))
         for col, (label, align) in enumerate(self.HEADERS):
             item = QTableWidgetItem(label)
@@ -520,7 +520,7 @@ class _DetailedTable(QWidget):
         return header_h + rows_h + 4  # +4 for frame border
 
     def _refresh_table_height(self):
-        """Pin the table to exactly fit its content — no scrollbars, no blank stretch."""
+        """Pin the table to exactly fit its content - no scrollbars, no blank stretch."""
         h = self._table_content_height()
         self._table.setMinimumHeight(h)
         self._table.setMaximumHeight(h)
@@ -534,13 +534,13 @@ class _DetailedTable(QWidget):
         vp_w = self._table.viewport().width()
         if vp_w <= 0:
             return
-        # Col 7 (Emissions) is Stretch — only size cols 0–6
+        # Col 7 (Emissions) is Stretch - only size cols 0–6
         ratios = {0: 0.22, 1: 0.14, 2: 0.12, 3: 0.10, 4: 0.10, 5: 0.12, 6: 0.14}
         mins   = {0: 150,   1: 150,   2: 150,   3: 120,   4: 120,   5: 180,   6: 120}
         col_widths = {c: max(mins[c], int(vp_w * r)) for c, r in ratios.items()}
         used = sum(col_widths.values())
         if used >= vp_w:
-            # Scale down to always fit — no horizontal overflow
+            # Scale down to always fit - no horizontal overflow
             scale = vp_w / used
             col_widths = {c: max(mins[c], int(w * scale)) for c, w in col_widths.items()}
         hh = self._table.horizontalHeader()
@@ -690,7 +690,7 @@ class _DetailedTable(QWidget):
     # ── Calculation ───────────────────────────────────────────────────────
 
     def _on_cell_changed(self, row, col):
-        if col == 1:  # Energy Source changed — auto-update EF
+        if col == 1:  # Energy Source changed - auto-update EF
             src = self._cell_text(row, 1, ENERGY_SOURCES[0])
             if src in EF_DEFAULTS:
                 self._table.blockSignals(True)
@@ -746,7 +746,7 @@ class _DetailedTable(QWidget):
         self._action_delegate.set_frozen(frozen)
 
     def get_total(self) -> float:
-        """Return last recalculated total — avoids redundant row traversal."""
+        """Return last recalculated total - avoids redundant row traversal."""
         return self._cached_total
 
     # ── Data I/O ──────────────────────────────────────────────────────────
@@ -801,10 +801,10 @@ class MachineryEmissions(ScrollableForm):
         banner = QGroupBox()
         banner_layout = QHBoxLayout(banner)
         banner_layout.setContentsMargins(12, 8, 12, 8)
-        self._lbl_grand_total = QLabel("Total Machinery Emissions: — kg CO₂e")
+        self._lbl_grand_total = QLabel("Total Machinery Emissions: - kg CO₂e")
         self._lbl_grand_total.setFont(bold)
         note = QLabel(
-            "  ⓘ  Fill either Detailed Equipment List or Lump Sum — not both."
+            "  ⓘ  Fill either Detailed Equipment List or Lump Sum - not both."
         )
         note.setStyleSheet("color: gray; font-style: italic;")
         banner_layout.addWidget(self._lbl_grand_total)
@@ -835,14 +835,14 @@ class MachineryEmissions(ScrollableForm):
         self._stack = QStackedWidget()
         self._stack.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
 
-        # Index 0 — Detailed table
+        # Index 0 - Detailed table
         detailed_widget = QWidget()
         detailed_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
         detailed_vbox = QVBoxLayout(detailed_widget)
         detailed_vbox.setContentsMargins(0, 0, 0, 0)
         detailed_vbox.setSpacing(4)
 
-        # default_days row — small form layout for consistent label+field style
+        # default_days row - small form layout for consistent label+field style
         days_form_widget = QWidget()
         days_form_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         days_form_layout = QFormLayout(days_form_widget)
@@ -868,7 +868,7 @@ class MachineryEmissions(ScrollableForm):
         detailed_vbox.addWidget(self._detailed_table)
         self._stack.addWidget(detailed_widget)
 
-        # Index 1 — Lump Sum via build_form temp-swap
+        # Index 1 - Lump Sum via build_form temp-swap
         lumpsum_widget = QWidget()
         lumpsum_layout = QFormLayout(lumpsum_widget)
         lumpsum_layout.setContentsMargins(0, 0, 0, 0)
@@ -883,7 +883,7 @@ class MachineryEmissions(ScrollableForm):
         build_form(self, LUMPSUM_FUEL_FIELDS, _DOC_OPENER)
         self.form = _saved
 
-        # Pop from _field_map — we save manually via collect_data
+        # Pop from _field_map - we save manually via collect_data
         # Wire valueChanged -> _on_totals_changed for live total update
         for key, default in _LUMPSUM_KEYS:
             self._field_map.pop(key, None)
@@ -917,7 +917,7 @@ class MachineryEmissions(ScrollableForm):
         bottom_banner = QGroupBox()
         bottom_layout = QHBoxLayout(bottom_banner)
         bottom_layout.setContentsMargins(12, 8, 12, 8)
-        self._lbl_grand_total_bottom = QLabel("Total Machinery Emissions: — kg CO₂e")
+        self._lbl_grand_total_bottom = QLabel("Total Machinery Emissions: - kg CO₂e")
         self._lbl_grand_total_bottom.setFont(bold)
         bottom_layout.addStretch()
         bottom_layout.addWidget(self._lbl_grand_total_bottom)
@@ -1116,12 +1116,12 @@ class MachineryEmissions(ScrollableForm):
             mode = data.get("mode", "")
             if mode == "detailed":
                 warnings.append(
-                    "Total machinery emissions is 0 kgCO₂e — "
+                    "Total machinery emissions is 0 kgCO₂e - "
                     "no equipment rows added or all inputs are zero."
                 )
             else:
                 warnings.append(
-                    "Total machinery emissions is 0 kgCO₂e — "
+                    "Total machinery emissions is 0 kgCO₂e - "
                     "lumpsum fuel and electricity values are zero."
                 )
         return {"errors": [], "warnings": warnings}

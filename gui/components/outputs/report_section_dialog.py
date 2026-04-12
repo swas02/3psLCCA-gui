@@ -1,5 +1,5 @@
 """
-Report Section Selection Dialog — Hierarchical tree for choosing PDF report sections.
+Report Section Selection Dialog - Hierarchical tree for choosing PDF report sections.
 
 Adapted from lcca_gui.py SectionTreeWidget for use as a modal dialog within
 the main 3psLCCA GUI application.
@@ -63,7 +63,7 @@ from lcca_template import (
 )
 
 # ─────────────────────────────────────────────────────────────────────────────
-# SECTION_MAP — hierarchical structure of report sections/subsections
+# SECTION_MAP - hierarchical structure of report sections/subsections
 # ─────────────────────────────────────────────────────────────────────────────
 
 SECTION_MAP = {
@@ -120,7 +120,7 @@ KEY_SHOW_LCCA_RESULTS = "show_lcca_results"
 
 
 # ==============================================================================
-# CLASS: SectionTreeWidget — Interactive tree for selecting report sections
+# CLASS: SectionTreeWidget - Interactive tree for selecting report sections
 # ==============================================================================
 
 
@@ -227,7 +227,7 @@ class SectionTreeWidget(QTreeWidget):
 
 
 # ==============================================================================
-# CLASS: _PdfGenWorker — Background thread for PDF generation
+# CLASS: _PdfGenWorker - Background thread for PDF generation
 # ==============================================================================
 
 
@@ -297,7 +297,7 @@ class _PdfGenWorker(QThread):
 
 
 # ==============================================================================
-# CLASS: ReportSectionDialog — Modal dialog for section selection + generation
+# CLASS: ReportSectionDialog - Modal dialog for section selection + generation
 # ==============================================================================
 
 

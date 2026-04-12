@@ -1,14 +1,14 @@
 """
 devtools/unit_manager_gui.py
 
-Unit Manager — browse built-in units, add new units, manage custom units,
+Unit Manager - browse built-in units, add new units, manage custom units,
 and test raw unit string resolution.
 
 Tabs
 ----
-1. Built-in Units  — read-only table from units.json + Add Unit button
-2. Custom Units    — CustomMaterialDB entries + Promote to Built-in
-3. Tester          — type any raw string, see what it resolves to
+1. Built-in Units  - read-only table from units.json + Add Unit button
+2. Custom Units    - CustomMaterialDB entries + Promote to Built-in
+3. Tester          - type any raw string, see what it resolves to
 """
 
 from __future__ import annotations
@@ -323,7 +323,7 @@ class EditUnitDialog(QDialog):
 
     def __init__(self, code: str, system: str, entry: dict, parent=None):
         super().__init__(parent)
-        self.setWindowTitle(f"Edit Unit — {code}")
+        self.setWindowTitle(f"Edit Unit - {code}")
         self.setMinimumWidth(480)
         self.setWindowFlags(Qt.Window | Qt.WindowTitleHint | Qt.WindowCloseButtonHint)
         self.setStyleSheet(_BASE_STYLE)
@@ -339,12 +339,12 @@ class EditUnitDialog(QDialog):
         form = QFormLayout()
         form.setSpacing(8)
 
-        # Code — read-only label
+        # Code - read-only label
         code_lbl = QLabel(code)
         code_lbl.setStyleSheet(f"color: {_BLUE}; font-weight: bold;")
         form.addRow("Code", code_lbl)
 
-        # System — read-only label
+        # System - read-only label
         sys_lbl = QLabel(system)
         sys_lbl.setStyleSheet(f"color: {_DIM};")
         form.addRow("System", sys_lbl)
@@ -369,7 +369,7 @@ class EditUnitDialog(QDialog):
         self._to_si.setValidator(QDoubleValidator(0.0, 1e12, 10))
         form.addRow("to_si factor *", self._to_si)
 
-        # Aliases — most important field for devs
+        # Aliases - most important field for devs
         aliases_str = ", ".join(entry.get("aliases", []))
         self._aliases = QLineEdit(aliases_str)
         self._aliases.setPlaceholderText("comma-separated  e.g.  Sqm, Sqm., SQM, sqmt")
@@ -423,7 +423,7 @@ class EditUnitDialog(QDialog):
 
 
 # ---------------------------------------------------------------------------
-# Tab 1 — Built-in Units
+# Tab 1 - Built-in Units
 # ---------------------------------------------------------------------------
 
 class BuiltinUnitsTab(QWidget):
@@ -616,7 +616,7 @@ class BuiltinUnitsTab(QWidget):
 
 
 # ---------------------------------------------------------------------------
-# Tab 2 — Custom Units
+# Tab 2 - Custom Units
 # ---------------------------------------------------------------------------
 
 class CustomUnitsTab(QWidget):
@@ -785,7 +785,7 @@ class CustomUnitsTab(QWidget):
 
 
 # ---------------------------------------------------------------------------
-# Tab 3 — Tester
+# Tab 3 - Tester
 # ---------------------------------------------------------------------------
 
 class TesterTab(QWidget):
@@ -804,7 +804,7 @@ class TesterTab(QWidget):
         in_row.setSpacing(8)
 
         self._input = QLineEdit()
-        self._input.setPlaceholderText("Type any unit string — e.g.  Sqm.   MT   Nos.   cft   RMt")
+        self._input.setPlaceholderText("Type any unit string - e.g.  Sqm.   MT   Nos.   cft   RMt")
         self._input.setFixedHeight(36)
         self._input.returnPressed.connect(self._on_test)
         in_row.addWidget(self._input, stretch=1)
@@ -845,7 +845,7 @@ class TesterTab(QWidget):
         layout.addStretch()
 
         hint = QLabel(
-            "The tester reads units.json directly — reflects any units added in this session "
+            "The tester reads units.json directly - reflects any units added in this session "
             "without needing an app restart."
         )
         hint.setStyleSheet(f"color: {_DIM}; font-size: 10px;")
@@ -870,7 +870,7 @@ class TesterTab(QWidget):
             )
         else:
             self._res_status.setStyleSheet(f"color: {_RED}; font-weight: bold;")
-            self._res_status.setText(f"✗  Unrecognised  —  '{raw}'")
+            self._res_status.setText(f"✗  Unrecognised  -  '{raw}'")
             self._res_detail.setText(
                 "This string is not in units.json as a canonical code or alias. "
                 "Add it via the Built-in Units tab or define it as a custom unit in the material dialog."

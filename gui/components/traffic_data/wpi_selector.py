@@ -1,16 +1,16 @@
 """
 gui/components/traffic_data/wpi_selector.py
 
-_WPISelector — profile selector bar for WPI adjustment ratio profiles.
+_WPISelector - profile selector bar for WPI adjustment ratio profiles.
 
 Layout:
     [Profile: ▾ combo] [✅/⚠/❌] [+ New] [✎ Save As] [🗑 Delete]
 
 Signals:
-    profile_selected(WPIProfile)   — user picked a profile from combo
-    profile_saved(WPIProfile)      — user saved a custom profile
-    profile_deleted(str)           — user deleted a profile (id)
-    edit_requested()               — user wants to edit current profile
+    profile_selected(WPIProfile)   - user picked a profile from combo
+    profile_saved(WPIProfile)      - user saved a custom profile
+    profile_deleted(str)           - user deleted a profile (id)
+    edit_requested()               - user wants to edit current profile
 """
 
 from __future__ import annotations
@@ -47,8 +47,8 @@ from ..utils.wpi_manager import (
 
 _BADGE = {
     IntegrityState.OK:       ("✅", get_token("success"), "Integrity verified"),
-    IntegrityState.MISMATCH: ("⚠",  get_token("danger"), "Hash mismatch — data may be tampered"),
-    IntegrityState.MISSING:  ("❓", get_token("warning"), "No hash — unverified profile"),
+    IntegrityState.MISMATCH: ("⚠",  get_token("danger"), "Hash mismatch - data may be tampered"),
+    IntegrityState.MISSING:  ("❓", get_token("warning"), "No hash - unverified profile"),
 }
 
 
@@ -161,7 +161,7 @@ class _ImportLibraryDialog(QDialog):
     def _on_idx_changed(self, idx: int):
         if 0 <= idx < len(self._profiles):
             p = self._profiles[idx]
-            remark = p.remark or "—"
+            remark = p.remark or "-"
             self._detail.setText(f"Year: {p.year}    Remark: {remark}")
 
     def _on_delete(self):
@@ -230,7 +230,7 @@ class _WPISelector(QWidget):
         self._combo.currentIndexChanged.connect(self._on_combo_changed)
         row1.addWidget(self._combo)
 
-        self._badge = QLabel("—")
+        self._badge = QLabel("-")
         self._badge.setFixedWidth(24)
         self._badge.setAlignment(Qt.AlignCenter)
         self._badge.setToolTip("")
@@ -329,21 +329,21 @@ class _WPISelector(QWidget):
         self._badge.setStyleSheet(f"color: {color}; font-size: 14px;")
 
     def _update_buttons(self, profile: WPIProfile):
-        # Save As — always available (copies current into new custom)
+        # Save As - always available (copies current into new custom)
         self._btn_save_as.setEnabled(True)
         self._btn_save_as.setToolTip(
             "Save current table values as a new custom profile"
             if not profile.is_custom
             else "Save changes to this custom profile under a new name"
         )
-        # Delete — only for custom
+        # Delete - only for custom
         self._btn_delete.setEnabled(profile.is_custom)
         self._btn_delete.setToolTip(
             "Delete this custom profile"
             if profile.is_custom
             else "DB profiles cannot be deleted"
         )
-        # Save to library — always available (any profile can be saved to library)
+        # Save to library - always available (any profile can be saved to library)
         self._btn_save_lib.setEnabled(True)
         self._btn_save_lib.setToolTip(
             "Save this profile to your global WPI library to reuse in other projects"
@@ -416,7 +416,7 @@ class _WPISelector(QWidget):
         # Parent will call save_profile_data(profile, data) after this signal
         self.edit_requested.emit()
 
-        # Build new profile shell — parent fills data via collect_and_save()
+        # Build new profile shell - parent fills data via collect_and_save()
         self._pending_save_meta = {
             "name": name,
             "year": dlg.year,
@@ -507,7 +507,7 @@ class _WPISelector(QWidget):
         # Ask the parent to collect current table data first
         self.edit_requested.emit()
 
-        # Stash intent — collect_and_save() will be called by parent with the data;
+        # Stash intent - collect_and_save() will be called by parent with the data;
         # we intercept it via a flag so we can route to the library instead.
         self._pending_library_save = True
 

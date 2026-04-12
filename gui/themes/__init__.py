@@ -1,5 +1,5 @@
 """
-gui/themes/__init__.py — Theme registry.
+gui/themes/__init__.py - Theme registry.
 
 Directory layout
 ----------------
@@ -14,9 +14,9 @@ gui/themes/
         <custom>.py     legacy .py themes still work as a fallback
 
 Each theme YAML must contain:
-    name: str                        — human-readable display name
-    palette: map[semantic_key, hex]  — semantic colour → hex
-    state:   map[state_key, float]   — hover/pressed/focus/disabled opacity multipliers (optional)
+    name: str                        - human-readable display name
+    palette: map[semantic_key, hex]  - semantic colour → hex
+    state:   map[state_key, float]   - hover/pressed/focus/disabled opacity multipliers (optional)
 
 Semantic palette keys
 ---------------------
@@ -24,7 +24,7 @@ Semantic palette keys
     text, text_secondary, text_disabled, success, warning, danger, info
 
 If a YAML file is missing, corrupt, or has a schema mismatch the system
-silently falls back to the hardcoded defaults below — the app never crashes.
+silently falls back to the hardcoded defaults below - the app never crashes.
 
 Selecting active themes
 -----------------------
@@ -68,7 +68,7 @@ APPEARANCE_MODE: str = "auto"  # "auto" | "light" | "dark"
 
 _PKG = "gui.themes"
 _THEMES_DIR = Path(__file__).parent
-# Absolute path — works regardless of working directory (e.g. when a project is open)
+# Absolute path - works regardless of working directory (e.g. when a project is open)
 _QSS_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
     "gui",
@@ -83,7 +83,7 @@ _active_tokens: dict[str, str] = {}
 # populated by get_light/dark_theme(); read via get_state()
 _active_state: dict[str, float] = {}
 
-# ── Hardcoded fallback themes — system NEVER fails even if all YAMLs are gone ──
+# ── Hardcoded fallback themes - system NEVER fails even if all YAMLs are gone ──
 #
 # Light fallback: brand green palette (matches gui/theme.py constants)
 _FALLBACK_LIGHT: dict = {
@@ -274,11 +274,11 @@ def _derive_compat_tokens(raw: dict[str, str], state: dict[str, float]) -> dict[
 def _build_theme(data: dict) -> tuple[QPalette, dict[str, str], dict[str, float]]:
     """Build (QPalette, semantic_palette, state) from a raw theme dict.
 
-    Validates schema — raises ValueError on mismatch so callers can fall back.
+    Validates schema - raises ValueError on mismatch so callers can fall back.
     Returns:
-      palette  — QPalette populated from semantic colour keys
-      raw      — flat str→str palette map (used by get_token() and QSS substitution)
-      state    — float multipliers for hover/pressed/focus/disabled
+      palette  - QPalette populated from semantic colour keys
+      raw      - flat str→str palette map (used by get_token() and QSS substitution)
+      state    - float multipliers for hover/pressed/focus/disabled
     """
     if not isinstance(data, dict):
         raise ValueError("Theme data is not a mapping")
@@ -299,7 +299,7 @@ def _build_theme(data: dict) -> tuple[QPalette, dict[str, str], dict[str, float]
         for role in roles:
             palette.setColor(role, color)
 
-    # State multipliers — fall back to defaults for any missing key
+    # State multipliers - fall back to defaults for any missing key
     raw_state = data.get("state", {})
     state: dict[str, float] = {**_FALLBACK_STATE, **{str(k): float(v) for k, v in raw_state.items()}}
 
@@ -316,7 +316,7 @@ def _build_theme(data: dict) -> tuple[QPalette, dict[str, str], dict[str, float]
 
 
 def _fallback(variant: str) -> tuple[QPalette, dict[str, str], dict[str, float]]:
-    """Return the hardcoded fallback theme — guaranteed to never fail."""
+    """Return the hardcoded fallback theme - guaranteed to never fail."""
     data = _FALLBACK_DARK if variant == "dark" else _FALLBACK_LIGHT
     return _build_theme(data)
 
@@ -357,9 +357,9 @@ def _load(variant: str, name: str) -> tuple[QPalette, dict[str, str], dict[str, 
     """Load a theme by variant ('light'|'dark') and name.
 
     Resolution order:
-      1. <themes_dir>/<variant>/<name>.yml  — preferred declarative format
-      2. gui.themes.<variant>.<name>        — legacy .py module fallback
-      3. Hardcoded fallback                 — if file missing, corrupt, or schema mismatch
+      1. <themes_dir>/<variant>/<name>.yml  - preferred declarative format
+      2. gui.themes.<variant>.<name>        - legacy .py module fallback
+      3. Hardcoded fallback                 - if file missing, corrupt, or schema mismatch
     """
     # 1. YAML
     yml_path = _THEMES_DIR / variant / f"{name}.yml"
@@ -372,14 +372,14 @@ def _load(variant: str, name: str) -> tuple[QPalette, dict[str, str], dict[str, 
             )
             return _fallback(variant)
 
-    # 2. Legacy .py module — no state dict; use defaults
+    # 2. Legacy .py module - no state dict; use defaults
     try:
         mod = importlib.import_module(f"{_PKG}.{variant}.{name}")
         return mod.palette, mod.QSS_TOKENS, dict(_FALLBACK_STATE)
     except Exception:
         pass
 
-    # 3. Hardcoded fallback — YAML missing and no .py module found
+    # 3. Hardcoded fallback - YAML missing and no .py module found
     print(
         f"[themes] Warning: theme '{variant}/{name}' not found; using built-in fallback."
     )
@@ -458,29 +458,29 @@ def is_dark() -> bool:
 
 
 def _detect_os_dark(app=None) -> bool:
-    """Read the current OS dark/light state directly — never uses cached values.
+    """Read the current OS dark/light state directly - never uses cached values.
 
     Resolution order:
-      1. QApplication.styleHints().colorScheme()  — Qt 6.5+, most reliable
-      2. Windows registry AppsUseLightTheme       — fallback on Windows
-      3. False (assume light)                     — safe default
+      1. QApplication.styleHints().colorScheme()  - Qt 6.5+, most reliable
+      2. Windows registry AppsUseLightTheme       - fallback on Windows
+      3. False (assume light)                     - safe default
     """
     # 1. Qt colorScheme (reliable on Qt 6.5+; often Unknown on Windows/Fusion)
     if app is not None:
         try:
             scheme = app.styleHints().colorScheme()
             if scheme == Qt.ColorScheme.Dark:
-                print(f"[themes] _detect_os_dark → Dark (Qt.ColorScheme.Dark)")
+                print(f"[themes] _detect_os_dark -> Dark (Qt.ColorScheme.Dark)")
                 return True
             if scheme == Qt.ColorScheme.Light:
-                print(f"[themes] _detect_os_dark → Light (Qt.ColorScheme.Light)")
+                print(f"[themes] _detect_os_dark -> Light (Qt.ColorScheme.Light)")
                 return False
             print(
-                f"[themes] _detect_os_dark: Qt.ColorScheme returned Unknown ({scheme}), trying registry …"
+                f"[themes] _detect_os_dark: Qt.ColorScheme returned Unknown ({scheme}), trying registry ..."
             )
         except AttributeError:
             print(
-                "[themes] _detect_os_dark: Qt.ColorScheme not available, trying registry …"
+                "[themes] _detect_os_dark: Qt.ColorScheme not available, trying registry ..."
             )
 
     # 2. Windows registry
@@ -495,7 +495,7 @@ def _detect_os_dark(app=None) -> bool:
         winreg.CloseKey(key)
         result = val == 0
         print(
-            f"[themes] _detect_os_dark → {'Dark' if result else 'Light'} (registry AppsUseLightTheme={val})"
+            f"[themes] _detect_os_dark -> {'Dark' if result else 'Light'} (registry AppsUseLightTheme={val})"
         )
         return result
     except Exception as e:
@@ -541,7 +541,7 @@ def reapply(app=None) -> None:
     if app is None:
         return
 
-    # For "auto" mode always re-read the live OS state — _current_is_dark is
+    # For "auto" mode always re-read the live OS state - _current_is_dark is
     # stale when the user switches FROM an explicit mode (dark/light) back to auto.
     if APPEARANCE_MODE == "auto":
         os_is_dark = _detect_os_dark(app)
@@ -570,7 +570,7 @@ def reapply(app=None) -> None:
             for token, value in sorted_tokens:
                 qss = qss.replace(f"${token}", value)
                 
-            # Clear first — forces Qt to fully re-evaluate all style rules
+            # Clear first - forces Qt to fully re-evaluate all style rules
             # on every existing widget, including window backgrounds.
             app.setStyleSheet("")
             app.setStyleSheet(qss)

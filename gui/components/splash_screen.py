@@ -1,7 +1,7 @@
 """
 gui/components/splash_screen.py
 ────────────────────────────────────────────────────────────────────────────────
-Theme-aware Splash Screen — lightweight & smooth.
+Theme-aware Splash Screen - lightweight & smooth.
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ SPLASH_W, SPLASH_H = 520, 300
 
 
 class _Bar(QWidget):
-    """Slim progress bar — reads live theme tokens."""
+    """Slim progress bar - reads live theme tokens."""
 
     def __init__(self, parent: QWidget) -> None:
         super().__init__(parent)
@@ -116,7 +116,7 @@ class SplashScreen(QWidget):
         clip.addRoundedRect(self.rect(), 12, 12)
         p.setClipPath(clip)
 
-        # SVG — crisp at any DPI, aspect ratio preserved
+        # SVG - crisp at any DPI, aspect ratio preserved
         if self._svg.isValid():
             m = 24
             avail_w, avail_h = SPLASH_W - m * 2, SPLASH_H - m * 2

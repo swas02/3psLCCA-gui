@@ -1,10 +1,10 @@
 """
 gui/components/settings_dialog.py
 
-SettingsPanel  — reusable form widget (name + theme pickers).
+SettingsPanel  - reusable form widget (name + theme pickers).
                  Embedded by both SettingsDialog and FirstLaunchDialog.
 
-SettingsDialog — sidebar gear-button dialog (Save / Cancel).
+SettingsDialog - sidebar gear-button dialog (Save / Cancel).
 """
 
 import core.start_manager as sm
@@ -49,7 +49,7 @@ from gui.themes import get_token
 
 class SettingsPanel(QWidget):
     """
-    The shared settings form — display name + light/dark theme pickers.
+    The shared settings form - display name + light/dark theme pickers.
     Contains no buttons or title; embed this inside any dialog.
     """
 
@@ -324,7 +324,7 @@ class SettingsDialog(QDialog):
 
         # Explanation
         prof_desc = QLabel(
-            "Profiles store your agency details — name, logo, and contact information. "
+            "Profiles store your agency details - name, logo, and contact information. "
             "The active profile is used in generated reports and exports."
         )
         prof_desc.setWordWrap(True)

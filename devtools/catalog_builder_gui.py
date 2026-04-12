@@ -1,7 +1,7 @@
 """
 devtools/catalog_builder_gui.py
 
-Catalog Builder — inspect, validate, and rebuild material_catalog.json.
+Catalog Builder - inspect, validate, and rebuild material_catalog.json.
 
 Features:
   - Auto-detect material_database root from the project tree
@@ -119,7 +119,7 @@ _NCOLS       = 7
 
 
 # ---------------------------------------------------------------------------
-# Helpers — locate material_catalog.py
+# Helpers - locate material_catalog.py
 # ---------------------------------------------------------------------------
 
 
@@ -480,7 +480,7 @@ class CatalogBuilderDialog(QDialog):
         if manifest_path.exists():
             self._load_registry()
         else:
-            self._log_line("No material_catalog.json found — click Rebuild Registry to create it.", color=_YELLOW)
+            self._log_line("No material_catalog.json found - click Rebuild Registry to create it.", color=_YELLOW)
 
     # ── Browse root ────────────────────────────────────────────────────────────
 
@@ -528,7 +528,7 @@ class CatalogBuilderDialog(QDialog):
             return
         manifest_path = Path(self._mod.CATALOG_MANIFEST_PATH)
         if not manifest_path.exists():
-            self._log_line("material_catalog.json not found — rebuild first.", color=_YELLOW)
+            self._log_line("material_catalog.json not found - rebuild first.", color=_YELLOW)
             return
 
         try:

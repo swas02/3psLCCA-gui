@@ -149,12 +149,12 @@ class SocialCost(ScrollableForm):
         self._field_map.pop("source", None)  # managed manually, not via base autosave
         self.source.currentIndexChanged.connect(self._on_mode_changed)
 
-        # Effective SCC summary — padded container gives it breathing room
+        # Effective SCC summary - padded container gives it breathing room
         # between the combo above and the stack below.
         _rc, self._result_lbl = self._padded_label(top=10, bottom=6)
         f.addRow(_rc)
 
-        # Stack — one panel per methodology
+        # Stack - one panel per methodology
         self._stack = QStackedWidget()
         f.addRow(self._stack)
 
@@ -306,7 +306,7 @@ class SocialCost(ScrollableForm):
             return
         mode = self.source.currentText()
 
-        # Release the fixed height BEFORE the panel swap — otherwise Qt stretches
+        # Release the fixed height BEFORE the panel swap - otherwise Qt stretches
         # the new (shorter) panel's rows to fill the old panel's locked height.
         self._stack.setMaximumHeight(16777215)
         self._stack.setMinimumHeight(0)
@@ -375,7 +375,7 @@ class SocialCost(ScrollableForm):
         
         if base == 0:
             self._ricke_result_lbl.setText(
-                "<span style='color:red;'><b>Invalid combination</b> — this SSP/RCP pair "
+                "<span style='color:red;'><b>Invalid combination</b> - this SSP/RCP pair "
                 "does not exist in the Ricke et al. table. "
                 "Valid pairs: SSP1+RCP2.6, SSP1+RCP4.5, SSP2+RCP4.5, "
                 "SSP2+RCP6.0, SSP3+RCP8.5, SSP5+RCP8.5.</span>"
@@ -604,7 +604,7 @@ class SocialCost(ScrollableForm):
         finally:
             self._loading = False
 
-        # Sync stack to loaded mode — suppressed so it doesn't trigger a save
+        # Sync stack to loaded mode - suppressed so it doesn't trigger a save
         self._suppress_signals = True
         self._on_mode_changed()
         self._suppress_signals = False
@@ -628,20 +628,20 @@ class SocialCost(ScrollableForm):
                 )
             elif data.get("ricke", {}).get("usd_to_local_rate", 0.0) == 0.0:
                 warnings.append(
-                    "USD Conversion Rate is 0 — the effective SCC will be 0."
+                    "USD Conversion Rate is 0 - the effective SCC will be 0."
                 )
         elif _MODE_NITI in mode:
             cur = data.get("niti", {}).get("currency", "INR")
             if cur != "INR" and data.get("niti", {}).get("inr_to_local_rate", 0.0) == 0.0:
                 warnings.append(
-                    "INR Conversion Rate is 0 — the effective SCC will be 0."
+                    "INR Conversion Rate is 0 - the effective SCC will be 0."
                 )
         else:
             scc = data.get("result", {}).get("cost_of_carbon_local", 0.0)
             if scc == 0.0:
                 if _MODE_CUSTOM in mode:
                     warnings.append(
-                        "Social Cost of Carbon is 0 — enter a custom SCC value."
+                        "Social Cost of Carbon is 0 - enter a custom SCC value."
                     )
                 else:
                     warnings.append("Social Cost of Carbon is 0.")

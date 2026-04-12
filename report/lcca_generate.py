@@ -108,7 +108,7 @@ class LCCAReportLatex(Document):
             )
         )
 
-        # Preamble — match the clean docx look
+        # Preamble - match the clean docx look
         self.preamble.append(NoEscape(r"""
 \renewcommand{\arraystretch}{1.2}
 \setlength{\tabcolsep}{5pt}
@@ -121,7 +121,7 @@ class LCCAReportLatex(Document):
 
 
     def add_lcca_results(self, config, data):
-        """Section 3: LCCA Results — Tables 3-1 through 3-7."""
+        """Section 3: LCCA Results - Tables 3-1 through 3-7."""
         with self.create(Section("LCCA results")):
             self.append(
                 "This chapter presents software-generated numerical results "
@@ -208,7 +208,7 @@ class LCCAReportLatex(Document):
                     r"\endhead" + "\n"
                     # Footer on all pages except last
                     r"\endfoot" + "\n"
-                    # Last-page footer — nothing
+                    # Last-page footer - nothing
                     r"\hline" + "\n"
                     r"\endlastfoot" + "\n"
                     # Data rows
@@ -1236,7 +1236,7 @@ IETC = SCC \times \sum_{j=1}^{o} \left[ Q_{j} \times Di_{j} \times (EF_{tp})_{j}
         self.append(NoEscape(r"\vspace{4pt}"))
 
     # ==================================================================
-    # METHOD: add_multi_table — Multi-column table with caption
+    # METHOD: add_multi_table - Multi-column table with caption
     # ==================================================================
     def add_multi_table(self, caption, headers, data, col_spec):
         """
@@ -1263,7 +1263,7 @@ IETC = SCC \times \sum_{j=1}^{o} \left[ Q_{j} \times Di_{j} \times (EF_{tp})_{j}
         self.append(NoEscape(r"\vspace{4pt}"))
 
     # ==================================================================
-    # METHOD: save_latex — Main entry point (matches CreateLatex API)
+    # METHOD: save_latex - Main entry point (matches CreateLatex API)
     # ==================================================================
     def save_latex(self, config, data, filename="LCCA_Report", output_dir=None):
         """
@@ -1289,7 +1289,7 @@ IETC = SCC \times \sum_{j=1}^{o} \left[ Q_{j} \times Di_{j} \times (EF_{tp})_{j}
         self.generate_pdf_output(filename, output_dir=output_dir)
 
     # ==================================================================
-    # METHOD: add_introduction — Section 1: Introduction to LCCA
+    # METHOD: add_introduction - Section 1: Introduction to LCCA
     # ==================================================================
     def add_introduction(self, config, data):
         """
@@ -1321,7 +1321,7 @@ IETC = SCC \times \sum_{j=1}^{o} \left[ Q_{j} \times Di_{j} \times (EF_{tp})_{j}
 
 
     def add_input_data(self, config, data):
-        """Section 2: Input Data — all 17 tables matching Word doc exactly."""
+        """Section 2: Input Data - all 17 tables matching Word doc exactly."""
         with self.create(Section("Input data")):
             self.append(
                 "This chapter provides general project information, including "
@@ -1355,7 +1355,7 @@ IETC = SCC \times \sum_{j=1}^{o} \left[ Q_{j} \times Di_{j} \times (EF_{tp})_{j}
             with self.create(Subsection("Construction data")):
                 self.append("Material quantities and unit rates.")
 
-                # Table 2-3: 6 columns — Category | Material | Quantity | Unit | Rate | Source
+                # Table 2-3: 6 columns - Category | Material | Quantity | Unit | Rate | Source
                 # One longtable per structural category (Foundation, Sub Structure, etc.)
                 if config.get(KEY_SHOW_CONSTRUCTION, True):
                     construction = data.get(KEY_CONSTRUCTION, {})
@@ -1456,7 +1456,7 @@ IETC = SCC \times \sum_{j=1}^{o} \left[ Q_{j} \times Di_{j} \times (EF_{tp})_{j}
                         self.append(NoEscape(longtable_tex))
                         self.append(NoEscape(r"\vspace{4pt}"))
 
-                # Table 2-4: 3 columns — row | Assumed % | Basis
+                # Table 2-4: 3 columns - row | Assumed % | Basis
                 if config.get(KEY_SHOW_LCC_ASSUMPTIONS, True):
                     self.append(NoEscape(r"\vspace{4pt}"))
                     self.append(NoEscape(r"\needspace{8\baselineskip}"))
@@ -1534,7 +1534,7 @@ IETC = SCC \times \sum_{j=1}^{o} \left[ Q_{j} \times Di_{j} \times (EF_{tp})_{j}
                             t.add_hline()
                     self.append(NoEscape(r"\vspace{4pt}"))
 
-                # Table 2-12: Human injury cost data — 2 cols
+                # Table 2-12: Human injury cost data - 2 cols
                 if config.get(KEY_SHOW_HUMAN_INJURY, True):
                     self.append(NoEscape(r"\vspace{4pt}"))
                     self.append(NoEscape(r"\needspace{8\baselineskip}"))
@@ -1554,7 +1554,7 @@ IETC = SCC \times \sum_{j=1}^{o} \left[ Q_{j} \times Di_{j} \times (EF_{tp})_{j}
                             t.add_hline()
                     self.append(NoEscape(r"\vspace{4pt}"))
 
-                # Table 2-13: Vehicle damage cost data — 2 cols
+                # Table 2-13: Vehicle damage cost data - 2 cols
                 if config.get(KEY_SHOW_VEHICLE_DAMAGE, True):
                     self.append(NoEscape(r"\vspace{4pt}"))
                     self.append(NoEscape(r"\needspace{12\baselineskip}"))
@@ -1581,7 +1581,7 @@ IETC = SCC \times \sum_{j=1}^{o} \left[ Q_{j} \times Di_{j} \times (EF_{tp})_{j}
                     "and carbon pricing assumptions."
                 )
 
-                # Table 2-13: Social Cost of Carbon — 2-col kv
+                # Table 2-13: Social Cost of Carbon - 2-col kv
                 if config.get(KEY_SHOW_SOCIAL_CARBON, True):
                     self.add_kv_table(
                         "Social Cost of Carbon",
@@ -1589,7 +1589,7 @@ IETC = SCC \times \sum_{j=1}^{o} \left[ Q_{j} \times Di_{j} \times (EF_{tp})_{j}
                         col1="9cm", col2="5.5cm",
                     )
 
-                # Table 2-15: 7 cols — Category | Material | Qty | Unit | CF | EF | EF unit
+                # Table 2-15: 7 cols - Category | Material | Qty | Unit | CF | EF | EF unit
                 if config.get(KEY_SHOW_MATERIAL_EMISSION, True):
                     self.append(NoEscape(r"\vspace{4pt}"))
                     self.append(NoEscape(r"\needspace{8\baselineskip}"))
@@ -1621,7 +1621,7 @@ IETC = SCC \times \sum_{j=1}^{o} \left[ Q_{j} \times Di_{j} \times (EF_{tp})_{j}
                     self.append(NoEscape(r"}"))
                     self.append(NoEscape(r"\vspace{4pt}"))
 
-                # Table 2-15: 2 cols — row | Assumed % of initial emission
+                # Table 2-15: 2 cols - row | Assumed % of initial emission
                 if config.get(KEY_SHOW_USE_EMISSION, True):
                     self.append(NoEscape(r"\vspace{4pt}"))
                     self.append(NoEscape(r"\needspace{8\baselineskip}"))
@@ -1657,7 +1657,7 @@ IETC = SCC \times \sum_{j=1}^{o} \left[ Q_{j} \times Di_{j} \times (EF_{tp})_{j}
                             t.add_hline()
                     self.append(NoEscape(r"\vspace{4pt}"))
 
-                # Table 2-17: 8 cols — emissions from transportation of material (NEW)
+                # Table 2-17: 8 cols - emissions from transportation of material (NEW)
                 if config.get(KEY_SHOW_TRANSPORT_EMISSION, True):
                     self.append(NoEscape(r"\vspace{4pt}"))
                     self.append(NoEscape(r"\needspace{8\baselineskip}"))
@@ -1786,7 +1786,7 @@ def generate_report(output_filename="LCCA_Report", input_json=None, config_overr
 
 
 # ==============================================================================
-# MAIN — CLI entry point
+# MAIN - CLI entry point
 # ==============================================================================
 
 if __name__ == "__main__":

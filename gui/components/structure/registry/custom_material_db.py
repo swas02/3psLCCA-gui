@@ -21,7 +21,7 @@ class CustomMaterialDB:
     """
     Thin wrapper around a single SQLite file that stores custom SOR-style
     materials.  Each 'logical database' the user creates is just a distinct
-    value in the db_name column — no separate files needed.
+    value in the db_name column - no separate files needed.
     """
 
     def __init__(self, path: Path = _DB_PATH):

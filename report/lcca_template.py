@@ -160,7 +160,7 @@ class LCCATemplate:
         )
 
     def get_config(self) -> Dict[str, bool]:
-        """Return a dict of display flags — all True by default."""
+        """Return a dict of display flags - all True by default."""
         return {
             KEY_SHOW_BRIDGE_DESC:       True,
             KEY_SHOW_FINANCIAL:         True,
@@ -338,7 +338,7 @@ class LCCATemplate:
                     if meta_source in ("db", "db_modified"):
                         source_display = source_db_key
                     else:
-                        # manual or anything else — no db key, show blank
+                        # manual or anything else - no db key, show blank
                         source_display = ""
 
                     rows.append([

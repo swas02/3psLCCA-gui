@@ -1,7 +1,7 @@
 """
 gui/components/first_launch_dialog.py
 
-First-launch welcome dialog — same settings form as the sidebar Settings dialog,
+First-launch welcome dialog - same settings form as the sidebar Settings dialog,
 wrapped in a welcome header with "Skip" / "Get Started" buttons.
 """
 

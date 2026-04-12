@@ -1,5 +1,5 @@
 """
-webview.py — Offline docs viewer using PySide6 WebEngine.
+webview.py - Offline docs viewer using PySide6 WebEngine.
 
 Loads site/ over file:// with the WebEngine flags needed for local XHR/fetch
 (mkdocs search, JSON loading) to work without a server.
@@ -19,7 +19,7 @@ CLI:
     python webview.py guide/getting-started.html
 
 Config:
-    DOCS_DIR  — base directory to serve (default: site/ next to webview.py)
+    DOCS_DIR  - base directory to serve (default: site/ next to webview.py)
 """
 
 import sys
@@ -61,7 +61,7 @@ def _ensure_app() -> QApplication:
     """Return the existing QApplication or create one (exactly once)."""
     global _app
     if _app is None:
-        # Allow file:// pages to make XHR/fetch calls — same as Chrome's behaviour
+        # Allow file:// pages to make XHR/fetch calls - same as Chrome's behaviour
         # when opening local files. Must be set before QApplication is created.
         if "--allow-file-access-from-files" not in sys.argv:
             sys.argv.append("--allow-file-access-from-files")
@@ -77,7 +77,7 @@ def _ensure_view() -> QWebEngineView:
     if _view is None:
         _ensure_app()
 
-        # Off-the-record profile — no cache/cookie bleed between sessions
+        # Off-the-record profile - no cache/cookie bleed between sessions
         _profile = QWebEngineProfile(parent=None)
         settings = _profile.settings()
 
@@ -124,7 +124,7 @@ def navigate(
         Custom window title; defaults to the filename.
     run_loop : bool
         Start the Qt event loop after showing the window.
-        Default False — for use inside an already-running Qt app.
+        Default False - for use inside an already-running Qt app.
         Set True only at your application entry point.
     """
     base      = Path(docs_dir).resolve() if docs_dir is not None else DOCS_DIR.resolve()

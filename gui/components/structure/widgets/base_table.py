@@ -22,11 +22,11 @@ from gui.theme import FS_SM, FW_SEMIBOLD
 _HDR_FONT = QFont("Ubuntu", FS_SM, FW_SEMIBOLD)
 
 _ACTION_W = 80  # fixed Action column width
-_ROW_H = 50  # row height — 11 px clearance top + bottom around 28 px button
+_ROW_H = 50  # row height - 11 px clearance top + bottom around 28 px button
 
 
 # ---------------------------------------------------------------------------
-# Action column delegate — paints icon buttons directly, no QWidget overhead
+# Action column delegate - paints icon buttons directly, no QWidget overhead
 # ---------------------------------------------------------------------------
 
 
@@ -106,7 +106,7 @@ class _ActionDelegate(BaseActionDelegate):
 
 
 # ---------------------------------------------------------------------------
-# Frozen Action overlay — single-column widget pinned to the right edge
+# Frozen Action overlay - single-column widget pinned to the right edge
 # ---------------------------------------------------------------------------
 
 
@@ -116,7 +116,7 @@ class _FrozenActionTable(QTableWidget):
     reserves via setViewportMargins(0, 0, _ACTION_W, 0).
 
     Because the main table's viewport is already narrowed by _ACTION_W, no
-    scrollable column ever enters this zone — the overlay just sits on top of
+    scrollable column ever enters this zone - the overlay just sits on top of
     the dead margin and nothing is hidden behind it.
     """
 
@@ -225,8 +225,8 @@ class StructureTableWidget(TooltipTableMixin, QTableWidget):
             ("Unit", _C),  # 3  ┘
             ("Source", _L),  # 4
             ("Total", _R),  # 5
-            ("Action", _C),  # 6  hidden — data/delegate only
-            ("", _C),  # 7  placeholder — same width as overlay, keeps Total visible
+            ("Action", _C),  # 6  hidden - data/delegate only
+            ("", _C),  # 7  placeholder - same width as overlay, keeps Total visible
         ]
         for col, (label, align) in enumerate(_headers):
             item = QTableWidgetItem(label)
@@ -350,7 +350,7 @@ class StructureTableWidget(TooltipTableMixin, QTableWidget):
         action_item.setFlags(Qt.ItemIsEnabled)
         self.setItem(row, 6, action_item)
 
-        # Col 7: empty placeholder — reserves space so Total is never hidden
+        # Col 7: empty placeholder - reserves space so Total is never hidden
         self.setItem(row, 7, QTableWidgetItem())
 
         # Mirror in frozen overlay
@@ -392,7 +392,7 @@ class StructureTableWidget(TooltipTableMixin, QTableWidget):
 
         used = sum(col_widths.values())
         if used > vp_w:
-            # Too narrow for proportional layout — scale down to mins, enable scroll
+            # Too narrow for proportional layout - scale down to mins, enable scroll
             scale = vp_w / used
             col_widths = {
                 c: max(mins[c], int(w * scale)) for c, w in col_widths.items()

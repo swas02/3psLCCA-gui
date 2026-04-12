@@ -21,7 +21,7 @@ class AgencyProfileForm(ScrollableForm):
     def __init__(self):
         super().__init__(controller=None, chunk_name="agency_profile")
 
-        # Exclude the section header and agency_logo — logo is handled by the
+        # Exclude the section header and agency_logo - logo is handled by the
         # avatar widget in SettingsDialog, not a separate Browse field here.
         fields_no_logo = [
             f for f in AGENCY_FIELDS

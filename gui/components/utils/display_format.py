@@ -3,7 +3,7 @@ gui/components/utils/display_format.py
 
 Global numeric display formatting for 3psLCCA.
 
-Change DECIMAL_PLACES once here — it propagates to every table cell,
+Change DECIMAL_PLACES once here - it propagates to every table cell,
 result label, formula preview, and input field across the app.
 """
 
@@ -27,7 +27,7 @@ def fmt_comma(val) -> str:
 
 
 def fmt_pct(val) -> str:
-    """Percentage — always 1 decimal place regardless of DECIMAL_PLACES."""
+    """Percentage - always 1 decimal place regardless of DECIMAL_PLACES."""
     try:
         return f"{float(val):.1f}"
     except (TypeError, ValueError):

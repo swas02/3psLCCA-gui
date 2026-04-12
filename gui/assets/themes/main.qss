@@ -27,7 +27,7 @@ QWidget {
     background-color: $window;
 }
 
-/* ── Form controls — inputs ─────────────────────────────────────────────── */
+/* ── Form controls - inputs ─────────────────────────────────────────────── */
 QLineEdit,
 QTextEdit,
 QPlainTextEdit {
@@ -67,7 +67,7 @@ QPlainTextEdit:disabled {
     border-color: $surface_mid;
 }
 
-/* ── Form controls — spin boxes ─────────────────────────────────────────── */
+/* ── Form controls - spin boxes ─────────────────────────────────────────── */
 QSpinBox,
 QDoubleSpinBox {
     background-color: $base;
@@ -129,7 +129,7 @@ QDoubleSpinBox::down-arrow:disabled {
     image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpolygon points='12,16 6,8 18,8' fill='$text_disabled-url'/%3E%3C/svg%3E");
 }
 
-/* ── Table-cell spin boxes (transparent, borderless — cell border highlights on focus) ── */
+/* ── Table-cell spin boxes (transparent, borderless - cell border highlights on focus) ── */
 TableSpinBox,
 TableDoubleSpinBox {
     background-color: transparent;
@@ -184,7 +184,7 @@ TableDoubleSpinBox::down-button {
 }
 
 
-/* ── Table-cell line edit (transparent, borderless — cell border on focus) ── */
+/* ── Table-cell line edit (transparent, borderless - cell border on focus) ── */
 TableLineEdit {
     background-color: transparent;
     border: none;
@@ -215,7 +215,7 @@ TableLineEdit:disabled {
     color: $text_disabled;
     border: none;
 }
-/* ── Form controls — combo box ──────────────────────────────────────────── */
+/* ── Form controls - combo box ──────────────────────────────────────────── */
 QComboBox {
     background-color: $base;
     border: 1px solid $surface_mid;
@@ -302,7 +302,7 @@ QComboBox QAbstractItemView::item:selected {
 
 
 
-/* ── Form controls — check box ──────────────────────────────────────────── */
+/* ── Form controls - check box ──────────────────────────────────────────── */
 QCheckBox {
     spacing: 12px;
     color: $text;
@@ -339,7 +339,7 @@ QCheckBox:disabled {
     color: $text_disabled;
 }
 
-/* ── Form controls — radio button ───────────────────────────────────────── */
+/* ── Form controls - radio button ───────────────────────────────────────── */
 QRadioButton {
     spacing: 12px;
     color: $text;

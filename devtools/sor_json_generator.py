@@ -67,7 +67,7 @@ except ImportError:
 
 CID_PREFIX = "cid#"
 
-# All keys are lowercase — lookup uses field_part.lower() for case-insensitive matching.
+# All keys are lowercase - lookup uses field_part.lower() for case-insensitive matching.
 # Required columns: name, unit, rate.  All others (including id) are optional.
 CID_TO_INTERNAL: dict[str, str] = {
     "id": "id",  # optional
@@ -200,7 +200,7 @@ def parse_excel(path: str) -> dict[str, list[dict]]:
                 record[field] = _clean(raw)
 
             # If CID#Carbon_Emission_Src was absent from this sheet's headers,
-            # try to recover it from the scrap_rate column — the Excel data
+            # try to recover it from the scrap_rate column - the Excel data
             # sometimes has the source string (e.g. "IFC") shifted left by one.
             if not has_carbon_src_col:
                 candidate = record.get("scrap_rate", "")

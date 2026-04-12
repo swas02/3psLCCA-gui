@@ -69,7 +69,7 @@ def _section_label(text: str) -> QLabel:
 
 
 # ---------------------------------------------------------------------------
-# Material lookup — scan all structure chunks by UUID
+# Material lookup - scan all structure chunks by UUID
 # ---------------------------------------------------------------------------
 
 
@@ -116,14 +116,14 @@ def calc_vehicle_emission(entry: dict, mat_index: dict) -> tuple:
     warnings = []
 
     if cap <= 0:
-        warnings.append("Payload capacity is zero — check vehicle data.")
+        warnings.append("Payload capacity is zero - check vehicle data.")
         return 0.0, [], warnings
 
     if dist <= 0:
-        warnings.append("Distance is zero — no emission calculated.")
+        warnings.append("Distance is zero - no emission calculated.")
 
     if ef <= 0:
-        warnings.append("Emission factor is zero — no emission calculated.")
+        warnings.append("Emission factor is zero - no emission calculated.")
 
     for mat_entry in uuids:
         # materials is now [{uuid, kg_factor}]
@@ -177,16 +177,16 @@ def calc_vehicle_emission(entry: dict, mat_index: dict) -> tuple:
         if qty <= 0:
             warns.append("⚠ Zero quantity")
         if qty_kg <= 0 and qty > 0:
-            warns.append("⚠ Zero kg — check factor")
+            warns.append("⚠ Zero kg - check factor")
         if trips > 1000:
-            warns.append(f"⚠ {trips} trips — unusually high")
+            warns.append(f"⚠ {trips} trips - unusually high")
         is_mass = UNIT_DIMENSION.get(unit.lower()) == "Mass"
         if not is_mass and abs(kg_factor - 1.0) < 1e-6:
-            warns.append(f"⚠ 1:1 factor for {unit} — verify conversion")
+            warns.append(f"⚠ 1:1 factor for {unit} - verify conversion")
 
         warn = " | ".join(warns)
         if trips > 1000:
-            warnings.append(f"'{name}': {trips} trips — unusually high, check data.")
+            warnings.append(f"'{name}': {trips} trips - unusually high, check data.")
 
         material_results.append(
             {
@@ -239,7 +239,7 @@ class VehicleCard(QGroupBox):
         origin = r.get("origin", "").strip()
         origin_part = f"{origin}  |  " if origin else ""
         title = (
-            f"{v.get('name', 'Vehicle')}  —  "
+            f"{v.get('name', 'Vehicle')}  -  "
             f"{origin_part}"
             f"{fmt(r.get('distance_km', 0))} km  |  "
             f"{fmt_comma(total_emission)} kgCO₂e"
@@ -370,7 +370,7 @@ class VehicleCard(QGroupBox):
                 table.setItem(row, 0, self._item(mat.get("name", "")))
                 table.setItem(row, 1, self._item(mat.get("category", "")))
                 for c in range(2, 6):
-                    table.setItem(row, c, self._item("—", Qt.AlignCenter))
+                    table.setItem(row, c, self._item("-", Qt.AlignCenter))
                 label = "In Trash" if status == "trashed" else "Removed"
                 warn_item = self._item(f"✕ {label}", Qt.AlignCenter)
                 warn_item.setForeground(QColor(get_token("")))
@@ -391,7 +391,7 @@ class VehicleCard(QGroupBox):
 
 
 # ---------------------------------------------------------------------------
-# TransportEmissions — main widget
+# TransportEmissions - main widget
 # ---------------------------------------------------------------------------
 
 
@@ -415,8 +415,8 @@ class TransportEmissions(QWidget):
         summary_layout = QHBoxLayout(summary_bar)
         summary_layout.setContentsMargins(8, 8, 8, 8)
 
-        self.total_lbl = QLabel("Total Transport Emissions: — kgCO₂e")
-        self.vehicle_lbl = QLabel("Vehicles: —")
+        self.total_lbl = QLabel("Total Transport Emissions: - kgCO₂e")
+        self.vehicle_lbl = QLabel("Vehicles: -")
         self.details_btn = QPushButton("Show Details ▼")
         self.details_btn.setFlat(True)
         self.details_btn.setCursor(Qt.PointingHandCursor)
@@ -434,10 +434,10 @@ class TransportEmissions(QWidget):
         details_layout = QHBoxLayout(self.details_widget)
         details_layout.setContentsMargins(8, 0, 8, 8)
 
-        self.foundation_lbl = QLabel("Foundation: —")
-        self.sub_lbl = QLabel("Sub Structure: —")
-        self.super_lbl = QLabel("Super Structure: —")
-        self.misc_lbl = QLabel("Misc: —")
+        self.foundation_lbl = QLabel("Foundation: -")
+        self.sub_lbl = QLabel("Sub Structure: -")
+        self.super_lbl = QLabel("Super Structure: -")
+        self.misc_lbl = QLabel("Misc: -")
 
         for lbl in [self.foundation_lbl, self.sub_lbl, self.super_lbl, self.misc_lbl]:
             details_layout.addWidget(lbl)
@@ -708,11 +708,11 @@ class TransportEmissions(QWidget):
 
         if result["active_count"] == 0:
             warnings.append(
-                "No active vehicle entries — add a vehicle in the Transportation Emissions tab."
+                "No active vehicle entries - add a vehicle in the Transportation Emissions tab."
             )
         elif result["total_emission"] == 0.0:
             warnings.append(
-                "Total transport emission is 0 kgCO₂e — "
+                "Total transport emission is 0 kgCO₂e - "
                 "check vehicle distance, payload, and emission factor."
             )
 

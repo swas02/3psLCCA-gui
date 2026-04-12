@@ -1,4 +1,4 @@
-# Unit System — Reference & Refactoring Plan
+# Unit System - Reference & Refactoring Plan
 
 ## Overview
 
@@ -41,13 +41,13 @@ Pure logic module. Imports data from `definitions.py`, adds alias resolution and
 | Name | Type | Description |
 |------|------|-------------|
 | `_custom_units_cache` | `list[dict]` | In-process cache of user-defined custom units loaded from `CustomMaterialDB` |
-| `_UNIT_ALIASES` | `dict[str, str]` | Normalises raw SOR strings to canonical unit codes. Only 11 entries — incomplete |
+| `_UNIT_ALIASES` | `dict[str, str]` | Normalises raw SOR strings to canonical unit codes. Only 11 entries - incomplete |
 
 #### Public functions
 
 | Function | Signature | Returns | Description |
 |----------|-----------|---------|-------------|
-| `load_custom_units` | `() → None` | — | Reads `CustomMaterialDB.list_custom_units()` into `_custom_units_cache`. Call at startup and after any custom unit add/delete |
+| `load_custom_units` | `() → None` | - | Reads `CustomMaterialDB.list_custom_units()` into `_custom_units_cache`. Call at startup and after any custom unit add/delete |
 | `get_custom_units` | `() → list[dict]` | Current cache | Returns in-process custom unit list without hitting DB |
 | `get_known_units` | `() → set[str]` | Set of strings | All recognised unit codes: `UNIT_TO_SI.keys()` ∪ `_UNIT_ALIASES.keys()`. Does NOT include custom units |
 | `get_unit_info` | `(code, custom_units=None) → (float\|None, str\|None)` | `(to_si, dimension)` | Main resolution function. Order: canonical registry → custom cache → alias fallback. Returns `(None, None)` if unknown |
@@ -60,48 +60,48 @@ Pure logic module. Imports data from `definitions.py`, adds alias resolution and
 ## Who Calls What
 
 ### `load_custom_units()`
-- `gui/main.py` — called once at app startup
-- `gui/components/structure/widgets/material_dialog.py` — called after user saves a new custom unit
+- `gui/main.py` - called once at app startup
+- `gui/components/structure/widgets/material_dialog.py` - called after user saves a new custom unit
 
 ### `get_custom_units()`
-- `gui/components/structure/widgets/material_dialog.py` — populates "Custom" section in unit dropdown; checks for duplicate symbols on add
+- `gui/components/structure/widgets/material_dialog.py` - populates "Custom" section in unit dropdown; checks for duplicate symbols on add
 
 ### `get_known_units()`
-- `gui/components/structure/excel_importer.py` (lines 381, 392) — validates unit strings during SOR Excel import
+- `gui/components/structure/excel_importer.py` (lines 381, 392) - validates unit strings during SOR Excel import
 
 ### `get_unit_info()`
-- `gui/components/structure/excel_importer.py` (line 474) — resolves each SOR item's unit string during import
+- `gui/components/structure/excel_importer.py` (line 474) - resolves each SOR item's unit string during import
 - Called internally by `suggest_cf`, `analyze_conversion_sympy`, `validate_cf_simple`
 
 ### `analyze_conversion_sympy()`
-- `gui/components/carbon_emission/widgets/material_emissions.py` — checks whether stored conversion factor is plausible when displaying emission data
+- `gui/components/carbon_emission/widgets/material_emissions.py` - checks whether stored conversion factor is plausible when displaying emission data
 
 ### `UNIT_TO_SI`
-- `gui/components/utils/unit_resolver.py` — core lookup table
-- `gui/components/structure/widgets/material_dialog.py` — `_get_unit_info()`, duplicate symbol check
+- `gui/components/utils/unit_resolver.py` - core lookup table
+- `gui/components/structure/widgets/material_dialog.py` - `_get_unit_info()`, duplicate symbol check
 
 ### `UNIT_DIMENSION`
-- `gui/components/utils/unit_resolver.py` — dimension comparison
-- `gui/components/carbon_emission/widgets/transport_emissions.py` — filters unit dropdown by dimension
-- `gui/components/carbon_emission/widgets/transport_dialog.py` — same
+- `gui/components/utils/unit_resolver.py` - dimension comparison
+- `gui/components/carbon_emission/widgets/transport_emissions.py` - filters unit dropdown by dimension
+- `gui/components/carbon_emission/widgets/transport_dialog.py` - same
 
 ### `SI_BASE_UNITS`
-- `gui/components/utils/unit_resolver.py` — imported but not directly used in functions (available for callers)
+- `gui/components/utils/unit_resolver.py` - imported but not directly used in functions (available for callers)
 
 ### `UNIT_DISPLAY`
-- `gui/components/carbon_emission/widgets/material_emissions.py` — formats unit symbol in emission display
-- `gui/components/structure/widgets/base_table.py` — shows unit column symbol in material table
-- `gui/components/carbon_emission/widgets/transport_dialog.py` — unit symbol in transport form
-- `gui/components/recycling/main.py` — unit symbol in recycling panel
+- `gui/components/carbon_emission/widgets/material_emissions.py` - formats unit symbol in emission display
+- `gui/components/structure/widgets/base_table.py` - shows unit column symbol in material table
+- `gui/components/carbon_emission/widgets/transport_dialog.py` - unit symbol in transport form
+- `gui/components/recycling/main.py` - unit symbol in recycling panel
 
 ### `_CONSTRUCTION_UNITS` / `UNIT_DROPDOWN_DATA`
-- `gui/components/structure/widgets/material_dialog.py` — builds the grouped unit dropdown
+- `gui/components/structure/widgets/material_dialog.py` - builds the grouped unit dropdown
 
 ---
 
 ## Known Problems
 
-### 1. `UNIT_TO_KG` vs `UNIT_TO_SI` — two separate mass dicts
+### 1. `UNIT_TO_KG` vs `UNIT_TO_SI` - two separate mass dicts
 
 `UNIT_TO_KG` has entries that `UNIT_TO_SI` does not:
 
@@ -120,10 +120,10 @@ Since `kg` is the SI base for Mass, `UNIT_TO_KG` and `UNIT_TO_SI` (Mass subset) 
 
 `"t"` (tonne) is the most commonly used mass unit in Indian SORs. It exists in `UNIT_TO_KG`
 and in `_UNIT_ALIASES` (`"t" → "tonne"`) but NOT in `UNIT_TO_SI`. So `get_unit_info("t")`
-hits the alias fallback and resolves via `"tonne"`. Fragile — and `"t"` appears in `UNIT_DISPLAY`
+hits the alias fallback and resolves via `"tonne"`. Fragile - and `"t"` appears in `UNIT_DISPLAY`
 as a direct key (`"t": "t"`), which means display works but resolution is indirect.
 
-### 3. `_UNIT_ALIASES` is too small — only 11 entries
+### 3. `_UNIT_ALIASES` is too small - only 11 entries
 
 Current aliases:
 ```
@@ -142,7 +142,7 @@ When these appear in an imported SOR, `get_unit_info()` returns `(None, None)`.
 | Physical unit | Code 1 | Code 2 | Why both? |
 |--------------|--------|--------|-----------|
 | Square metre | `m2` | `sqm` | `m2` is ISO notation, `sqm` is SOR convention |
-| Cubic metre | `m3` | `cum` | same — ISO vs SOR |
+| Cubic metre | `m3` | `cum` | same - ISO vs SOR |
 | Metric tonne | `mt` | `tonne` | `mt` is SOR abbreviation |
 
 Both codes exist in `UNIT_TO_SI` and `UNIT_DIMENSION` with identical values. The canonical
@@ -152,7 +152,7 @@ one is unclear. The system works but is confusing to extend.
 
 The class exists only to group units for the dropdown. `get_dropdown_data()` just flattens
 the dict into a list. The grouping info (dimension) is already in `UNIT_DIMENSION`. The
-name and example strings are not stored anywhere else — they live only inside `ConstructionUnits`.
+name and example strings are not stored anywhere else - they live only inside `ConstructionUnits`.
 
 ### 6. `get_known_units()` does not include custom units
 
@@ -167,7 +167,7 @@ flag a custom unit as "unrecognised" even if it is defined by the user.
 ### Goal
 
 Replace scattered hardcoded dicts with a single `units.json` data file.
-Keep all public function signatures and export names identical — no other file changes.
+Keep all public function signatures and export names identical - no other file changes.
 
 ### `units.json` structure
 
@@ -206,27 +206,27 @@ Keep all public function signatures and export names identical — no other file
 ```
 
 Key fields per unit:
-- `dimension` — replaces `UNIT_DIMENSION`
-- `to_si` — replaces `UNIT_TO_SI` and `UNIT_TO_KG`
-- `display` — replaces `UNIT_DISPLAY`
-- `name` + `example` — replaces `ConstructionUnits` name/example strings
-- `aliases` — replaces `_UNIT_ALIASES` (flattened at load time)
-- `systems` — metric / imperial / traditional (for filtering)
-- `preferred_in` — country codes where this unit appears first in dropdowns
+- `dimension` - replaces `UNIT_DIMENSION`
+- `to_si` - replaces `UNIT_TO_SI` and `UNIT_TO_KG`
+- `display` - replaces `UNIT_DISPLAY`
+- `name` + `example` - replaces `ConstructionUnits` name/example strings
+- `aliases` - replaces `_UNIT_ALIASES` (flattened at load time)
+- `systems` - metric / imperial / traditional (for filtering)
+- `preferred_in` - country codes where this unit appears first in dropdowns
 
 ### `dimensions` block
 
-- `si` — the SI base unit code for this dimension
-- `common` — the practical reference unit for construction (e.g. `t` not `kg` for mass)
+- `si` - the SI base unit code for this dimension
+- `common` - the practical reference unit for construction (e.g. `t` not `kg` for mass)
 
 ### Migration steps
 
 | Step | Change | Risk |
 |------|--------|------|
-| 1 | Write `units.json` seeded from current data, fix inconsistencies | None — file only |
-| 2 | Rewrite `definitions.py` to load from `units.json`, keep same exports | Low — same interface |
-| 3 | Flatten aliases from `units.json` in `unit_resolver.py`, remove `_UNIT_ALIASES` hardcode | Low — same interface |
-| 4 | Fix `get_known_units()` to include custom units | Additive — no breakage |
+| 1 | Write `units.json` seeded from current data, fix inconsistencies | None - file only |
+| 2 | Rewrite `definitions.py` to load from `units.json`, keep same exports | Low - same interface |
+| 3 | Flatten aliases from `units.json` in `unit_resolver.py`, remove `_UNIT_ALIASES` hardcode | Low - same interface |
+| 4 | Fix `get_known_units()` to include custom units | Additive - no breakage |
 | 5 | Build Unit Manager devtool to read/write `units.json` | Additive |
 | 6 | Use `preferred_in` in material dialog dropdown ordering | Enhancement |
 

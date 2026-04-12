@@ -123,7 +123,7 @@ LANE_TYPES = [
     },
 ]
 
-_NONE_LANE = "— Select —"
+_NONE_LANE = "- Select -"
 _BY_NAME = {lt["name"]: lt for lt in LANE_TYPES}
 _BY_CODE = {lt["code"]: lt["name"] for lt in LANE_TYPES}
 _LANE_NAMES = [_NONE_LANE] + [lt["name"] for lt in LANE_TYPES]
@@ -153,7 +153,7 @@ TRAFFIC_FIELDS = [
     FieldDef(
         "alternate_road_carriageway",
         "Alternate Road Carriageway",
-        "Lane configuration of the alternate route — auto-fills capacity and width.",
+        "Lane configuration of the alternate route - auto-fills capacity and width.",
         "combo",
         options=_LANE_NAMES,
         required=True,
@@ -222,7 +222,7 @@ TRAFFIC_FIELDS = [
         warn=(
             0.01,
             9_999.0,
-            "Road Rise is 0 or unusually high — please verify the value",
+            "Road Rise is 0 or unusually high - please verify the value",
         ),
     ),
     FieldDef(
@@ -236,7 +236,7 @@ TRAFFIC_FIELDS = [
         warn=(
             0.01,
             9_999.0,
-            "Road Fall is 0 or unusually high — please verify the value",
+            "Road Fall is 0 or unusually high - please verify the value",
         ),
     ),
     FieldDef(
@@ -249,7 +249,7 @@ TRAFFIC_FIELDS = [
         warn=(
             0.01,
             1000,
-            "Additional Reroute Distance is 0 or unusually high — please verify the value",
+            "Additional Reroute Distance is 0 or unusually high - please verify the value",
         ),
     ),
     FieldDef(
@@ -262,7 +262,7 @@ TRAFFIC_FIELDS = [
         warn=(
             0.01,
             1000,
-            "Additional Travel Time is 0 or unusually high — please verify the value",
+            "Additional Travel Time is 0 or unusually high - please verify the value",
         ),
     ),
     FieldDef(
@@ -276,7 +276,7 @@ TRAFFIC_FIELDS = [
         warn=(
             0.01,
             10000,
-            "Crash Rate is 0 or unusually high — please verify the value",
+            "Crash Rate is 0 or unusually high - please verify the value",
         ),
     ),
     FieldDef(
@@ -290,7 +290,7 @@ TRAFFIC_FIELDS = [
         warn=(
             0.001,
             1.0,
-            "Work Zone Multiplier is 0 — work zone accident scaling will be disabled",
+            "Work Zone Multiplier is 0 - work zone accident scaling will be disabled",
         ),
     ),
     Section("Traffic Flow"),
@@ -377,7 +377,7 @@ class _VehicleTrafficTable(TooltipTableMixin, QTableWidget):
                 self.setCellWidget(row, 3, pwr)
                 self._pwr[key] = pwr
             else:
-                na = QTableWidgetItem("—")
+                na = QTableWidgetItem("-")
                 na.setFlags(Qt.ItemIsEnabled)
                 na.setTextAlignment(Qt.AlignCenter)
                 self.setItem(row, 3, na)
@@ -470,7 +470,7 @@ class _PeakHoursTable(TooltipTableMixin, QTableWidget):
             self._spinboxes.append(sb)
 
         self.setItem(n, 0, QTableWidgetItem("Other Hours (Average)"))
-        self._other_label = QLabel("—")
+        self._other_label = QLabel("-")
         self._other_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         self._other_label.setStyleSheet("padding-right: 10px; font-weight: bold;")
         self.setCellWidget(n, 1, self._other_label)
@@ -553,7 +553,7 @@ class TrafficData(ScrollableForm):
     def __init__(self, controller=None):
         super().__init__(controller=controller, chunk_name=CHUNK)
         self._suppress_lane_signal = False
-        # Load WPI manager — DB profiles loaded once at startup
+        # Load WPI manager - DB profiles loaded once at startup
         self._wpi_manager = WPIManager(_WPI_DB_PATH)
         self._build_ui()
 
@@ -858,11 +858,11 @@ class TrafficData(ScrollableForm):
         self._on_field_changed()
 
     def _on_wpi_profile_saved(self, profile: WPIProfile):
-        """After save-as — reload custom profiles into manager and save chunk."""
+        """After save-as - reload custom profiles into manager and save chunk."""
         self._on_field_changed()
 
     def _on_wpi_profile_deleted(self, profile_id: str):
-        """After delete — save chunk to reflect removed profile reference."""
+        """After delete - save chunk to reflect removed profile reference."""
         self._on_field_changed()
 
     def _on_wpi_edit_requested(self):
@@ -895,7 +895,7 @@ class TrafficData(ScrollableForm):
         data["remarks"] = self._remarks.to_html()
         data["force_free_flow_off_peak"] = bool(self._force_free_flow.isChecked())
 
-        # Vehicle table — merge to preserve extra keys
+        # Vehicle table - merge to preserve extra keys
         existing_veh = {}
         if self.controller and self.controller.engine:
             existing_veh = (self.controller.engine.fetch_chunk(CHUNK) or {}).get(
@@ -911,7 +911,7 @@ class TrafficData(ScrollableForm):
 
         data["peak_hour_distribution"] = self._peak_table.collect_to_dict()
 
-        # WPI — store selected profile id + snapshot of data + custom profiles
+        # WPI - store selected profile id + snapshot of data + custom profiles
         current_profile = self._wpi_selector.current_profile()
         selected_data = self._wpi_table.collect_to_data()
 
@@ -1008,7 +1008,7 @@ class TrafficData(ScrollableForm):
         # 4. Restore common-to-all checkbox states
         common_state = wpi.get("common_state", {})
         if common_state:
-            # Keys are stored as strings in JSON — convert back to int
+            # Keys are stored as strings in JSON - convert back to int
             self._wpi_table.load_common_state(
                 {int(k): v for k, v in common_state.items()}
             )
@@ -1071,7 +1071,7 @@ class TrafficData(ScrollableForm):
         self._wpi_selector.freeze(frozen)
         self._wpi_table.freeze(frozen)
         # freeze_form uses setReadOnly for spinboxes; carriage_width_in_m also
-        # uses setEnabled to reflect lane selection — reapply after any freeze change.
+        # uses setEnabled to reflect lane selection - reapply after any freeze change.
         if not frozen:
             self._apply_carriageway_enabled()
 
@@ -1106,16 +1106,16 @@ class TrafficData(ScrollableForm):
             total_vpd = sum(v["vehicles_per_day"] for v in vehicle_data.values())
 
             if total_vpd == 0:
-                # ADT = 0 — user opts out of road user cost; skip all transport checks
+                # ADT = 0 - user opts out of road user cost; skip all transport checks
                 warnings.append(
-                    "No vehicle traffic data — all vehicles per day are 0"
+                    "No vehicle traffic data - all vehicles per day are 0"
                 )
             else:
                 # Per-vehicle accident % must sum to 100 (±0.1)
                 total_acc = sum(v["accident_percentage"] for v in vehicle_data.values())
                 if abs(total_acc - 100.0) > 0.1:
                     errors.append(
-                        f"Vehicle accident percentages must sum to 100% — currently {total_acc:.1f}%"
+                        f"Vehicle accident percentages must sum to 100% - currently {total_acc:.1f}%"
                     )
 
                 # Accident severity distribution must sum to 100%
@@ -1126,7 +1126,7 @@ class TrafficData(ScrollableForm):
                 )
                 if abs(total_sev - 100.0) > 1e-4:
                     errors.append(
-                        f"Accident severity must sum to 100% — currently {total_sev:.1f}%"
+                        f"Accident severity must sum to 100% - currently {total_sev:.1f}%"
                     )
 
                 # PWR must be > 0 for hcv/mcv when their VPD > 0
@@ -1155,7 +1155,7 @@ class TrafficData(ScrollableForm):
                     total_peak = sum(peak_fractions)
                     if total_peak > 1.0 + 1e-6:
                         errors.append(
-                            f"Peak hour proportions sum to {total_peak * 100:.1f}% — must be \u2264 100%"
+                            f"Peak hour proportions sum to {total_peak * 100:.1f}% - must be \u2264 100%"
                         )
 
             # WPI values must not be zero (checked regardless of ADT)
@@ -1168,7 +1168,7 @@ class TrafficData(ScrollableForm):
 
             if self.road_user_cost_per_day.value() <= 0:
                 warnings.append(
-                    "Road User Cost per Day is 0 — road user cost will not be included"
+                    "Road User Cost per Day is 0 - road user cost will not be included"
                 )
                 self.road_user_cost_per_day.setStyleSheet(f"border: 1px solid {get_token('warning')};")
 

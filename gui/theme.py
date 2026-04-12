@@ -1,5 +1,5 @@
 """
-gui/theme.py — Layout and typography design tokens.
+gui/theme.py - Layout and typography design tokens.
 
 Colours are no longer defined here. Use gui.themes.get_token() instead:
 
@@ -8,7 +8,7 @@ Colours are no longer defined here. Use gui.themes.get_token() instead:
     color = get_token("primary")               # full opacity
     color = get_token("danger", "disabled")    # 38 % alpha
 
-Migration reference — old constant → new get_token() call
+Migration reference - old constant → new get_token() call
 ----------------------------------------------------------
     PRIMARY           → get_token("primary")
     PRIMARY_HOVER     → get_token("primary", "hover")

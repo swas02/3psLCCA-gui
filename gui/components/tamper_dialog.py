@@ -62,7 +62,7 @@ class TamperDialog(QDialog):
         layout.setSpacing(12)
 
         # Title
-        title = QLabel(f"Project Integrity — {self.engine.display_name}")
+        title = QLabel(f"Project Integrity - {self.engine.display_name}")
         f = QFont()
         f.setPointSize(11)
         f.setBold(True)
@@ -191,7 +191,7 @@ class TamperDialog(QDialog):
         # Tamper log
         tl_item = QTreeWidgetItem(self.result_tree)
         tl_item.setText(
-            0, f"Tamper Log — {report.get('tamper_log_entries', 0)} entries"
+            0, f"Tamper Log - {report.get('tamper_log_entries', 0)} entries"
         )
 
         self.result_tree.expandAll()
@@ -272,7 +272,7 @@ class TamperDialog(QDialog):
         # Key status
         key_exists = self.engine.key_file.exists()
         status_lbl = QLabel(
-            f"{'✅  Project key present.' if key_exists else '⚠  No key found — signatures disabled.'}"
+            f"{'✅  Project key present.' if key_exists else '⚠  No key found - signatures disabled.'}"
         )
         status_lbl.setForeground = lambda c: None
         layout.addWidget(status_lbl)
@@ -333,7 +333,7 @@ class TamperDialog(QDialog):
                 )
             else:
                 QMessageBox.warning(
-                    self, "Import Failed", "Could not import key — file may be invalid."
+                    self, "Import Failed", "Could not import key - file may be invalid."
                 )
 
     def _resign_all(self):

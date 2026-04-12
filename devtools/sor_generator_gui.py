@@ -1,7 +1,7 @@
 """
 devtools/sor_generator_gui.py
 
-SOR JSON Generator — GUI wrapper around sor_json_generator.py.
+SOR JSON Generator - GUI wrapper around sor_json_generator.py.
 
 Opens from the DevToolsWindow toolbar.  Lets the user:
   1. Pick an SOR Excel file (.xlsx)
@@ -45,7 +45,7 @@ from PySide6.QtWidgets import (
 )
 
 # ---------------------------------------------------------------------------
-# Style constants (Catppuccin Mocha — matches devtools_window.py)
+# Style constants (Catppuccin Mocha - matches devtools_window.py)
 # ---------------------------------------------------------------------------
 
 _BG       = "#1e1e2e"
@@ -148,7 +148,7 @@ def _load_catalog(output_json: str) -> ModuleType | None:
 
 
 # ---------------------------------------------------------------------------
-# Worker thread — runs parse + build off the main thread
+# Worker thread - runs parse + build off the main thread
 # ---------------------------------------------------------------------------
 
 
@@ -357,7 +357,7 @@ class SorGeneratorDialog(QDialog):
         close_btn.clicked.connect(self.reject)
         btn_row.addWidget(close_btn)
 
-        # Rebuild only in standalone mode — Registry Builder handles it when used as sub-dialog
+        # Rebuild only in standalone mode - Registry Builder handles it when used as sub-dialog
         if self._standalone:
             self._rebuild_btn = QPushButton("Rebuild Registry")
             self._rebuild_btn.setFixedHeight(34)
@@ -515,7 +515,7 @@ class SorGeneratorDialog(QDialog):
                 self._log_line(line)
 
         if not sor:
-            self._log_line("No sections generated — check the file has CID# headers.", color=_RED)
+            self._log_line("No sections generated - check the file has CID# headers.", color=_RED)
             return
 
         self._sor = sor
@@ -526,7 +526,7 @@ class SorGeneratorDialog(QDialog):
             f"{len(sor)} section(s)  |  {total_entries} entries total"
         )
         self._generate_btn.setEnabled(bool(self._output_edit.text().strip()))
-        self._log_line(f"Done — {len(sor)} sections, {total_entries} entries.", color=_GREEN)
+        self._log_line(f"Done - {len(sor)} sections, {total_entries} entries.", color=_GREEN)
 
     def _on_parse_error(self, msg: str):
         self._parse_btn.setText("Parse Excel")
@@ -617,7 +617,7 @@ class SorGeneratorDialog(QDialog):
                 self._rebuild_btn.setEnabled(True)
             else:
                 self._log_line(
-                    "Note: material_catalog.py not found relative to output path — "
+                    "Note: material_catalog.py not found relative to output path - "
                     "Rebuild Registry unavailable.",
                     color=_DIM,
                 )
@@ -628,7 +628,7 @@ class SorGeneratorDialog(QDialog):
         """Run material_catalog.check_integrity_by_path and display results in the log."""
         reg_mod = _load_catalog(file_path)
         if reg_mod is None:
-            self._log_line("Integrity check skipped — material_catalog.py not found.", color=_DIM)
+            self._log_line("Integrity check skipped - material_catalog.py not found.", color=_DIM)
             return
 
         self._log_line("--- Integrity check ---", color=_DIM)
@@ -645,13 +645,13 @@ class SorGeneratorDialog(QDialog):
 
         if status == "OK":
             self._log_line(
-                f"Integrity: OK — {n_rec} record(s), "
+                f"Integrity: OK - {n_rec} record(s), "
                 f"{len(errors)} error(s), {len(warnings)} warning(s)",
                 color=_GREEN,
             )
         else:
             self._log_line(
-                f"Integrity: FAILED — {len(errors)} error(s)", color=_RED
+                f"Integrity: FAILED - {len(errors)} error(s)", color=_RED
             )
 
         for e in errors:

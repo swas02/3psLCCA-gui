@@ -3,8 +3,8 @@ gui/components/checkpoint_dialog.py
 
 Two dialogs for the checkpoint system:
 
-  SaveCheckpointDialog    — prompts for a label + notes, then saves
-  CheckpointManagerDialog — lists all checkpoints; restore or delete
+  SaveCheckpointDialog    - prompts for a label + notes, then saves
+  CheckpointManagerDialog - lists all checkpoints; restore or delete
 """
 
 from datetime import datetime
@@ -33,7 +33,7 @@ from gui.styles import font as _f
 
 
 class SaveCheckpointDialog(QDialog):
-    """Modal dialog — collect label + notes before saving a checkpoint."""
+    """Modal dialog - collect label + notes before saving a checkpoint."""
 
     def __init__(self, controller, parent=None):
         super().__init__(parent)
@@ -115,7 +115,7 @@ class SaveCheckpointDialog(QDialog):
 
 
 class CheckpointManagerDialog(QDialog):
-    """Full checkpoint browser — list, restore, delete."""
+    """Full checkpoint browser - list, restore, delete."""
 
     def __init__(self, controller, parent=None):
         super().__init__(parent)
@@ -163,7 +163,7 @@ class CheckpointManagerDialog(QDialog):
 
         layout.addSpacing(4)
 
-        # Action row — New on left, Delete + Restore on right
+        # Action row - New on left, Delete + Restore on right
         btn_row = QHBoxLayout()
         btn_row.setSpacing(8)
 

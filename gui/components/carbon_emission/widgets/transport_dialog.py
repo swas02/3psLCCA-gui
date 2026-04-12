@@ -7,7 +7,7 @@ from gui.themes import get_token
 # ASSUMPTIONS
 # ===========================================================================
 # 1. TRIPS ARE PER-MATERIAL, WITH OPTIONAL POOLING
-#    By default, trips are calculated per unique material name — the same
+#    By default, trips are calculated per unique material name - the same
 #    material used across multiple processes is pooled into one shipment.
 #    Example (pooled, default): Vehicle capacity = 100 kg
 #             Steel (foundation) = 60 kg  ┐ pooled → 120 kg → 2 trips
@@ -31,7 +31,7 @@ from gui.themes import get_token
 #    where empty_weight = gross_weight − payload_capacity.
 #
 # 3. TRIPS DISPLAY
-#    Trips count is purely informational — no colour warning is applied.
+#    Trips count is purely informational - no colour warning is applied.
 #    The number simply reflects how many vehicle loads are needed given
 #    the selected materials, capacity, and pooling mode.
 #
@@ -50,11 +50,11 @@ from gui.themes import get_token
 #
 # 6. CUSTOM VEHICLE DETECTION
 #    A vehicle is "custom" when the user overrides capacity or emission factor
-#    from the selected class defaults. gross_weight is excluded — it always
+#    from the selected class defaults. gross_weight is excluded - it always
 #    derives from capacity + tare, so it changing is a consequence not an
 #    independent override.
 #    Detection (_is_custom_vehicle) compares live spinbox values against
-#    _CLASSES[selected_cls] defaults at call time — no extra flag needed.
+#    _CLASSES[selected_cls] defaults at call time - no extra flag needed.
 #    Effects:
 #      - Summary panel shows "HDV Large ★" with a tooltip when custom.
 #      - Saved dict includes is_custom: True/False so callers can label/filter.
@@ -275,7 +275,7 @@ class TransportDialog(QDialog):
         self.capacity_in.valueChanged.connect(self._on_capacity_changed)
 
         w, self.gross_in = _spin_field(
-            "Gross Weight — Loaded (t)", 0.01, 2000, DECIMAL_PLACES
+            "Gross Weight - Loaded (t)", 0.01, 2000, DECIMAL_PLACES
         )
         ag.addWidget(w, 0, 1)
         self.gross_in.valueChanged.connect(self._update_summary)
@@ -286,7 +286,7 @@ class TransportDialog(QDialog):
         ag.addWidget(w, 0, 2)
         self.ef_in.valueChanged.connect(self._on_ef_user_changed)
 
-        self.empty_derived_lbl = QLabel("Empty vehicle weight: — t")
+        self.empty_derived_lbl = QLabel("Empty vehicle weight: - t")
         self.empty_derived_lbl.setStyleSheet("color: gray; font-size: 11px;")
         ag.addWidget(self.empty_derived_lbl, 1, 0, 1, 3)
 
@@ -399,7 +399,7 @@ class TransportDialog(QDialog):
             rw.setSpacing(4)
             lbl = QLabel(label)
             lbl.setStyleSheet("color: gray; font-size: 11px;")
-            val = QLabel("—")
+            val = QLabel("-")
             val.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
             rw.addWidget(lbl)
             rw.addStretch()
@@ -423,7 +423,7 @@ class TransportDialog(QDialog):
 
         rl.addWidget(QLabel("Est. Emission"))
 
-        self._s_emission = QLabel("—")
+        self._s_emission = QLabel("-")
         font = QFont()
         font.setPointSize(18)
         font.setWeight(QFont.Weight(FW_BOLD))
@@ -500,7 +500,7 @@ class TransportDialog(QDialog):
     def _is_custom_vehicle(self) -> bool:
         """
         Returns True if the user has overridden capacity or EF from the
-        class defaults.  gross_weight is excluded — it derives from cap+tare.
+        class defaults.  gross_weight is excluded - it derives from cap+tare.
         """
         _, _, _tare, default_ef, default_cap = _CLASSES[self._selected_cls]
         cap_changed = abs(self.capacity_in.value() - default_cap) > 0.01
@@ -558,7 +558,7 @@ class TransportDialog(QDialog):
         _ro = Qt.ItemIsEnabled  # read-only flag
         name_val = v.get("material_name", "")
 
-        # Col 0 — checkbox
+        # Col 0 - checkbox
         if is_assigned:
             self.mat_table.setItem(row, 0, QTableWidgetItem())
         else:
@@ -578,7 +578,7 @@ class TransportDialog(QDialog):
             self.mat_table.setItem(row, 0, QTableWidgetItem())
             self.mat_table.setCellWidget(row, 0, chk_w)
 
-        # Col 1 — material name
+        # Col 1 - material name
         ni = QTableWidgetItem(name_val)
         if is_assigned:
             ni.setForeground(_grey)
@@ -590,24 +590,24 @@ class TransportDialog(QDialog):
             ni.setFont(f)
         self.mat_table.setItem(row, 1, ni)
 
-        # Col 2 — category
+        # Col 2 - category
         ci = QTableWidgetItem(category)
         if is_assigned:
             ci.setForeground(_grey)
             ci.setFlags(_ro)
         self.mat_table.setItem(row, 2, ci)
 
-        # Col 3 — unit
-        ui = QTableWidgetItem(UNIT_DISPLAY.get(unit.lower(), unit) if unit else "—")
+        # Col 3 - unit
+        ui = QTableWidgetItem(UNIT_DISPLAY.get(unit.lower(), unit) if unit else "-")
         ui.setTextAlignment(Qt.AlignCenter)
         ui.setFlags(_ro)
         if is_assigned:
             ui.setForeground(_grey)
         self.mat_table.setItem(row, 3, ui)
 
-        # Col 4 — kg / unit  (3 variants: assigned / mass / editable)
+        # Col 4 - kg / unit  (3 variants: assigned / mass / editable)
         if is_assigned:
-            ai = QTableWidgetItem("—")
+            ai = QTableWidgetItem("-")
             ai.setTextAlignment(Qt.AlignCenter)
             ai.setForeground(_grey)
             ai.setFlags(_ro)
@@ -628,7 +628,7 @@ class TransportDialog(QDialog):
             if kg_from_carbon:
                 edit.setToolTip(
                     "Pre-filled from carbon emission data "
-                    "(carbon denominator is kg — same conversion applies)"
+                    "(carbon denominator is kg - same conversion applies)"
                 )
             edit.textChanged.connect(
                 lambda t, r=row, q=qty: self._on_factor_changed(t, r, q)
@@ -638,8 +638,8 @@ class TransportDialog(QDialog):
             self.mat_table.setItem(row, 4, sort_item)
             self.mat_table.setCellWidget(row, 4, edit)
 
-        # Col 5 — qty in kg
-        qi = QTableWidgetItem(f"{qty_kg:,.0f}" if qty_kg > 0 else "—")
+        # Col 5 - qty in kg
+        qi = QTableWidgetItem(f"{qty_kg:,.0f}" if qty_kg > 0 else "-")
         qi.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
         qi.setData(Qt.UserRole, qty_kg)
         qi.setFlags(_ro)
@@ -649,7 +649,7 @@ class TransportDialog(QDialog):
 
         # Dim zero-qty rows so user knows Select with Qty will skip them
         if qty == 0 and not is_assigned:
-            tip = "No quantity defined in structure — skipped by 'Select with Qty'"
+            tip = "No quantity defined in structure - skipped by 'Select with Qty'"
             for col in (1, 2, 3, 5):
                 it = self.mat_table.item(row, col)
                 if it:
@@ -721,7 +721,7 @@ class TransportDialog(QDialog):
                     )
 
         # Sorting disabled: QLineEdit cell widgets capture row index at insertion
-        # time — physical reordering would wire them to the wrong rows.
+        # time - physical reordering would wire them to the wrong rows.
         self.mat_table.setSortingEnabled(False)
         self._refresh_mat_count()
 
@@ -737,7 +737,7 @@ class TransportDialog(QDialog):
 
         item = self.mat_table.item(row, 5)
         if item:
-            item.setText(f"{qty_kg:,.0f}" if qty_kg > 0 else "—")
+            item.setText(f"{qty_kg:,.0f}" if qty_kg > 0 else "-")
             item.setData(Qt.UserRole, qty_kg)
 
         sort = self.mat_table.item(row, 4)
@@ -904,11 +904,11 @@ class TransportDialog(QDialog):
             if is_custom
             else ""
         )
-        self._s_dist.setText(f"{fmt(dist)} km" if dist > 0 else "—")
+        self._s_dist.setText(f"{fmt(dist)} km" if dist > 0 else "-")
         self._s_cap.setText(f"{fmt(cap)} t")
-        self._s_mats.setText(str(selected_count) if selected_count else "—")
-        self._s_load.setText(f"{total_kg:,.0f} kg" if total_kg > 0 else "—")
-        self._s_trips.setText(str(trips) if trips > 0 else "—")
+        self._s_mats.setText(str(selected_count) if selected_count else "-")
+        self._s_load.setText(f"{total_kg:,.0f} kg" if total_kg > 0 else "-")
+        self._s_trips.setText(str(trips) if trips > 0 else "-")
         self._s_trips.setStyleSheet("")
 
         if emission > 0:
@@ -917,7 +917,7 @@ class TransportDialog(QDialog):
                 f"Loaded {fmt_comma(loaded)}  +  Return {fmt_comma(ret)}"
             )
         else:
-            self._s_emission.setText("—")
+            self._s_emission.setText("-")
             self._s_breakdown.setText(
                 "Select materials and enter distance"
                 if dist == 0 or selected_count == 0

@@ -154,7 +154,7 @@ class GeneralInfo(ScrollableForm):
 
         self.required_keys = build_form(self, GENERAL_FIELDS, _DOC_OPENER)
 
-        # Lock country and currency — disable widget so user can't edit,
+        # Lock country and currency - disable widget so user can't edit,
         # but keep in _field_map so get_data_dict() saves them normally
         self.required_keys = [k for k in self.required_keys if k not in self._LOCKED]
         for key in self._LOCKED:
@@ -301,10 +301,10 @@ class GeneralInfo(ScrollableForm):
         cb.clear()
         for opt in options:
             cb.addItem(opt["label"], opt["db_key"])
-        cb.addItem("— No suggestions —", "")
+        cb.addItem("- No suggestions -", "")
 
         idx = cb.findData(saved_key) if saved_key else -1
-        cb.setCurrentIndex(idx if idx >= 0 else cb.count() - 1)  # default → "— No suggestions —"
+        cb.setCurrentIndex(idx if idx >= 0 else cb.count() - 1)  # default → "- No suggestions -"
 
         cb.setEnabled(bool(options))
         cb.blockSignals(False)

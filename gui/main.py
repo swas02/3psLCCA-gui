@@ -160,7 +160,7 @@ def main():
     QTimer.singleShot(0, _load_custom_units)
 
     # Install Global Event Filters
-    # NOTE: named references required — Python GC will collect anonymous instances
+    # NOTE: named references required - Python GC will collect anonymous instances
     wheel_filter = DisableSpinBoxScroll()
     table_filter = _TableRowSelectFilter()
     focus_filter = SelectTextOnFocus()
@@ -190,7 +190,7 @@ def main():
     # Initialize Project Manager and Close Splash
     manager = ProjectManager()
 
-    # Heavy work first — splash stays visible during entire load
+    # Heavy work first - splash stays visible during entire load
     manager.open_project()
 
     # Pass main window so Qt waits until it's visible AND MIN_DISPLAY_MS has elapsed

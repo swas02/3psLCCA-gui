@@ -26,7 +26,7 @@ class CarbonEmissionTabView(QWidget):
         # QTabWidget's content pane paints using the Base palette role, which
         # differs from Window in dark mode (gray vs black).
         # Fix: copy the Window color into the Base role so both paint identically,
-        # no QSS needed — this follows the active theme automatically.
+        # no QSS needed - this follows the active theme automatically.
         palette = self.tab_view.palette()
         palette.setColor(QPalette.Base, palette.color(QPalette.Window))
         self.tab_view.setPalette(palette)

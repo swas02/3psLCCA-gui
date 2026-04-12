@@ -52,7 +52,7 @@ def _fmt_unit(code: str) -> str:
 
 
 def _recycle_pct(v: dict) -> float:
-    """Read recyclability % — checks both field names for backward compat."""
+    """Read recyclability % - checks both field names for backward compat."""
     return float(
         v.get("post_demolition_recovery_percentage")
         or v.get("recyclability_percentage")
@@ -160,7 +160,7 @@ class _RecyclingActionDelegate(BaseActionDelegate):
 
 
 # ---------------------------------------------------------------------------
-# Frozen Action overlay — single-column widget pinned to the right edge
+# Frozen Action overlay - single-column widget pinned to the right edge
 # ---------------------------------------------------------------------------
 
 
@@ -384,7 +384,7 @@ class RecyclingTable(TooltipTableMixin, QTableWidget):
 
 
 # ---------------------------------------------------------------------------
-# RecyclingWidget — main tab
+# RecyclingWidget - main tab
 # ---------------------------------------------------------------------------
 
 
@@ -417,8 +417,8 @@ class Recycling(QWidget):
         summary_layout = QHBoxLayout(self.summary_bar)
         summary_layout.setContentsMargins(8, 8, 8, 8)
 
-        self.total_lbl = QLabel("Total Recovered Value: —")
-        self.count_lbl = QLabel("Included: — of — items")
+        self.total_lbl = QLabel("Total Recovered Value: -")
+        self.count_lbl = QLabel("Included: - of - items")
         self.details_btn = QPushButton("Show Details ▼")
         self.details_btn.setFlat(True)
         self.details_btn.setCursor(Qt.PointingHandCursor)
@@ -436,10 +436,10 @@ class Recycling(QWidget):
         details_layout = QHBoxLayout(self.details_widget)
         details_layout.setContentsMargins(8, 0, 8, 8)
 
-        self.foundation_lbl = QLabel("Foundation: —")
-        self.sub_lbl = QLabel("Sub Structure: —")
-        self.super_lbl = QLabel("Super Structure: —")
-        self.misc_lbl = QLabel("Misc: —")
+        self.foundation_lbl = QLabel("Foundation: -")
+        self.sub_lbl = QLabel("Sub Structure: -")
+        self.super_lbl = QLabel("Super Structure: -")
+        self.misc_lbl = QLabel("Misc: -")
 
         for lbl in [self.foundation_lbl, self.sub_lbl, self.super_lbl, self.misc_lbl]:
             details_layout.addWidget(lbl)
@@ -797,11 +797,11 @@ class Recycling(QWidget):
 
         if result["total_count"] == 0:
             warnings.append(
-                "No materials found — add items in the Construction Work Data section."
+                "No materials found - add items in the Construction Work Data section."
             )
         elif result["total_recovered_value"] == 0.0:
             warnings.append(
-                f"Total recovered value is 0 — "
+                f"Total recovered value is 0 - "
                 f"{result['included_count']} of {result['total_count']} items are included."
             )
 
@@ -810,7 +810,7 @@ class Recycling(QWidget):
         )
         if missing:
             warnings.append(
-                f"{missing} item{'s' if missing != 1 else ''} excluded — "
+                f"{missing} item{'s' if missing != 1 else ''} excluded - "
                 f"missing recyclability % or scrap rate data."
             )
 

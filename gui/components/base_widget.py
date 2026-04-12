@@ -51,7 +51,7 @@ class BaseDataWidget(QWidget):
         self.form = None  # set by subclass
 
         if self.controller:
-            # 1. Connect for future project opens — reset loaded state so fresh data is pulled
+            # 1. Connect for future project opens - reset loaded state so fresh data is pulled
             if hasattr(self.controller, "project_loaded"):
                 self.controller.project_loaded.connect(self._on_project_reloaded)
 
@@ -113,7 +113,7 @@ class BaseDataWidget(QWidget):
         return widget
 
     def refresh_from_engine(self):
-        """Loads stored data from the engine into widgets — skips if data unchanged."""
+        """Loads stored data from the engine into widgets - skips if data unchanged."""
         if not self.controller or not self.controller.engine:
             return
         if not self.controller.engine.is_active() or not self.chunk_name:
@@ -231,13 +231,13 @@ class ScrollableForm(BaseDataWidget):
         self.form.setSpacing(12)
         self.form.setLabelAlignment(Qt.AlignRight)
         # Stop QFormLayout distributing leftover vertical space into rows.
-        # build_form() wraps every field in a single-column QWidget row —
+        # build_form() wraps every field in a single-column QWidget row -
         # without this, those rows absorb extra height as padding gaps.
         self.form.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
         self.form.setRowWrapPolicy(QFormLayout.DontWrapRows)
 
         # Wrap in scroll area.
-        # No QSS — use palette propagation instead.
+        # No QSS - use palette propagation instead.
         # Setting WA_TranslucentBackground + autoFillBackground=False on both
         # the content widget and the scroll viewport tells Qt to skip painting
         # any background of their own and let the parent's Window colour show
@@ -253,7 +253,7 @@ class ScrollableForm(BaseDataWidget):
             w.setAttribute(Qt.WA_TranslucentBackground)
 
         # self.layout is always created by BaseDataWidget.__init__.
-        # We simply add the scroll area to it — no orphan QFormLayout exists
+        # We simply add the scroll area to it - no orphan QFormLayout exists
         # anymore because BaseDataWidget no longer creates one.
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.layout.addWidget(scroll)

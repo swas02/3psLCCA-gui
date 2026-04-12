@@ -2,7 +2,7 @@
 devtools/lcca_codec.py
 
 Pure encode/decode for .lcca binary chunk files.
-No SafeChunkEngine dependency — standalone codec.
+No SafeChunkEngine dependency - standalone codec.
 
 Binary format:
   MAGIC (4 bytes: 0x4C 0x43 0x43 0x41 = "LCCA")

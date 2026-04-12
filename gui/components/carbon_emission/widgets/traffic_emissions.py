@@ -304,7 +304,7 @@ class TrafficEmissions(ScrollableForm):
         calc_layout.setFormAlignment(Qt.AlignTop | Qt.AlignLeft)
         calc_layout.setVerticalSpacing(8)
 
-        self._reroute_label = QLabel("—")
+        self._reroute_label = QLabel("-")
         calc_layout.addRow("Reroute Distance (from Traffic Data):", self._reroute_label)
         calc_layout.addRow(QLabel("<b>Vehicle Emission Factors</b>"))
 
@@ -373,7 +373,7 @@ class TrafficEmissions(ScrollableForm):
     # ── Slot Handlers ─────────────────────────────────────────────────────────
 
     def _on_field_changed(self):
-        """Override base — saves full collect_data() dict, not just _field_map."""
+        """Override base - saves full collect_data() dict, not just _field_map."""
         if self._loading:
             return
         if self.controller and self.controller.engine and self.chunk_name:
@@ -430,7 +430,7 @@ class TrafficEmissions(ScrollableForm):
 
         self._suppress_mode_signal = False
 
-        # Always locked — mode is determined automatically
+        # Always locked - mode is determined automatically
         self.mode.setEnabled(False)
 
         # ── Load reroute + vehicle data ────────────────────────────────────
@@ -449,7 +449,7 @@ class TrafficEmissions(ScrollableForm):
 
         if show_warning:
             self._warning_label.setText(
-                "⚠ Reroute distance is 0 km — please fill in the Traffic Data tab first."
+                "⚠ Reroute distance is 0 km - please fill in the Traffic Data tab first."
             )
             self._warning_label.setVisible(True)
         else:
@@ -533,13 +533,13 @@ class TrafficEmissions(ScrollableForm):
         if mode == "Calculate by Vehicle":
             if data.get("total_calculated_emissions", 0.0) == 0.0:
                 warnings.append(
-                    "Total diversion emissions is 0 kgCO₂e/day — "
+                    "Total diversion emissions is 0 kgCO₂e/day - "
                     "check reroute distance and vehicle counts in Traffic Data."
                 )
         else:
             if data.get("total_direct_emissions", 0.0) == 0.0:
                 warnings.append(
-                    "Total direct diversion emissions is 0 kgCO₂e/day — "
+                    "Total direct diversion emissions is 0 kgCO₂e/day - "
                     "enter the per-day emission value in the field."
                 )
         return {"errors": [], "warnings": warnings}

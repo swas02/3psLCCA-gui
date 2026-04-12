@@ -427,7 +427,7 @@ def _unit_sym(code: str) -> str:
     if code in UNIT_DISPLAY:
         return UNIT_DISPLAY[code]
 
-    # Compound unit — prettify each part separated by '-'
+    # Compound unit - prettify each part separated by '-'
     parts = code.split("-")
     if len(parts) > 1:
         return "-".join(UNIT_DISPLAY.get(p, p) for p in parts)
@@ -455,7 +455,7 @@ def _resolve_unit_code(sor_unit: str, combo: "QComboBox") -> int:
         idx = combo.findData(alias)
         if idx >= 0:
             return idx
-    # Unit not in the standard list — append it so it isn't silently dropped.
+    # Unit not in the standard list - append it so it isn't silently dropped.
     combo.addItem(_unit_sym(sor_unit), sor_unit)
     return combo.count() - 1
 
@@ -732,7 +732,7 @@ class _SaveToCustomDBDialog(QDialog):
 
 
 # ---------------------------------------------------------------------------
-# Migration helper — moves custom units embedded in old project data → DB
+# Migration helper - moves custom units embedded in old project data → DB
 # ---------------------------------------------------------------------------
 
 
@@ -800,13 +800,13 @@ class MaterialDialog(QDialog):
             data.get("values", {}).get("material_name", "") if data else ""
         ) or comp_name
         if recyclability_only:
-            self.setWindowTitle(f"Edit Recyclability — {mat_name}")
+            self.setWindowTitle(f"Edit Recyclability - {mat_name}")
         elif emissions_only:
-            self.setWindowTitle(f"Edit Emission Data — {mat_name}")
+            self.setWindowTitle(f"Edit Emission Data - {mat_name}")
         elif self.is_edit:
-            self.setWindowTitle(f"Edit Material — {comp_name}")
+            self.setWindowTitle(f"Edit Material - {comp_name}")
         else:
-            self.setWindowTitle(f"Add Material — {comp_name}")
+            self.setWindowTitle(f"Add Material - {comp_name}")
         self.setMinimumWidth(520)
         self.setWindowFlag(Qt.WindowContextHelpButtonHint, False)
 
@@ -852,7 +852,7 @@ class MaterialDialog(QDialog):
             _sor_val = (
                 self._sor_db_key
                 if self._sor_db_key
-                else "— not set (configure in Project Settings)"
+                else "- not set (configure in Project Settings)"
             )
             sor_val_lbl = QLabel(_sor_val)
             sor_val_lbl.setStyleSheet(
@@ -1470,7 +1470,7 @@ class MaterialDialog(QDialog):
                 t = (self.type_filter_cb.itemData(i) or "").lower()
                 if t == pre_lower:
                     best_idx = i
-                    break  # exact match — nothing better
+                    break  # exact match - nothing better
                 elif pre_lower in t:
                     score = 2 + len(t)  # comp fits into type; prefer shorter
                     if score > best_score:
@@ -1508,7 +1508,7 @@ class MaterialDialog(QDialog):
             self._skip_btn.setVisible(True)
 
     def _on_skip_suggestion(self):
-        """User chose to enter all fields manually — bypass the suggestion system."""
+        """User chose to enter all fields manually - bypass the suggestion system."""
         self._skip_suggestions = True
         self._reset_sor_state()
         self.name_in.setCompleter(None)
@@ -1549,7 +1549,7 @@ class MaterialDialog(QDialog):
                 finally:
                     self._sor_filling = False
             else:
-                # First time allowing edit — only clear source attribution fields
+                # First time allowing edit - only clear source attribution fields
                 self._sor_filling = True
                 self.src_in.clear()
                 self.carbon_src_in.clear()
@@ -1628,7 +1628,7 @@ class MaterialDialog(QDialog):
                 self._is_modified_by_user = False
                 self._update_cf()
             else:
-                # No DB suggestion — restore the sources saved at check time, or the originals
+                # No DB suggestion - restore the sources saved at check time, or the originals
                 restore_src = getattr(self, "_pre_allow_edit_source", None)
                 if restore_src is None:
                     restore_src = self._original_source
@@ -1689,7 +1689,7 @@ class MaterialDialog(QDialog):
         if not item:
             return
 
-        # New suggestion — discard any snapshot from a previous suggestion's edit session
+        # New suggestion - discard any snapshot from a previous suggestion's edit session
         self.id_in.setText(str(item.get("id", "")))
         self._user_edited_snapshot = {}
         self._sor_filling = True
@@ -1799,7 +1799,7 @@ class MaterialDialog(QDialog):
                 )
                 si_sym = _unit_sym(si_unit_code)
                 short_name = info["name"].split(",")[-1].strip()
-                item = QStandardItem(f"{sym} — {short_name}")
+                item = QStandardItem(f"{sym} - {short_name}")
                 item.setData(code, Qt.UserRole)
                 tooltip = (
                     f"1 {sym} = {si_val:g} {si_sym}  |  Example: {info['example']}"
@@ -1816,7 +1816,7 @@ class MaterialDialog(QDialog):
             model.appendRow(sep_c)
             for cu in _global_custom:
                 display = (
-                    f"{cu['symbol']} — {cu['name']}" if cu.get("name") else cu["symbol"]
+                    f"{cu['symbol']} - {cu['name']}" if cu.get("name") else cu["symbol"]
                 )
                 item = QStandardItem(display)
                 item.setData(cu["symbol"], Qt.UserRole)
@@ -2005,7 +2005,7 @@ class MaterialDialog(QDialog):
             self.cf_row_widget.setVisible(True)
             self.cf_prefix_lbl.setText(f"1 {mat_sym} =")
             self.cf_suffix_lbl.setText(denom_sym)
-            self.cf_status_lbl.setText("(suggested — you can change this)")
+            self.cf_status_lbl.setText("(suggested - you can change this)")
         else:
             # Clear the field only if it still holds a previously auto-written value
             if self.conv_factor_in.text() == getattr(self, "_auto_cf", None):
@@ -2080,7 +2080,7 @@ class MaterialDialog(QDialog):
                 reply = QMessageBox.warning(
                     self,
                     "Emission Factor",
-                    "Emission factor is 0 — carbon cost will be skipped.\n\nContinue?",
+                    "Emission factor is 0 - carbon cost will be skipped.\n\nContinue?",
                     QMessageBox.Yes | QMessageBox.No,
                 )
                 if reply == QMessageBox.No:
@@ -2090,7 +2090,7 @@ class MaterialDialog(QDialog):
                 reply = QMessageBox.warning(
                     self,
                     "Conversion Factor",
-                    "Conversion factor is 0 — carbon cost will be skipped.\n\nContinue?",
+                    "Conversion factor is 0 - carbon cost will be skipped.\n\nContinue?",
                     QMessageBox.Yes | QMessageBox.No,
                 )
                 if reply == QMessageBox.No:
@@ -2105,7 +2105,7 @@ class MaterialDialog(QDialog):
                     res = QMessageBox.warning(
                         self,
                         "Check Conversion Factor",
-                        f"Unit mismatch: material is {mat_dim}, carbon unit is {denom_dim}.\nConversion factor is 1.0 — is this correct?\n\nContinue?",
+                        f"Unit mismatch: material is {mat_dim}, carbon unit is {denom_dim}.\nConversion factor is 1.0 - is this correct?\n\nContinue?",
                         QMessageBox.Yes | QMessageBox.No,
                     )
                     if res == QMessageBox.No:
@@ -2121,7 +2121,7 @@ class MaterialDialog(QDialog):
                 reply = QMessageBox.warning(
                     self,
                     "Recyclability",
-                    "Both scrap rate and recovery percentage are zero — recyclability will be excluded.\n\nContinue?",
+                    "Both scrap rate and recovery percentage are zero - recyclability will be excluded.\n\nContinue?",
                     QMessageBox.Yes | QMessageBox.No,
                 )
                 if reply == QMessageBox.No:
@@ -2174,7 +2174,7 @@ class MaterialDialog(QDialog):
     # ── Window close / Escape ─────────────────────────────────────────────
 
     def closeEvent(self, event):
-        """X button on the title bar — always treated as Cancel."""
+        """X button on the title bar - always treated as Cancel."""
         self.reject()
         event.accept()
 

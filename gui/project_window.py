@@ -126,7 +126,7 @@ class _SidebarDelegate(QStyledItemDelegate):
         return QSize(base.width(), base.height() + pad * 2)
 
     def paint(self, painter: QPainter, option: QStyleOptionViewItem, index):
-        # Query tree directly — option.state may be stripped by drawRow
+        # Query tree directly - option.state may be stripped by drawRow
         tree = self.parent()
         item = tree.itemFromIndex(index) if tree else None
         is_sel = bool(item and item in tree.selectedItems())
@@ -143,7 +143,7 @@ class _SidebarDelegate(QStyledItemDelegate):
             depth += 1
             p = p.parent()
 
-        # Font by depth — size stays at FS_MD; weight carries the hierarchy
+        # Font by depth - size stays at FS_MD; weight carries the hierarchy
         # Bump weight if selected
         if depth == 0:
             painter.setFont(_f(FS_MD, FW_SEMIBOLD if is_sel else FW_MEDIUM))
@@ -152,7 +152,7 @@ class _SidebarDelegate(QStyledItemDelegate):
         else:
             painter.setFont(_f(FS_BASE, FW_MEDIUM if is_sel else FW_NORMAL))
 
-        # Text colour — PRIMARY on selected, normal otherwise
+        # Text colour - PRIMARY on selected, normal otherwise
         text_col = QColor(get_token("primary")) if is_sel else option.palette.windowText().color()
         painter.setPen(text_col)
 
@@ -179,7 +179,7 @@ class _SidebarDelegate(QStyledItemDelegate):
 
 class _SidebarTree(QTreeWidget):
     """
-    QTreeWidget subclass that overrides drawRow() and drawBranches() —
+    QTreeWidget subclass that overrides drawRow() and drawBranches() -
     the only two methods that own the full row width including the
     indentation/branch zone. The delegate only handles text after we've
     painted the correct background across the entire row.
@@ -201,7 +201,7 @@ class _SidebarTree(QTreeWidget):
         p = self.palette()
         p.setColor(QPalette.Base, p.color(QPalette.Window))
         p.setColor(QPalette.AlternateBase, p.color(QPalette.Window))
-        # Keep Highlight neutral — we paint selection ourselves
+        # Keep Highlight neutral - we paint selection ourselves
         p.setColor(QPalette.Highlight, p.color(QPalette.Window))
         p.setColor(QPalette.HighlightedText, p.color(QPalette.WindowText))
         self.setPalette(p)
@@ -255,7 +255,7 @@ class _SidebarTree(QTreeWidget):
 
 class _HoverHandle(QSplitterHandle):
     """
-    Splitter handle that draws a 2px green accent line on hover/drag —
+    Splitter handle that draws a 2px green accent line on hover/drag -
     identical visual language to VS Code's panel resize handles.
     No QSS used; painting is done entirely via QPainter + QPalette.
     """
@@ -603,7 +603,7 @@ class ProjectWindow(QMainWindow):
         header = item.text(0)
         parent = item.parent()
 
-        # Direct page item — show it
+        # Direct page item - show it
         widget = self._get_or_create_widget(header)
         if widget:
             # If we are navigating AWAY from Construction Work Data or TO it directly, 
@@ -615,7 +615,7 @@ class ProjectWindow(QMainWindow):
             self.content_stack.setCurrentWidget(widget)
             return
 
-        # Leaf item under a tabbed page — show parent page and select tab
+        # Leaf item under a tabbed page - show parent page and select tab
         if parent is not None:
             parent_name = parent.text(0)
             w = self._get_or_create_widget(parent_name)
@@ -727,7 +727,7 @@ class ProjectWindow(QMainWindow):
                 page.freeze(checked)
 
     def _run_calculate(self):
-        # Ensure all pages exist — needed for full validation and calculation
+        # Ensure all pages exist - needed for full validation and calculation
         for name in self._page_names:
             self._get_or_create_widget(name)
         self.outputs_page.register_pages(self.widget_map)
@@ -773,7 +773,7 @@ class ProjectWindow(QMainWindow):
     def _on_fault(self, error_message: str):
         QMessageBox.critical(
             self,
-            "Engine Error — Data may not be saved",
+            "Engine Error - Data may not be saved",
             f"Storage error:\n\n{error_message}\n\nSave a checkpoint now if possible, then restart.",
         )
 
@@ -841,7 +841,7 @@ class ProjectWindow(QMainWindow):
             info["wal_exists"] = report.get("wal_exists", False)
 
         dlg = QDialog(self)
-        dlg.setWindowTitle(f"Project Info — {info.get('display_name', self.project_id)}")
+        dlg.setWindowTitle(f"Project Info - {info.get('display_name', self.project_id)}")
         dlg.setMinimumWidth(360)
         layout = QVBoxLayout(dlg)
         layout.setContentsMargins(20, 20, 20, 20)
@@ -852,13 +852,13 @@ class ProjectWindow(QMainWindow):
             ("Project ID",       info.get("project_id", "")),
             ("Display Name",     info.get("display_name", "")),
             ("Status",           info.get("status", "").capitalize()),
-            ("Created",          info.get("created_at", "—")),
-            ("Last Modified",    info.get("last_modified", "—")),
+            ("Created",          info.get("created_at", "-")),
+            ("Last Modified",    info.get("last_modified", "-")),
             ("Chunks",           str(info.get("chunk_count", 0))),
             ("Checkpoints",      str(info.get("checkpoint_count", 0))),
-            ("Last Checkpoint",  info.get("last_checkpoint_date") or "—"),
+            ("Last Checkpoint",  info.get("last_checkpoint_date") or "-"),
             ("Size",             f"{info.get('size_kb', 0)} KB"),
-            ("Engine Version",   info.get("engine_version", "—")),
+            ("Engine Version",   info.get("engine_version", "-")),
             ("Pending Syncs",    str(info.get("pending_syncs", 0))),
             ("WAL Active",       "Yes" if info.get("wal_exists") else "No"),
         ]

@@ -2,7 +2,7 @@
 # utils/definitions.py
 # ---------------------------------------------------------------------------
 # Unit data is loaded from units.json at import time.
-# All exports below keep the same names and types as before — no other file
+# All exports below keep the same names and types as before - no other file
 # needs to change.
 # ---------------------------------------------------------------------------
 
@@ -43,7 +43,7 @@ def _load_units_json() -> tuple[dict, dict]:
 _raw_data, _all_units = _load_units_json()
 
 # ---------------------------------------------------------------------------
-# Public exports — same names, same types, now driven by units.json
+# Public exports - same names, same types, now driven by units.json
 # ---------------------------------------------------------------------------
 
 # Maps unit code → how many SI base units it equals
@@ -75,7 +75,7 @@ UNIT_TO_KG: dict[str, float] = {
 
 
 # ---------------------------------------------------------------------------
-# ConstructionUnits — grouped dropdown data, built from units.json
+# ConstructionUnits - grouped dropdown data, built from units.json
 # ---------------------------------------------------------------------------
 
 # Dimension display order for dropdowns
@@ -138,7 +138,7 @@ STRUCTURE_CHUNKS = [
 ]
 
 
-# Vehicle presets — EF values from IPCC AR5 (WGIII, 2014) / matching CSV source.
+# Vehicle presets - EF values from IPCC AR5 (WGIII, 2014) / matching CSV source.
 # gross_weight = fully loaded vehicle weight (vehicle tare + full payload).
 # capacity     = net payload capacity (cargo only).
 # empty_weight is derived at runtime: gross_weight - capacity.

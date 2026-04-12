@@ -1,7 +1,7 @@
 """
 gui/components/splash_screen.py
 ────────────────────────────────────────────────────────────────────────────────
-Theme-aware Splash Screen — lightweight & smooth.
+Theme-aware Splash Screen - lightweight & smooth.
 """
 
 from __future__ import annotations
@@ -21,7 +21,7 @@ _ICON_PATH = os.path.join("gui", "assets", "logo", "logo-3psLCCA.svg")
 
 
 class _Bar(QWidget):
-    """Slim progress bar — reads live theme tokens."""
+    """Slim progress bar - reads live theme tokens."""
 
     def __init__(self, parent: QWidget) -> None:
         super().__init__(parent)
@@ -61,7 +61,7 @@ class SplashScreen(QWidget):
         self.setFixedSize(SPLASH_W, SPLASH_H)
         self._center()
 
-        # Cache pixmap once — never re-read disk on repaint
+        # Cache pixmap once - never re-read disk on repaint
         self._logo: QPixmap | None = None
         if os.path.exists(_ICON_PATH):
             self._logo = QPixmap(_ICON_PATH).scaled(

@@ -1,5 +1,5 @@
 """
-devtools/docs_viewer_example.py — Launcher for every built page in site/.
+devtools/docs_viewer_example.py - Launcher for every built page in site/.
 
 Auto-discovers all HTML files in site/ and renders a button for each.
 Click any button to load that page in the singleton offline WebView.
@@ -17,7 +17,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 
-# webview.py lives in doc_handler — add it to path
+# webview.py lives in doc_handler - add it to path
 _DOC_HANDLER_DIR = Path(__file__).parent.parent / "gui" / "components" / "utils" / "doc_handler"
 if str(_DOC_HANDLER_DIR) not in sys.path:
     sys.path.insert(0, str(_DOC_HANDLER_DIR))

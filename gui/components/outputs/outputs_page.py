@@ -73,7 +73,7 @@ OUTPUTS_WARN_RULES = {
         None,
         500,
         None,
-        "Analysis period exceeds 500 years — please verify",
+        "Analysis period exceeds 500 years - please verify",
     ),
 }
 DEBUG = False
@@ -96,7 +96,7 @@ class _LCCAWorker(QObject):
     errored(exc, tb)    - emitted with the exception and formatted traceback on failure.
     """
 
-    # Carries (results, all_data, lcc_breakdown) — all owned by main thread on receipt.
+    # Carries (results, all_data, lcc_breakdown) - all owned by main thread on receipt.
     finished = Signal(object, object, object)
     errored = Signal(object, str)  # (Exception, traceback_str)
 
@@ -136,7 +136,7 @@ class _LCCAWorker(QObject):
                 f"Worker: run_full_lcc_analysis returned: {list(results.keys()) if isinstance(results, dict) else type(results).__name__}"
             )
 
-            # Emit all three payloads so the main thread owns the data — no
+            # Emit all three payloads so the main thread owns the data - no
             # cross-thread attribute writes on the page object.
             self.finished.emit(results, all_data, lcc_breakdown)
 
@@ -154,7 +154,7 @@ class OutputsPage(ScrollableForm):
     calculation_completed = Signal()  # emitted after a successful calculation
     validate_requested = (
         Signal()
-    )  # emitted when user clicks Validate — project_window handles it
+    )  # emitted when user clicks Validate - project_window handles it
 
     def __init__(self, controller=None):
         super().__init__(controller=controller, chunk_name=CHUNK)
@@ -341,14 +341,14 @@ class OutputsPage(ScrollableForm):
             self._elapsed_timer = None
 
     def _on_calc_timeout(self):
-        """Called when the 30 s timeout fires — terminate the thread and show error."""
+        """Called when the 30 s timeout fires - terminate the thread and show error."""
         _dbg(
             "=== _on_calc_timeout: calculation exceeded timeout, terminating thread ==="
         )
         self._stop_timers()
 
         if self._calc_thread and self._calc_thread.isRunning():
-            self._calc_thread.terminate()  # forceful stop — never call wait() on main thread
+            self._calc_thread.terminate()  # forceful stop - never call wait() on main thread
 
         self.btn_calculate.setEnabled(True)
         timeout_exc = TimeoutError(
@@ -369,7 +369,7 @@ class OutputsPage(ScrollableForm):
                 f"border-radius: {RADIUS_MD}px; padding: {SP3}px; }}"
             )
             layout = QVBoxLayout(banner)
-            title = QLabel("🛑  Calculation Blocked — Please fix the following errors")
+            title = QLabel("🛑  Calculation Blocked - Please fix the following errors")
             title.setFont(_f(FS_MD, FW_BOLD))
             title.setStyleSheet(f"color: {get_token('danger')};")
             layout.addWidget(title)
@@ -389,9 +389,9 @@ class OutputsPage(ScrollableForm):
             )
             layout = QVBoxLayout(banner)
             label = (
-                "⚠️  Warnings — fix errors above before proceeding."
+                "⚠️  Warnings - fix errors above before proceeding."
                 if all_errors
-                else "⚠️  Warnings — Data looks unusual but you can proceed."
+                else "⚠️  Warnings - Data looks unusual but you can proceed."
             )
             title = QLabel(label)
             title.setFont(_f(FS_MD, FW_BOLD))
@@ -432,7 +432,7 @@ class OutputsPage(ScrollableForm):
             f"border-radius: {RADIUS_MD}px; padding: {SP3}px; }}"
         )
         layout = QVBoxLayout(banner)
-        title = QLabel("✅  All checks passed — Ready to calculate.")
+        title = QLabel("✅  All checks passed - Ready to calculate.")
         title.setFont(_f(FS_MD, FW_BOLD))
         title.setStyleSheet(f"color: {get_token('success')};")
         layout.addWidget(title)
@@ -462,7 +462,7 @@ class OutputsPage(ScrollableForm):
                 f"border: 1.5px solid {get_token('danger')};"
             )
             all_errors["Analysis Period"] = [
-                "Analysis Period is required — please enter a value greater than zero."
+                "Analysis Period is required - please enter a value greater than zero."
             ]
         else:
             self.analysis_period.setStyleSheet("")
@@ -546,7 +546,7 @@ class OutputsPage(ScrollableForm):
     def _on_calc_finished(self, results, all_data, lcc_breakdown):
         _dbg(f"_on_calc_finished: results type={type(results).__name__}")
         self._stop_timers()
-        # Store on main thread — no cross-thread writes needed anymore.
+        # Store on main thread - no cross-thread writes needed anymore.
         self._last_all_data = all_data
         self._last_lcc_breakdown = lcc_breakdown
         self._show_calculation_success(results)
@@ -691,7 +691,7 @@ class OutputsPage(ScrollableForm):
                 wv.addWidget(lbl)
             self._status_layout.addWidget(warn_container)
 
-        # ── Loading placeholder — replaced once charts are built ──────────
+        # ── Loading placeholder - replaced once charts are built ──────────
         self._charts_loading_lbl = QLabel("Building charts…")
         self._charts_loading_lbl.setFont(_f(FS_SM))
         self._charts_loading_lbl.setStyleSheet(
@@ -720,7 +720,7 @@ class OutputsPage(ScrollableForm):
     def _build_next_result_widget(self):
         """Add one result widget per event-loop cycle to avoid a UI freeze."""
         if not self._result_build_steps:
-            # All done — remove the loading label
+            # All done - remove the loading label
             if hasattr(self, "_charts_loading_lbl") and self._charts_loading_lbl:
                 self._charts_loading_lbl.hide()
                 self._charts_loading_lbl.setParent(None)
@@ -758,7 +758,7 @@ class OutputsPage(ScrollableForm):
     def validate(self):
         return validate_form(OUTPUTS_FIELDS, self, warn_rules=OUTPUTS_WARN_RULES)
 
-    # ── Chunk routing — analysis_period saves to its own chunk ────────────────
+    # ── Chunk routing - analysis_period saves to its own chunk ────────────────
 
     def _on_field_changed(self):
         if self._loading:

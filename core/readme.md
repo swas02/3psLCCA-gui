@@ -1,6 +1,6 @@
 # SafeChunkEngine v3.0
 
-A crash-safe, auto-saving chunk storage engine for Python applications. Designed to protect user data with rolling backups, write-ahead logging, SHA256 integrity checks, and automatic checkpoints — all with zero manual save button required. Supports both structured data (chunks) and binary files (blobs: images, PDFs, ZIPs, etc.).
+A crash-safe, auto-saving chunk storage engine for Python applications. Designed to protect user data with rolling backups, write-ahead logging, SHA256 integrity checks, and automatic checkpoints - all with zero manual save button required. Supports both structured data (chunks) and binary files (blobs: images, PDFs, ZIPs, etc.).
 
 ---
 
@@ -11,12 +11,12 @@ A crash-safe, auto-saving chunk storage engine for Python applications. Designed
 - [Quick Start](#quick-start)
 - [Creating vs Opening a Project](#creating-vs-opening-a-project)
 - [Reading and Writing Data](#reading-and-writing-data)
-- [Chunks — What Are They?](#chunks--what-are-they)
+- [Chunks - What Are They?](#chunks--what-are-they)
 - [Auto-Save Behaviour](#auto-save-behaviour)
 - [Closing a Project](#closing-a-project)
-- [Blob Storage — Binary Files](#blob-storage--binary-files)
+- [Blob Storage - Binary Files](#blob-storage--binary-files)
 - [Checkpoints](#checkpoints)
-- [Rollback — Per-Chunk Undo](#rollback--per-chunk-undo)
+- [Rollback - Per-Chunk Undo](#rollback--per-chunk-undo)
 - [Callbacks / Event Hooks](#callbacks--event-hooks)
 - [Project Discovery](#project-discovery)
 - [Project Management](#project-management)
@@ -33,14 +33,14 @@ A crash-safe, auto-saving chunk storage engine for Python applications. Designed
 
 The engine manages two types of storage:
 
-**Chunks** — structured data stored as named dicts. When you call `stage_update()`, the engine:
+**Chunks** - structured data stored as named dicts. When you call `stage_update()`, the engine:
 1. Buffers the data in memory
 2. Immediately writes it to a **Write-Ahead Log (WAL)** for crash safety
 3. After a short debounce delay, atomically flushes it to disk
 4. Rotates backup copies so you always have 3 versions of every chunk
 
-**Blobs** — binary files (images, PDFs, ZIPs, etc.) stored as-is. When you call `store_blob()`, the engine:
-1. Streams the file directly to disk — no memory staging, no WAL
+**Blobs** - binary files (images, PDFs, ZIPs, etc.) stored as-is. When you call `store_blob()`, the engine:
+1. Streams the file directly to disk - no memory staging, no WAL
 2. Uses atomic tmp → fsync → rename to prevent partial writes
 3. Auto-increments the name on collision so nothing is silently overwritten
 4. Records a SHA256 hash in `blob_manifest.json` for integrity checking on open
@@ -97,7 +97,7 @@ engine.detach()
 
 ## Creating vs Opening a Project
 
-### `SafeChunkEngine.new()` — Create a fresh project
+### `SafeChunkEngine.new()` - Create a fresh project
 
 ```python
 engine, status = SafeChunkEngine.new(
@@ -120,7 +120,7 @@ If `my_project` already exists, the engine auto-increments: `my_project_1`, `my_
 | `"SUCCESS"` | Project created and engine active |
 | `"FAILED_TO_CREATE: ..."` | Creation failed with reason |
 
-### `SafeChunkEngine.open()` — Open an existing project
+### `SafeChunkEngine.open()` - Open an existing project
 
 ```python
 engine, status = SafeChunkEngine.open(
@@ -150,7 +150,7 @@ On open, the engine automatically:
 
 ## Reading and Writing Data
 
-### Writing — `stage_update()`
+### Writing - `stage_update()`
 
 ```python
 engine.stage_update(data, chunk_name)
@@ -168,7 +168,7 @@ engine.stage_update({"x": 120, "y": 340, "map": "dungeon_1"}, chunk_name="positi
 - The force-save timer guarantees a write within `force_save_delay` seconds regardless
 - Calling with an empty `chunk_name` is a no-op and logs a warning
 
-### Reading — `fetch_chunk()` / `read_chunk()`
+### Reading - `fetch_chunk()` / `read_chunk()`
 
 ```python
 data = engine.fetch_chunk(chunk_name)
@@ -184,7 +184,7 @@ staged memory  →  .lcca (current)  →  .lcca.bak (previous)  →  .lcca.ebak 
 
 Returns an empty dict `{}` if no data exists for that chunk anywhere.
 
-### Force flushing — `force_sync()`
+### Force flushing - `force_sync()`
 
 ```python
 engine.force_sync()
@@ -192,7 +192,7 @@ engine.force_sync()
 
 Immediately writes all staged (in-memory) data to disk. Cancels any pending timers. Use this before any critical operation that requires the latest data to be on disk.
 
-### Checking dirty state — `is_dirty()`
+### Checking dirty state - `is_dirty()`
 
 ```python
 if engine.is_dirty():
@@ -203,11 +203,11 @@ Returns `True` if there is staged data in memory that has not yet been committed
 
 ---
 
-## Chunks — What Are They?
+## Chunks - What Are They?
 
 A **chunk** is just a named dict saved as a single file. You decide how to split your data into chunks. Smaller, logically separate chunks are better than one giant chunk, because:
 
-- Each chunk is saved independently — a write to `inventory` does not rewrite `user_profile`
+- Each chunk is saved independently - a write to `inventory` does not rewrite `user_profile`
 - Each chunk gets its own 3-copy rolling backup
 - Rollback works at the chunk level
 
@@ -222,7 +222,7 @@ engine.stage_update({"x": 100, "y": 200, "map": "forest"}, chunk_name="position"
 
 Chunk names must be non-empty strings. Avoid path separators or special characters.
 
-> **Chunks are for structured data only.** Do not store images, PDFs, or other binary files as Base64 inside a chunk — use [Blob Storage](#blob-storage--binary-files) instead.
+> **Chunks are for structured data only.** Do not store images, PDFs, or other binary files as Base64 inside a chunk - use [Blob Storage](#blob-storage--binary-files) instead.
 
 ---
 
@@ -250,7 +250,7 @@ engine, _ = SafeChunkEngine.new(
 )
 ```
 
-> Auto-save applies to chunks only. Blobs are written to disk immediately and synchronously on every `store_blob()` call — there is no staging or timer involved.
+> Auto-save applies to chunks only. Blobs are written to disk immediately and synchronously on every `store_blob()` call - there is no staging or timer involved.
 
 ---
 
@@ -275,9 +275,9 @@ If the process is killed without calling `detach()`, the engine will detect this
 
 ---
 
-## Blob Storage — Binary Files
+## Blob Storage - Binary Files
 
-Blobs are for binary files that cannot be stored as JSON — images, PDFs, ZIP archives, audio files, and so on. They are managed separately from chunks with a simpler, direct-to-disk design.
+Blobs are for binary files that cannot be stored as JSON - images, PDFs, ZIP archives, audio files, and so on. They are managed separately from chunks with a simpler, direct-to-disk design.
 
 **Key differences from chunks:**
 
@@ -286,25 +286,25 @@ Blobs are for binary files that cannot be stored as JSON — images, PDFs, ZIP a
 | Data type | Python dict | Raw bytes / file path |
 | Write path | Staged in memory → WAL → disk | Streamed directly to disk |
 | Auto-save | Debounced (1–2s delay) | Immediate, synchronous |
-| Backup copies | 3 (`.lcca`, `.bak`, `.ebak`) | None — re-upload if lost |
+| Backup copies | 3 (`.lcca`, `.bak`, `.ebak`) | None - re-upload if lost |
 | Crash recovery | WAL replay + backup restore | SHA256 check → re-upload prompt |
 | In checkpoints | Always included | Optional (`include_blobs=True`) |
 
-### Storing a blob — `store_blob()`
+### Storing a blob - `store_blob()`
 
 ```python
-# From a file path (recommended — streamed, never fully loaded into memory)
+# From a file path (recommended - streamed, never fully loaded into memory)
 name = engine.store_blob("documents/report.pdf")
 name = engine.store_blob(Path("/uploads/photo.jpg"))
 
-# From raw bytes (blob_name required — no filename to derive from)
+# From raw bytes (blob_name required - no filename to derive from)
 name = engine.store_blob(raw_bytes, blob_name="scan.png")
 
 # Returns the actual name it was stored under
 print(name)  # "report.pdf"
 ```
 
-`blob_name` is optional for file paths — it is derived automatically from the filename.
+`blob_name` is optional for file paths - it is derived automatically from the filename.
 
 #### Collision handling (default: auto-increment)
 
@@ -338,18 +338,18 @@ name = engine.store_blob("report.pdf", overwrite=True)
 - `blob_name` is blank
 - Disk write fails
 
-### Reading a blob — `fetch_blob()`
+### Reading a blob - `fetch_blob()`
 
 ```python
 pdf_bytes = engine.fetch_blob("report.pdf")
 if pdf_bytes is None:
-    # File is missing — on_fault was already fired
+    # File is missing - on_fault was already fired
     pass
 ```
 
 Returns `None` and fires `on_fault` if the blob is missing or unreadable.
 
-### Deleting a blob — `delete_blob()`
+### Deleting a blob - `delete_blob()`
 
 ```python
 success = engine.delete_blob("old_report.pdf")
@@ -357,7 +357,7 @@ success = engine.delete_blob("old_report.pdf")
 
 Removes the `.blob` file from disk and its entry from `blob_manifest.json`. Returns `False` if the blob does not exist.
 
-### Listing all blobs — `list_blobs()`
+### Listing all blobs - `list_blobs()`
 
 ```python
 for blob in engine.list_blobs():
@@ -375,7 +375,7 @@ On the next `open()`, the engine checks all blob hashes against `blob_manifest.j
  These files need to be re-uploaded."
 ```
 
-The engine boots normally — blobs are not recoverable from backups, but the user is told exactly which files need re-uploading.
+The engine boots normally - blobs are not recoverable from backups, but the user is told exactly which files need re-uploading.
 
 ---
 
@@ -390,18 +390,18 @@ Checkpoints are full project snapshots saved as ZIP files. They capture all chun
 | Chunks only (default) | Chunks + chunk backups + blob hashes | Fast | Auto-close, frequent saves |
 | Full (`include_blobs=True`) | Everything above + all blob files | Slow (depends on blob sizes) | Before major changes, true full backup |
 
-> **Blob hashes are always recorded in `checkpoint_meta.json`** regardless of mode. This means even a chunks-only checkpoint knows which blobs existed and what their content was — so a restore can warn about mismatches.
+> **Blob hashes are always recorded in `checkpoint_meta.json`** regardless of mode. This means even a chunks-only checkpoint knows which blobs existed and what their content was - so a restore can warn about mismatches.
 
-### Manual Checkpoints — `create_checkpoint()`
+### Manual Checkpoints - `create_checkpoint()`
 
 ```python
-# Fast — chunks only (default)
+# Fast - chunks only (default)
 zip_name = engine.create_checkpoint(
     label="before_refactor",
     notes="Stable build",
 )
 
-# Full snapshot — includes all blobs
+# Full snapshot - includes all blobs
 zip_name = engine.create_checkpoint(
     label="full_backup",
     notes="Before major migration",
@@ -417,9 +417,9 @@ print(zip_name)  # "cp_before_refactor_20240315_143022_001.zip"
 
 ### Auto Checkpoints
 
-Created automatically on `detach()` if chunk data changed since the last auto-checkpoint. Always chunks-only — never hangs on close regardless of blob sizes. Up to **5 auto-checkpoints** are kept.
+Created automatically on `detach()` if chunk data changed since the last auto-checkpoint. Always chunks-only - never hangs on close regardless of blob sizes. Up to **5 auto-checkpoints** are kept.
 
-### Listing Checkpoints — `list_checkpoints()`
+### Listing Checkpoints - `list_checkpoints()`
 
 ```python
 checkpoints = engine.list_checkpoints()
@@ -446,7 +446,7 @@ Each entry:
 
 Results are sorted newest-first.
 
-### Verifying a Checkpoint — `verify_checkpoint()`
+### Verifying a Checkpoint - `verify_checkpoint()`
 
 ```python
 ok = engine.verify_checkpoint("cp_full_backup_20240315_143022_001.zip")
@@ -454,7 +454,7 @@ ok = engine.verify_checkpoint("cp_full_backup_20240315_143022_001.zip")
 
 Returns `True` if SHA256 matches, `False` if the ZIP is missing or tampered.
 
-### Restoring a Checkpoint — `restore_checkpoint()`
+### Restoring a Checkpoint - `restore_checkpoint()`
 
 ```python
 success = engine.restore_checkpoint("cp_full_backup_20240315_143022_001.zip")
@@ -481,11 +481,11 @@ for cp in checkpoints:
 
 ---
 
-## Rollback — Per-Chunk Undo
+## Rollback - Per-Chunk Undo
 
 Every chunk keeps 3 copies on disk. You can roll back any individual chunk independently without affecting the rest of the project or any blobs.
 
-### Step 1 — See what's available
+### Step 1 - See what's available
 
 ```python
 options = engine.get_rollback_options("inventory")
@@ -503,7 +503,7 @@ Returns a list of available copies:
 ]
 ```
 
-### Step 2 — Roll back to a specific copy
+### Step 2 - Roll back to a specific copy
 
 ```python
 source = options[1]  # "Previous save"
@@ -512,7 +512,7 @@ success = engine.rollback_chunk("inventory", source_path=source["path"])
 
 After rollback, `fetch_chunk("inventory")` immediately returns the rolled-back version. Only that chunk is affected.
 
-> Blob rollback is not supported — blobs have no backup copies. Use a full checkpoint (`include_blobs=True`) if you need point-in-time blob recovery.
+> Blob rollback is not supported - blobs have no backup copies. Use a full checkpoint (`include_blobs=True`) if you need point-in-time blob recovery.
 
 ---
 
@@ -529,10 +529,10 @@ engine.on_dirty  = lambda dirty: save_indicator.setVisible(dirty)
 
 | Callback | Signature | When it fires |
 |---|---|---|
-| `on_status` | `(message: str) → None` | Any log message — status updates, warnings, info |
+| `on_status` | `(message: str) → None` | Any log message - status updates, warnings, info |
 | `on_sync` | `() → None` | After a successful flush of chunks to disk |
-| `on_fault` | `(message: str) → None` | Any error — corrupt chunks, missing blobs, blob name conflicts, write failures |
-| `on_dirty` | `(dirty: bool) → None` | When dirty state changes — `True` = unsaved changes, `False` = clean |
+| `on_fault` | `(message: str) → None` | Any error - corrupt chunks, missing blobs, blob name conflicts, write failures |
+| `on_dirty` | `(dirty: bool) → None` | When dirty state changes - `True` = unsaved changes, `False` = clean |
 
 `on_fault` fires for both chunk and blob problems. The message always describes what happened and what to do. If `on_status` is not set, all log messages are printed to stdout.
 
@@ -540,7 +540,7 @@ engine.on_dirty  = lambda dirty: save_indicator.setVisible(dirty)
 
 ## Project Discovery
 
-### List all projects — `list_all_projects()`
+### List all projects - `list_all_projects()`
 
 ```python
 projects = SafeChunkEngine.list_all_projects(base_dir="user_projects")
@@ -558,7 +558,7 @@ Each entry:
 }
 ```
 
-### Deep info on one project — `get_project_info()`
+### Deep info on one project - `get_project_info()`
 
 ```python
 info = SafeChunkEngine.get_project_info("my_project", base_dir="user_projects")
@@ -588,7 +588,7 @@ Returns `None` if the project folder does not exist.
 
 ## Project Management
 
-### Rename — `rename()`
+### Rename - `rename()`
 
 Updates the display name stored in `version.json`. Does not rename the folder on disk.
 
@@ -596,7 +596,7 @@ Updates the display name stored in `version.json`. Does not rename the folder on
 engine.rename("My Awesome Project")
 ```
 
-### Delete — `delete_project()`
+### Delete - `delete_project()`
 
 Detaches the engine and permanently deletes the entire project folder including all chunks, blobs, and checkpoints.
 
@@ -606,7 +606,7 @@ success = engine.delete_project(confirmed=True)  # confirmed=True required
 
 > ⚠️ **This is irreversible.** All chunks, blobs, backups, and checkpoints are deleted.
 
-### Check active state — `is_active()`
+### Check active state - `is_active()`
 
 ```python
 if engine.is_active():
@@ -619,7 +619,7 @@ Returns `True` if the engine successfully attached. Any method decorated with `@
 
 ## Diagnostics
 
-### Health report — `get_health_report()`
+### Health report - `get_health_report()`
 
 ```python
 report = engine.get_health_report()
@@ -664,7 +664,7 @@ For debugging, enable readable mode when creating a project:
 ```python
 engine, _ = SafeChunkEngine.new(
     project_id="debug_project",
-    readable=True,  # Saves plain JSON — open with any text editor
+    readable=True,  # Saves plain JSON - open with any text editor
 )
 ```
 
@@ -723,7 +723,7 @@ if status != "SUCCESS":
     engine = None
 ```
 
-Wire up `on_fault` to surface errors in your UI — it covers both chunk and blob problems:
+Wire up `on_fault` to surface errors in your UI - it covers both chunk and blob problems:
 
 ```python
 engine.on_fault = lambda msg: show_error_dialog(f"Storage error: {msg}")
@@ -751,8 +751,8 @@ if engine and engine.is_active():
 
 | Method | Returns | Description |
 |---|---|---|
-| `attach()` | `None` | Activate engine — called automatically by `__init__` |
-| `detach()` | `None` | Safe close — flush, checkpoint, clear WAL, release lock |
+| `attach()` | `None` | Activate engine - called automatically by `__init__` |
+| `detach()` | `None` | Safe close - flush, checkpoint, clear WAL, release lock |
 | `is_active()` | `bool` | Whether engine is active and usable |
 | `is_dirty()` | `bool` | Whether there are unsaved staged chunk changes in memory |
 

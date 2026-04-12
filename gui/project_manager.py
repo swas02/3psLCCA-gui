@@ -67,7 +67,7 @@ class ProjectManager:
     # --------------------------------------------------------------------------
 
     def open_project(self, project_id=None, is_new=False):
-        # No project specified — show home screen
+        # No project specified - show home screen
         if not project_id and not is_new:
             target = self._find_empty_window() or self._create_window()
             target.show_home()
@@ -75,7 +75,7 @@ class ProjectManager:
             target.activateWindow()
             return
 
-        # Project already open — just focus it
+        # Project already open - just focus it
         if project_id:
             existing = self._find_window_for_project(project_id)
             if existing:
@@ -116,7 +116,7 @@ class ProjectManager:
 
                         # Pre-warm controller chunk cache so all widget
                         # refresh_from_engine calls during preload are
-                        # cache hits — no disk I/O after this point.
+                        # cache hits - no disk I/O after this point.
                         _warm_cache(target)
 
                         def _on_complete():

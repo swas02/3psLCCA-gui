@@ -1,4 +1,4 @@
-# 3psLCCA — Life Cycle Cost Analysis for Bridge Projects
+# 3psLCCA - Life Cycle Cost Analysis for Bridge Projects
 
 A desktop application built with Python and PySide6 for performing Life Cycle Cost Analysis (LCCA) on bridge infrastructure projects.
 
@@ -90,7 +90,7 @@ Make sure your virtual environment is activated, then run from the project root 
 python -m gui.main
 ```
 
-> The app must be launched from the project root. It loads assets (stylesheet, icons) using paths relative to that directory — running it from any other location will cause missing resource warnings.
+> The app must be launched from the project root. It loads assets (stylesheet, icons) using paths relative to that directory - running it from any other location will cause missing resource warnings.
 
 ---
 

@@ -205,7 +205,7 @@ class WPIManager:
             if p.id == profile.id:
                 self._custom_profiles[i] = profile
                 return
-        # Not found — add as new
+        # Not found - add as new
         self._custom_profiles.append(profile)
 
     # ── Queries ───────────────────────────────────────────────────────────────
@@ -251,7 +251,7 @@ class UserWPILibrary:
     """
     SQLite-backed global library of WPI profiles, shared across all projects.
 
-    Stored in data/user.db — one row per saved profile.
+    Stored in data/user.db - one row per saved profile.
     """
 
     def __init__(self, path: Path = _USER_DB_PATH):

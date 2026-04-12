@@ -45,8 +45,8 @@ class StructureManagerWidget(QWidget):
         summary_bar = QWidget()
         summary_layout = QHBoxLayout(summary_bar)
         summary_layout.setContentsMargins(4, 4, 4, 4)
-        self.total_lbl = QLabel("Total: —")
-        self.count_lbl = QLabel("Items: —")
+        self.total_lbl = QLabel("Total: -")
+        self.count_lbl = QLabel("Items: -")
         sep = QFrame()
         sep.setFrameShape(QFrame.VLine)
         sep.setFrameShadow(QFrame.Sunken)
@@ -165,7 +165,7 @@ class StructureManagerWidget(QWidget):
         is_excel = values_dict.pop("_is_excel_import", False)
         db_snapshot = values_dict.pop("_db_snapshot", {})
         values_dict.pop("_is_customized", None)
-        # `id` may come from an Excel CID#ID column — store it as a reference, not a value field
+        # `id` may come from an Excel CID#ID column - store it as a reference, not a value field
         _excel_ref_id = values_dict.pop("id", None)
         if _excel_ref_id and "sor_ref_id" not in db_snapshot:
             db_snapshot = dict(db_snapshot)
@@ -301,7 +301,7 @@ class StructureManagerWidget(QWidget):
                     item_to_edit["meta"][
                         "modified_on"
                     ] = datetime.datetime.now().isoformat()
-                    # Always overwrite snapshot — dialog rebuilds it fresh on each suggestion
+                    # Always overwrite snapshot - dialog rebuilds it fresh on each suggestion
                     if new_db_snapshot is not None:
                         item_to_edit["meta"]["db_snapshot"] = new_db_snapshot
                     item_to_edit["state"][

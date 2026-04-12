@@ -1,5 +1,5 @@
 """
-devtools/docs_build.py — Convert docs/*.md → site/*.html using pandoc.
+devtools/docs_build.py - Convert docs/*.md → site/*.html using pandoc.
 
 Also:
 - Inlines classless CSS (offline)
@@ -124,7 +124,7 @@ def build(docs_dir: Path, site_dir: Path) -> None:
     finally:
         os.unlink(header_file)
 
-    print(f"\nDone — {ok} built, {fail} failed.")
+    print(f"\nDone - {ok} built, {fail} failed.")
 
 
 # ── 404 PAGE ──────────────────────────────────────────────────────────────────
@@ -186,7 +186,7 @@ def _generate_sitemap(site_dir: Path) -> None:
         encoding="utf-8",
     )
 
-    print(f"sitemap.json — {len(pages)} pages")
+    print(f"sitemap.json - {len(pages)} pages")
 
 
 # ── LINKS.TXT ─────────────────────────────────────────────────────────────────
@@ -200,7 +200,7 @@ def export_links_txt(site_dir: Path) -> None:
     lines = [f'open("{p.relative_to(site_dir).as_posix()}")' for p in html_files]
 
     out_file.write_text("\n".join(lines), encoding="utf-8")
-    print(f"links.txt — {len(lines)} entries")
+    print(f"links.txt - {len(lines)} entries")
 
 
 # ── LINK CHECKER ──────────────────────────────────────────────────────────────

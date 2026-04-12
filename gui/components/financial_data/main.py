@@ -72,13 +72,13 @@ FINANCIAL_FIELDS = [
 FINANCIAL_WARN_RULES = {
     "discount_rate": (0.0, 30.0,
                       None,
-                      "Discount rate exceeds 30% — please verify"),
+                      "Discount rate exceeds 30% - please verify"),
     "inflation_rate": (0.0, 25.0,
                        None,
-                       "Inflation rate exceeds 25% — please verify"),
+                       "Inflation rate exceeds 25% - please verify"),
     "interest_rate": (0.0, 35.0,
                       None,
-                      "Interest rate exceeds 35% — please verify"),
+                      "Interest rate exceeds 35% - please verify"),
 }
 
 SUGGESTED_VALUES = {

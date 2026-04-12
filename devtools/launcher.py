@@ -1,7 +1,7 @@
 """
 devtools/launcher.py
 
-3psLCCA Developer Tools — master launcher window.
+3psLCCA Developer Tools - master launcher window.
 
 Displays every dev tool as a card.  Click a card to open its window/dialog.
 DevToolsWindow is kept as a single instance (raise if already open).
@@ -25,7 +25,7 @@ from PySide6.QtWidgets import (
 )
 
 # ---------------------------------------------------------------------------
-# Style palette (Catppuccin Mocha — same as devtools_window.py)
+# Style palette (Catppuccin Mocha - same as devtools_window.py)
 # ---------------------------------------------------------------------------
 
 _BG      = "#1e1e2e"
@@ -44,7 +44,7 @@ _BORDER  = "#2a2a3e"
 
 
 # ---------------------------------------------------------------------------
-# Tool registry — add new tools here only
+# Tool registry - add new tools here only
 # ---------------------------------------------------------------------------
 
 def _get_tools() -> list[dict]:
@@ -339,7 +339,7 @@ class ToolCard(QFrame):
 
         outer.addWidget(text_block, stretch=1)
 
-        # Open button — pinned to the right
+        # Open button - pinned to the right
         self._btn = QPushButton("Open")
         self._btn.setFixedHeight(30)
         self._btn.setFixedWidth(76)
@@ -482,7 +482,7 @@ class LauncherWindow(QMainWindow):
         fl = QHBoxLayout(footer)
         fl.setContentsMargins(24, 0, 24, 0)
 
-        tip = QLabel("Tip: tools open as separate windows — the launcher stays open.")
+        tip = QLabel("Tip: tools open as separate windows - the launcher stays open.")
         tip.setStyleSheet(f"color:{_DIM}; font-size:11px;")
         fl.addWidget(tip)
         fl.addStretch()

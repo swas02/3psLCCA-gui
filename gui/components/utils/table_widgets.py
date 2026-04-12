@@ -2,13 +2,13 @@
 Reusable table widgets shared across the application.
 
 Exports:
-    GroupedHeaderView       — two-tier grouped horizontal header
-    BaseActionDelegate      — base for painted action-column delegates
-    TooltipTableMixin       — mixin that shows cell tooltip on overflow
-    TableDoubleSpinBox      — QDoubleSpinBox styled for table cells
-    TableSpinBox            — QSpinBox styled for table cells
-    TableLineEdit           — QLineEdit styled for table cells
-    mark_editable_column    — tints a column to indicate it is editable
+    GroupedHeaderView       - two-tier grouped horizontal header
+    BaseActionDelegate      - base for painted action-column delegates
+    TooltipTableMixin       - mixin that shows cell tooltip on overflow
+    TableDoubleSpinBox      - QDoubleSpinBox styled for table cells
+    TableSpinBox            - QSpinBox styled for table cells
+    TableLineEdit           - QLineEdit styled for table cells
+    mark_editable_column    - tints a column to indicate it is editable
 """
 from PySide6.QtWidgets import (
     QDoubleSpinBox,
@@ -100,14 +100,14 @@ class GroupedHeaderView(QHeaderView):
 
 class BaseActionDelegate(QStyledItemDelegate):
     """Paints circular icon buttons in a table's last (action) column.
-    No QWidget/QHBoxLayout — eliminates jitter and background bleed.
+    No QWidget/QHBoxLayout - eliminates jitter and background bleed.
 
     Subclasses must implement:
         _get_btns_for_row(row) → list of (QIcon, hover_rgb_tuple)
 
     Class attributes to override per subclass:
-        BTN_SIZE  — button diameter in px  (default 28)
-        BTN_GAP   — gap between buttons px (default 6)
+        BTN_SIZE  - button diameter in px  (default 28)
+        BTN_GAP   - gap between buttons px (default 6)
     """
 
     BTN_SIZE = 28
@@ -191,7 +191,7 @@ class BaseActionDelegate(QStyledItemDelegate):
         painter.restore()
 
     # ------------------------------------------------------------------
-    # Mouse events — hover tracking
+    # Mouse events - hover tracking
     # ------------------------------------------------------------------
 
     def eventFilter(self, obj, event):
@@ -324,7 +324,7 @@ def mark_editable_column(table, col: int) -> None:
 
 # Base inline style to include whenever setStyleSheet is called on these widgets.
 # Required because a widget-level stylesheet overrides the app QSS entirely for
-# that widget — any properties omitted fall back to platform defaults, not main.qss.
+# that widget - any properties omitted fall back to platform defaults, not main.qss.
 TABLE_SPINBOX_BASE_QSS = (
     "background-color: transparent; border: none; border-radius: 0;"
     " margin: 0; padding: 0 4px; min-height: 0;"

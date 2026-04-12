@@ -67,14 +67,14 @@ DEMOLITION_FIELDS = [
 
 DEMOLITION_WARN_RULES = {
     "demolition_cost_pct": (0.1, 50.0,
-                            "Demolition cost is 0% — verify if intentional",
-                            "Demolition cost exceeds 50% — please verify"),
+                            "Demolition cost is 0% - verify if intentional",
+                            "Demolition cost exceeds 50% - please verify"),
     "demolition_carbon_cost_pct": (0.1, 50.0,
-                                   "Demolition carbon cost is 0% — verify if intentional",
-                                   "Demolition carbon cost exceeds 50% — please verify"),
+                                   "Demolition carbon cost is 0% - verify if intentional",
+                                   "Demolition carbon cost exceeds 50% - please verify"),
     "demolition_duration": (1, 24,
-                            "Demolition duration is 0 months — verify",
-                            "Demolition duration exceeds 24 months — please verify"),
+                            "Demolition duration is 0 months - verify",
+                            "Demolition duration exceeds 24 months - please verify"),
 }
 
 

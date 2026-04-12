@@ -28,13 +28,13 @@ Caller checks success as:
 
 Standard validation flow
 ------------------------
-1. Clear styles       — reset all visual state before re-validating
-2. Required checks    — is the field filled at all?         → result["errors"]
-3. Range/warn checks  — is the value plausible?             → result["warnings"]
+1. Clear styles       - reset all visual state before re-validating
+2. Required checks    - is the field filled at all?         → result["errors"]
+3. Range/warn checks  - is the value plausible?             → result["warnings"]
                         (skips fields already in errors)
                         (skips optional fields with no value)
-4. Cross-field checks — handled externally by the caller via the extra-validation pattern
-5. Return             — {"errors": [...], "warnings": [...]}
+4. Cross-field checks - handled externally by the caller via the extra-validation pattern
+5. Return             - {"errors": [...], "warnings": [...]}
 
 Each layer only runs on fields that passed the previous layer:
     required=True,  empty        → error   (stops here, warn skipped)
@@ -181,12 +181,12 @@ def validate_form(
               and f.default is not None
               and widget.value() == widget.minimum()):
             # Spinbox with an explicit default uses the minimum as the "blank" sentinel.
-            # If still at minimum it has never been filled — treat as a required error.
+            # If still at minimum it has never been filled - treat as a required error.
             _apply_border_style(widget, get_token("danger"))
             errors.append(f"Required: {f.title}")
             error_keys.add(f.key)
-        # QSpinBox/QDoubleSpinBox without default: 0 is a valid value — use warn_rules
-        # QComboBox: always has a selection — no check needed
+        # QSpinBox/QDoubleSpinBox without default: 0 is a valid value - use warn_rules
+        # QComboBox: always has a selection - no check needed
 
     # ── Step 3: Range/warn checks ─────────────────────────────────────────────
     # Behaviour by case:
@@ -209,13 +209,13 @@ def validate_form(
         high_msg = rule[3] if len(rule) > 3 else low_msg  # fall back to low_msg if only one given
 
         if key in error_keys:
-            # Required check already failed — keep red, do not overwrite with orange
+            # Required check already failed - keep red, do not overwrite with orange
             continue
         widget = getattr(widget_owner, key, None)
         if not widget:
             continue
         if not isinstance(widget, QAbstractSpinBox):
-            # warn_rules are range checks — only valid for numeric widgets.
+            # warn_rules are range checks - only valid for numeric widgets.
             # Skip silently to avoid AttributeError on .value()
             continue
         val = widget.value()
@@ -232,7 +232,7 @@ def validate_form(
             warnings.append(label)
             _apply_border_style(widget, get_token("warning"))
         else:
-            _clear_border_style(widget)  # passed both checks — clear any stale style
+            _clear_border_style(widget)  # passed both checks - clear any stale style
 
     # ── Step 4 (caller's responsibility): cross-field checks ──────────────────
     # See module docstring for the extra-validation pattern.
@@ -244,7 +244,7 @@ def validate_form(
 # ── Form freeze / unfreeze ────────────────────────────────────────────────────
 
 
-LOCK_TOOLTIP = "Project is locked — click Unlock in the toolbar to edit."
+LOCK_TOOLTIP = "Project is locked - click Unlock in the toolbar to edit."
 
 
 class _LockEventFilter(QObject):
@@ -319,10 +319,10 @@ class _LockEventFilter(QObject):
             QApplication.restoreOverrideCursor()
             return super().eventFilter(obj, event)
 
-        return True  # consume — prevent any accidental change
+        return True  # consume - prevent any accidental change
 
 
-# Module-level singleton — one filter object serves every frozen widget.
+# Module-level singleton - one filter object serves every frozen widget.
 _lock_filter = _LockEventFilter()
 
 
@@ -398,7 +398,7 @@ def freeze_widgets(frozen: bool, *widgets) -> None:
             w.setToolTip(LOCK_TOOLTIP)
             w.installEventFilter(_lock_filter)
             if isinstance(w, QAbstractButton):
-                # Keep enabled — disabled buttons don't receive mouse events
+                # Keep enabled - disabled buttons don't receive mouse events
                 # so the filter can't show the tooltip. Use a forbidden cursor
                 # as the visual "locked" cue instead.
                 w.setCursor(QCursor(Qt.CursorShape.ForbiddenCursor))

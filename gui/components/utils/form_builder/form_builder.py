@@ -117,7 +117,7 @@ def _make_upload_img_widget(
     file_layout.setSpacing(6)
 
     # Hidden QLineEdit stores the base64-encoded image for save/load.
-    # Base64 images can be hundreds of KB — raise the default 32767-char cap.
+    # Base64 images can be hundreds of KB - raise the default 32767-char cap.
     logo_input = QLineEdit()
     logo_input.setObjectName(key)   # needed for findChild(QLineEdit, key) lookups
     logo_input.setMaxLength(10_000_000)

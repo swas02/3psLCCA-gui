@@ -1,7 +1,7 @@
 """
 gui/components/blob_manager.py
 
-Blob Manager dialog — browse, upload, download, and delete binary files
+Blob Manager dialog - browse, upload, download, and delete binary files
 (images, PDFs, ZIPs, etc.) stored in the project's blob storage.
 """
 

@@ -72,7 +72,7 @@ class NewProjectDialog(QDialog):
 
         self.country_input = QComboBox()
         self.country_input.setFixedHeight(34)
-        self.country_input.addItem("— Select country —", "")
+        self.country_input.addItem("- Select country -", "")
         for country in COUNTRIES:
             self.country_input.addItem(country, country)
         self.country_input.currentIndexChanged.connect(
@@ -95,7 +95,7 @@ class NewProjectDialog(QDialog):
 
         self.currency_input = QComboBox()
         self.currency_input.setFixedHeight(34)
-        self.currency_input.addItem("— Select currency —", "")
+        self.currency_input.addItem("- Select currency -", "")
         for code in CURRENCIES:
             self.currency_input.addItem(code, code)
         self.currency_input.setEnabled(False)
@@ -171,7 +171,7 @@ class NewProjectDialog(QDialog):
         self._ok_btn.setText(self._LOADING_MSGS[self._msg_index])
 
     def finish_loading(self):
-        """Called by project_manager when preloading is done — closes the dialog."""
+        """Called by project_manager when preloading is done - closes the dialog."""
         self._msg_timer.stop()
         self.accept()
 

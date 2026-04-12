@@ -2,7 +2,7 @@
 gui/components/outputs/lcc_data.py
 
 Pure data-preparation helpers for LCC chart and tables.
-No Qt or matplotlib imports — safe to use from any context.
+No Qt or matplotlib imports - safe to use from any context.
 """
 
 from .Pie import COLORS
@@ -213,7 +213,7 @@ def stage_totals(results: dict, result_key: str, cat_keys: dict) -> dict:
     return totals
 
 
-# Derived from COLORS["pillars"] — lowercased keys for category row colouring
+# Derived from COLORS["pillars"] - lowercased keys for category row colouring
 CATEGORY_COLORS = {k.lower(): v for k, v in COLORS["pillars"].items()}
 
 

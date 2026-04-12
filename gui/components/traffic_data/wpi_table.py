@@ -1,7 +1,7 @@
 """
 gui/components/traffic_data/wpi_table.py
 
-_WPITable — vehicle × category matrix for WPI adjustment ratios.
+_WPITable - vehicle × category matrix for WPI adjustment ratios.
 
 Rows    : 8 vehicles + 2 header rows (group + individual label) + 1 checkbox row
 Columns : 16 cost categories grouped under 6 headings
@@ -78,7 +78,7 @@ _ROW_DATA = 3
 
 
 def _col_key(col: _ColDef) -> str:
-    """Last non-{v} segment of the column path — used as the flat data key."""
+    """Last non-{v} segment of the column path - used as the flat data key."""
     return next(s for s in reversed(col.path) if s != "{v}")
 
 
@@ -139,7 +139,7 @@ class _WPITable(QTableWidget):
         self.setWordWrap(True)
         self.setTextElideMode(Qt.ElideNone)
 
-        # Hide Qt's built-in column header — we use row 0 and 1 instead
+        # Hide Qt's built-in column header - we use row 0 and 1 instead
         self.horizontalHeader().setVisible(False)
         self.horizontalHeader().setSectionResizeMode(QHeaderView.Interactive)
         self.horizontalHeader().setMinimumSectionSize(90)
@@ -152,7 +152,7 @@ class _WPITable(QTableWidget):
         self.setRowHeight(_ROW_CB, 42)
 
     def _build_group_row(self):
-        """Row 0 — group labels with colspan (setSpan) per group."""
+        """Row 0 - group labels with colspan (setSpan) per group."""
         bold = QFont()
         bold.setBold(True)
 
@@ -179,7 +179,7 @@ class _WPITable(QTableWidget):
         self.setVerticalHeaderItem(_ROW_GROUP, QTableWidgetItem(""))
 
     def _build_label_row(self):
-        """Row 1 — individual column labels."""
+        """Row 1 - individual column labels."""
         small_bold = QFont()
         small_bold.setBold(True)
         small_bold.setPointSize(8)
@@ -188,12 +188,12 @@ class _WPITable(QTableWidget):
             item.setFlags(Qt.ItemIsEnabled)
             item.setFont(small_bold)
             item.setTextAlignment(Qt.AlignCenter | Qt.TextWordWrap)
-            item.setToolTip(f"{cdef.group} — {cdef.label}")
+            item.setToolTip(f"{cdef.group} - {cdef.label}")
             self.setItem(_ROW_LABEL, col, item)
         self.setVerticalHeaderItem(_ROW_LABEL, QTableWidgetItem(""))
 
     def _build_checkbox_row(self):
-        """Row 2 — one centered QCheckBox per column."""
+        """Row 2 - one centered QCheckBox per column."""
         for col in range(_N_COLS):
             cb = QCheckBox()
             is_veh_dim = _is_vehicle_dim(_COLUMNS[col])
@@ -201,7 +201,7 @@ class _WPITable(QTableWidget):
             if not is_veh_dim:
                 cb.setEnabled(False)
                 cb.setToolTip(
-                    "This factor is not vehicle-specific — always common to all"
+                    "This factor is not vehicle-specific - always common to all"
                 )
             else:
                 cb.setToolTip("Common to all vehicles")
@@ -222,7 +222,7 @@ class _WPITable(QTableWidget):
         self.setVerticalHeaderItem(_ROW_CB, QTableWidgetItem("Common\nto All"))
 
     def _build_data_rows(self):
-        """Rows 3+ — one QDoubleSpinBox per cell, vehicle name in vertical header."""
+        """Rows 3+ - one QDoubleSpinBox per cell, vehicle name in vertical header."""
         for row_idx, (vkey, vlabel) in enumerate(_VEHICLES):
             row = _ROW_DATA + row_idx
             self.setVerticalHeaderItem(row, QTableWidgetItem(vlabel))
@@ -249,7 +249,7 @@ class _WPITable(QTableWidget):
 
     def sizeHint(self):
         h = sum(self.rowHeight(r) for r in range(self.rowCount()))
-        # Always reserve horizontal scrollbar height — 16 cols × 90px min = 1440px
+        # Always reserve horizontal scrollbar height - 16 cols × 90px min = 1440px
         # exceeds typical window width, so the scrollbar is almost always present.
         sb_h = self.horizontalScrollBar().sizeHint().height()
         return QSize(super().sizeHint().width(), h + sb_h + 2)
@@ -345,7 +345,7 @@ class _WPITable(QTableWidget):
     def _apply_spinbox_opacity(self, sb: QDoubleSpinBox, active: bool):
         """
         Set spinbox text colour by deriving it from the current palette's
-        WindowText role and applying alpha — works in both light and dark mode.
+        WindowText role and applying alpha - works in both light and dark mode.
         active=True  → full opacity (palette default)
         active=False → 40% opacity (dimmed, read-only)
         """

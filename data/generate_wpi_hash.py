@@ -39,7 +39,7 @@ def main():
 
     for entry in entries:
         name = entry["metadata"]["name"]
-        old_hash = entry["metadata"].get("hash", "—")
+        old_hash = entry["metadata"].get("hash", "-")
         new_hash = compute_hash(entry["data"])
         entry["metadata"]["hash"] = new_hash
 

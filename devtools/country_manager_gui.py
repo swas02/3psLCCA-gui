@@ -1,7 +1,7 @@
 """
 devtools/country_manager_gui.py
 
-Country Manager — create and remove material_database country folders.
+Country Manager - create and remove material_database country folders.
 
 Purpose:
   Each country folder under material_database/ acts as a container where
@@ -13,7 +13,7 @@ Can be opened:
   - As a child of CatalogBuilderDialog (receives mod + db_root, no duplication)
 
 Signals:
-  folders_changed — emitted after any add/remove so the parent can reload.
+  folders_changed - emitted after any add/remove so the parent can reload.
 
 Workflow:
   1. Browse the full country list:
@@ -50,7 +50,7 @@ from PySide6.QtWidgets import (
 )
 
 # ---------------------------------------------------------------------------
-# Style palette (Catppuccin Mocha — matches all other devtools)
+# Style palette (Catppuccin Mocha - matches all other devtools)
 # ---------------------------------------------------------------------------
 
 _BG      = "#1e1e2e"
@@ -149,7 +149,7 @@ def _load_module(path: Path, name: str) -> ModuleType | None:
 
 
 # ---------------------------------------------------------------------------
-# Background worker — registry rebuild (only used in standalone mode)
+# Background worker - registry rebuild (only used in standalone mode)
 # ---------------------------------------------------------------------------
 
 class _RebuildWorker(QThread):
@@ -302,7 +302,7 @@ class CountryManagerDialog(QDialog):
 
         btn_row.addStretch()
 
-        # Rebuild only shown in standalone mode — when opened from
+        # Rebuild only shown in standalone mode - when opened from
         # CatalogBuilderDialog the parent handles rebuilding.
         if self._standalone:
             self._rebuild_btn = QPushButton("Rebuild Registry")
@@ -410,7 +410,7 @@ class CountryManagerDialog(QDialog):
                     item.setData(child.name, Qt.UserRole + 1)   # folder name
                     n = len(list(child.iterdir()))
                     item.setText(
-                        f"⚠  {child.name}  — orphaned"
+                        f"⚠  {child.name}  - orphaned"
                         + (f"  ({n} item(s))" if n else "  (empty)")
                     )
                     item.setForeground(QColor(_RED))
@@ -424,9 +424,9 @@ class CountryManagerDialog(QDialog):
             if (self._db_root / f).exists()
         )
         orphans = self._model.rowCount() - total
-        msg = f"Loaded {total} countries — {present} folder(s) exist"
+        msg = f"Loaded {total} countries - {present} folder(s) exist"
         if orphans:
-            msg += f" — {orphans} orphaned folder(s) detected"
+            msg += f" - {orphans} orphaned folder(s) detected"
         self._log_line(msg, color=_DIM)
 
     def _make_item(self, country: str, folder_name: str,
@@ -441,7 +441,7 @@ class CountryManagerDialog(QDialog):
                 item.setText(f"✓  {country}  ({folder_name})")
                 item.setForeground(QColor(_GREEN))
             else:
-                item.setText(f"·  {country}  ({folder_name})  — empty")
+                item.setText(f"·  {country}  ({folder_name})  - empty")
                 item.setForeground(QColor(_DIM))
         else:
             item.setText(f"·  {country}  ({folder_name})")
@@ -534,7 +534,7 @@ class CountryManagerDialog(QDialog):
             self.folders_changed.emit()
             if self._standalone and self._rebuild_btn:
                 self._rebuild_btn.setEnabled(self._reg_mod is not None)
-                self._log_line("Folders added — rebuild registry to update suggestions.", color=_DIM)
+                self._log_line("Folders added - rebuild registry to update suggestions.", color=_DIM)
 
     # ── Remove folder (bulk) ───────────────────────────────────────────────
 
@@ -557,7 +557,7 @@ class CountryManagerDialog(QDialog):
             else:
                 empty_folders.append(country)
 
-        # Warn about folders with content — never remove them
+        # Warn about folders with content - never remove them
         if has_content:
             names = "\n".join(
                 f"  • {self._country_to_folder[c]}  ({len(list((self._db_root / self._country_to_folder[c]).iterdir()))} item(s))"
@@ -604,7 +604,7 @@ class CountryManagerDialog(QDialog):
                     self.folders_changed.emit()
                     if self._standalone and self._rebuild_btn:
                         self._rebuild_btn.setEnabled(self._reg_mod is not None)
-                        self._log_line("Folders removed — rebuild registry to update suggestions.", color=_DIM)
+                        self._log_line("Folders removed - rebuild registry to update suggestions.", color=_DIM)
 
     def _remove_orphan(self, folder_name: str):
         folder_path = self._db_root / folder_name
@@ -617,7 +617,7 @@ class CountryManagerDialog(QDialog):
         )
         if children:
             msg += (
-                f"\n  Contains {len(children)} item(s) — removing will delete all content.\n"
+                f"\n  Contains {len(children)} item(s) - removing will delete all content.\n"
                 f"  This action cannot be undone."
             )
         else:
@@ -658,7 +658,7 @@ class CountryManagerDialog(QDialog):
             if self._standalone and self._rebuild_btn:
                 self._rebuild_btn.setEnabled(self._reg_mod is not None)
                 self._log_line(
-                    "Orphan with content removed — rebuild registry to clear stale entries.",
+                    "Orphan with content removed - rebuild registry to clear stale entries.",
                     color=_YELLOW,
                 )
 

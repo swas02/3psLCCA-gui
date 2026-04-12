@@ -1,5 +1,5 @@
 """
-devtools/docs_check_links.py — Verify all internal links in site/ are valid.
+devtools/docs_check_links.py - Verify all internal links in site/ are valid.
 
 - Scans all HTML files
 - Extracts href links

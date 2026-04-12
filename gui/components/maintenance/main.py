@@ -32,7 +32,7 @@ MAINTENANCE_FIELDS = [
         unit="(%/yr)",
         required=True,
         default=0.0,
-        warn=(0.01, 100.0, "Routine Inspection Cost is 0 — cost will not be included"),
+        warn=(0.01, 100.0, "Routine Inspection Cost is 0 - cost will not be included"),
     ),
     FieldDef(
         "routine_inspection_freq",
@@ -46,7 +46,7 @@ MAINTENANCE_FIELDS = [
         warn=(
             1,
             50,
-            "Routine Inspection Frequency seems unusual — expected between 1 and 50 years",
+            "Routine Inspection Frequency seems unusual - expected between 1 and 50 years",
         ),
     ),
     # ── Periodic Maintenance ─────────────────────────────────────────────
@@ -63,7 +63,7 @@ MAINTENANCE_FIELDS = [
         warn=(
             0.01,
             100.0,
-            "Periodic Maintenance Cost is 0 — cost will not be included",
+            "Periodic Maintenance Cost is 0 - cost will not be included",
         ),
     ),
     FieldDef(
@@ -78,7 +78,7 @@ MAINTENANCE_FIELDS = [
         warn=(
             0.01,
             100.0,
-            "Periodic Maintenance Carbon Cost is 0 — cost will not be included",
+            "Periodic Maintenance Carbon Cost is 0 - cost will not be included",
         ),
     ),
     FieldDef(
@@ -93,7 +93,7 @@ MAINTENANCE_FIELDS = [
         warn=(
             1,
             100,
-            "Periodic Maintenance Frequency seems unusual — expected between 1 and 100 years",
+            "Periodic Maintenance Frequency seems unusual - expected between 1 and 100 years",
         ),
     ),
     # ── Major Works ──────────────────────────────────────────────────────
@@ -107,7 +107,7 @@ MAINTENANCE_FIELDS = [
         unit="(%)",
         required=True,
         default=0.0,
-        warn=(0.01, 100.0, "Major Inspection Cost is 0 — cost will not be included"),
+        warn=(0.01, 100.0, "Major Inspection Cost is 0 - cost will not be included"),
     ),
     FieldDef(
         "major_inspection_freq",
@@ -121,7 +121,7 @@ MAINTENANCE_FIELDS = [
         warn=(
             1,
             100,
-            "Major Inspection Frequency seems unusual — expected between 1 and 100 years",
+            "Major Inspection Frequency seems unusual - expected between 1 and 100 years",
         ),
     ),
     FieldDef(
@@ -133,7 +133,7 @@ MAINTENANCE_FIELDS = [
         unit="(%)",
         required=True,
         default=0.0,
-        warn=(0.01, 100.0, "Major Repair Cost is 0 — cost will not be included"),
+        warn=(0.01, 100.0, "Major Repair Cost is 0 - cost will not be included"),
     ),
     FieldDef(
         "major_repair_carbon_cost",
@@ -144,7 +144,7 @@ MAINTENANCE_FIELDS = [
         unit="(%)",
         required=True,
         default=0.0,
-        warn=(0.01, 100.0, "Major Repair Carbon Cost is 0 — cost will not be included"),
+        warn=(0.01, 100.0, "Major Repair Carbon Cost is 0 - cost will not be included"),
     ),
     FieldDef(
         "major_repair_freq",
@@ -158,7 +158,7 @@ MAINTENANCE_FIELDS = [
         warn=(
             1,
             100,
-            "Major Repair Frequency seems unusual — expected between 1 and 100 years",
+            "Major Repair Frequency seems unusual - expected between 1 and 100 years",
         ),
     ),
     FieldDef(
@@ -173,7 +173,7 @@ MAINTENANCE_FIELDS = [
         warn=(
             1,
             60,
-            "Major Repair Duration seems unusual — expected between 1 and 60 months",
+            "Major Repair Duration seems unusual - expected between 1 and 60 months",
         ),
     ),
     # ── Bearings & Expansion Joints ──────────────────────────────────────
@@ -190,7 +190,7 @@ MAINTENANCE_FIELDS = [
         warn=(
             0.01,
             100.0,
-            "Bearing & Expansion Joint Cost is 0 — cost will not be included",
+            "Bearing & Expansion Joint Cost is 0 - cost will not be included",
         ),
     ),
     FieldDef(
@@ -205,7 +205,7 @@ MAINTENANCE_FIELDS = [
         warn=(
             1,
             100,
-            "Bearing & Expansion Joint Frequency seems unusual — expected between 1 and 100 years",
+            "Bearing & Expansion Joint Frequency seems unusual - expected between 1 and 100 years",
         ),
     ),
     FieldDef(
@@ -220,7 +220,7 @@ MAINTENANCE_FIELDS = [
         warn=(
             1,
             365,
-            "Replacement Duration seems unusual — expected between 1 and 365 days",
+            "Replacement Duration seems unusual - expected between 1 and 365 days",
         ),
     ),
 ]

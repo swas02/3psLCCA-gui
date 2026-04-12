@@ -1,7 +1,7 @@
 """
 gui/components/home_page.py
 
-Home screen — Word 2024-inspired two-panel layout.
+Home screen - Word 2024-inspired two-panel layout.
 Left sidebar: nav + recent/pinned list.
 Right panel: greeting, CTA cards, project grid.
 """
@@ -83,8 +83,8 @@ from gui.components.settings_dialog import SettingsDialog
 
 # ── Layout constants ──────────────────────────────────────────────────────────
 SIDEBAR_W = 76  # fixed sidebar width
-CARD_H_NORM = 78  # card height — normal projects
-CARD_H_WARN = 90  # card height — crashed / corrupted (extra line)
+CARD_H_NORM = 78  # card height - normal projects
+CARD_H_WARN = 90  # card height - crashed / corrupted (extra line)
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -150,7 +150,7 @@ def get_status_config(status: str) -> dict:
 
 
 class _NavButton(QWidget):
-    """Custom-painted sidebar nav button — icon drawn with QPainter for crisp results."""
+    """Custom-painted sidebar nav button - icon drawn with QPainter for crisp results."""
 
     clicked = Signal()
 
@@ -405,7 +405,7 @@ class _GridCardDelegate(QStyledItemDelegate):
         painter.setBrush(QBrush(pal.base().color()))
         painter.drawRoundedRect(rect, self.RADIUS, self.RADIUS)
 
-        # ── Loading state — early exit ──────────────────────────────────────
+        # ── Loading state - early exit ──────────────────────────────────────
         if is_loading:
             tint = QColor(muted_col)
             tint.setAlpha(18)
@@ -596,7 +596,7 @@ class _GridCardDelegate(QStyledItemDelegate):
             painter.setPen(warn_col)
             painter.setFont(_f(FS_XS, FW_MEDIUM))
             painter.drawText(
-                QPoint(tx, y_warn), "Needs recovery — last save may be incomplete"
+                QPoint(tx, y_warn), "Needs recovery - last save may be incomplete"
             )
         elif status == "corrupted":
             warn_col = QColor(get_token("warning"))
@@ -604,7 +604,7 @@ class _GridCardDelegate(QStyledItemDelegate):
             painter.setPen(warn_col)
             painter.setFont(_f(FS_XS, FW_MEDIUM))
             painter.drawText(
-                QPoint(tx, y_warn), "File may be damaged — restore from a checkpoint"
+                QPoint(tx, y_warn), "File may be damaged - restore from a checkpoint"
             )
 
         painter.restore() # Balanced
@@ -686,7 +686,7 @@ class _GridList(QListWidget):
 
 
 class _EmptyState(QWidget):
-    """Designed empty state — logo/icon + heading + subtext + optional CTA."""
+    """Designed empty state - logo/icon + heading + subtext + optional CTA."""
 
     def __init__(
         self,
@@ -1209,7 +1209,7 @@ class HomePage(QWidget):
             self.grid_section_lbl.setText("PINNED PROJECTS")
         elif sort_key == "name":
             projects.sort(key=lambda p: (p.get("display_name") or "").lower())
-            self.grid_section_lbl.setText("ALL PROJECTS — A–Z")
+            self.grid_section_lbl.setText("ALL PROJECTS - A–Z")
         else:
             # Sort by the most recent of either last_opened_at or last_modified
             def get_latest_time(p):

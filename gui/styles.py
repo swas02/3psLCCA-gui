@@ -1,7 +1,7 @@
 """
-gui/styles.py — Component-level style helpers (single source of truth).
+gui/styles.py - Component-level style helpers (single source of truth).
 
-All functions read from gui/theme.py tokens — change a token there and
+All functions read from gui/theme.py tokens - change a token there and
 every widget that calls these helpers picks it up automatically.
 
 Font helper
@@ -43,7 +43,7 @@ def font(size: int, weight: int = FW_NORMAL, italic: bool = False) -> QFont:
 # Pass `radius` to override the default border-radius per instance.
 
 def btn_primary(radius: int = RADIUS_MD) -> str:
-    """Filled PRIMARY button — main CTA."""
+    """Filled PRIMARY button - main CTA."""
     return (
         f"QPushButton {{ background: {get_token('primary')}; color: {get_token('text-on-primary')}; border: none;"
         f"  border-radius: {radius}px; padding: 0 16px; font-weight: {get_token('weight-semibold')}; }}"
@@ -53,7 +53,7 @@ def btn_primary(radius: int = RADIUS_MD) -> str:
 
 
 def btn_outline(radius: int = RADIUS_MD) -> str:
-    """Neutral outlined button — secondary action."""
+    """Neutral outlined button - secondary action."""
     return (
         f"QPushButton {{ background: transparent; border: 1px solid palette(mid);"
         f"  border-radius: {radius}px; padding: 0 16px; color: palette(windowText); }}"
@@ -63,7 +63,7 @@ def btn_outline(radius: int = RADIUS_MD) -> str:
 
 
 def btn_outline_primary(radius: int = RADIUS_MD) -> str:
-    """Outlined PRIMARY button — confirmatory action (Open, etc.)."""
+    """Outlined PRIMARY button - confirmatory action (Open, etc.)."""
     return (
         f"QPushButton {{ border: 1px solid {get_token('primary')}; color: {get_token('primary')};"
         f"  border-radius: {radius}px; padding: 0 20px; background: transparent; }}"
@@ -74,7 +74,7 @@ def btn_outline_primary(radius: int = RADIUS_MD) -> str:
 
 
 def btn_outline_danger(radius: int = RADIUS_MD) -> str:
-    """Outlined danger button — destructive action (Delete, etc.)."""
+    """Outlined danger button - destructive action (Delete, etc.)."""
     return (
         f"QPushButton {{ border: 1px solid {get_token('danger')}; color: {get_token('danger')};"
         f"  border-radius: {radius}px; padding: 0 20px; background: transparent; }}"
@@ -84,7 +84,7 @@ def btn_outline_danger(radius: int = RADIUS_MD) -> str:
 
 
 def btn_text_primary(radius: int = RADIUS_MD) -> str:
-    """Text-only PRIMARY button, left-aligned — nav/return links."""
+    """Text-only PRIMARY button, left-aligned - nav/return links."""
     return (
         f"QPushButton {{ color: {get_token('primary')}; border: none; background: transparent;"
         f"  text-align: left; padding-left: 16px; border-radius: {radius}px; }}"
@@ -93,7 +93,7 @@ def btn_text_primary(radius: int = RADIUS_MD) -> str:
 
 
 def btn_ghost(radius: int = RADIUS_MD) -> str:
-    """Subtle outlined button — toolbar/secondary small actions (Refresh, sort tabs)."""
+    """Subtle outlined button - toolbar/secondary small actions (Refresh, sort tabs)."""
     return (
         f"QPushButton {{ border: 1px solid palette(mid); border-radius: {radius}px;"
         f"  padding: 0 12px; background: transparent; color: palette(windowText); }}"
@@ -102,7 +102,7 @@ def btn_ghost(radius: int = RADIUS_MD) -> str:
 
 
 def btn_ghost_checkable(radius: int = RADIUS_MD) -> str:
-    """Ghost button that can be checked — sort/filter toggle tabs."""
+    """Ghost button that can be checked - sort/filter toggle tabs."""
     return (
         f"QPushButton {{ border: 1px solid palette(mid); border-radius: {radius}px;"
         f"  padding: 0 10px; background: transparent; color: palette(windowText); }}"

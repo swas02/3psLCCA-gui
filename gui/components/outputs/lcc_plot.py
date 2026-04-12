@@ -145,7 +145,7 @@ class LCCDetailsTable(QWidget):
             eco  = totals.get("Economic",      0.0)
             env  = totals.get("Environmental", 0.0)
             soc  = totals.get("Social",        0.0)
-            # change — store result_key for stage color lookup per row
+            # change - store result_key for stage color lookup per row
             stage_rows.append((stage_label, result_key, eco, env, soc, eco + env + soc))
 
         n_rows = len(stage_rows) + 1  # +1 grand total
@@ -166,7 +166,7 @@ class LCCDetailsTable(QWidget):
         table.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         table.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
-        # change — map result_key → stage name for color lookups
+        # change - map result_key → stage name for color lookups
         _result_key_to_stage = {
             "initial_stage":  "Initial",
             "use_stage":      "Use",
@@ -174,7 +174,7 @@ class LCCDetailsTable(QWidget):
             "end_of_life":    "End-of-Life",
         }
 
-        # change — custom header paints section colors directly, bypassing unreliable QSS nth-child
+        # change - custom header paints section colors directly, bypassing unreliable QSS nth-child
         _header_colors = [
             COLORS["summary_neutral"]["stage_col"],    # col 0: Stage
             COLORS["pillars"]["Economic"],             # col 1: Economic
@@ -227,7 +227,7 @@ class LCCDetailsTable(QWidget):
 
         from PySide6.QtGui import QBrush
 
-        # change — _item sets BackgroundRole as QBrush so _ColorDelegate paints correctly
+        # change - _item sets BackgroundRole as QBrush so _ColorDelegate paints correctly
         def _item(text, align=Qt.AlignLeft | Qt.AlignVCenter, font=None,
                   green=False, bg: QColor = None):
             it = QTableWidgetItem(text)
@@ -255,20 +255,20 @@ class LCCDetailsTable(QWidget):
             grand_soc   += soc
             grand_total += total
 
-            # change — col 0 gets stage strip color, cols 1-4 get white
+            # change - col 0 gets stage strip color, cols 1-4 get white
             stage_name  = _result_key_to_stage.get(result_key, "")
             strip_color = QColor(COLORS["stages"].get(stage_name, "#DDDDDD"))
             white       = QColor("#FFFFFF")
 
             # col 0: stage strip color (same as LCC Breakdown left sidebar)
             table.setItem(row_idx, 0, _item(label, font=bold, bg=strip_color))
-            # cols 1-4: white data cells — color identity lives in the headers
+            # cols 1-4: white data cells - color identity lives in the headers
             table.setItem(row_idx, 1, _val(eco,   bold_font=bold, bg=white))
             table.setItem(row_idx, 2, _val(env,   bold_font=bold, bg=white))
             table.setItem(row_idx, 3, _val(soc,   bold_font=bold, bg=white))
             table.setItem(row_idx, 4, _val(total, bold_font=bold, bg=white))
 
-        # change — Grand Total: col 0 silver-grey, cols 1-4 white
+        # change - Grand Total: col 0 silver-grey, cols 1-4 white
         tr = len(stage_rows)
         grand_stage_bg = QColor(COLORS["summary_neutral"]["stage_col"])
         white          = QColor("#FFFFFF")
@@ -278,11 +278,11 @@ class LCCDetailsTable(QWidget):
             table.setItem(tr, col, _val(val, bold_font=bold, bg=white))
         table.setItem(tr, 4, _val(grand_total, bold_font=bold, bg=white))
 
-        # change — _ColorDelegate on all 5 cols to bypass dark-theme QSS
+        # change - _ColorDelegate on all 5 cols to bypass dark-theme QSS
         for col in range(5):
             table.setItemDelegateForColumn(col, _ColorDelegate(table))
 
-        # change — fix row height to 32px for compact summary table
+        # change - fix row height to 32px for compact summary table
         for row in range(n_rows):
             table.setRowHeight(row, 32)
         table.setSizeAdjustPolicy(QTableWidget.AdjustToContents)
@@ -380,7 +380,7 @@ class LCCBreakdownTable(QWidget):
         self._build(results)
 
     def _build(self, results: dict):
-        # Collect applicable stages — keep cat for row colouring
+        # Collect applicable stages - keep cat for row colouring
         active_stages = []
         for stage_def in BREAKDOWN_STAGES:
             stage_data = results.get(stage_def["result_key"], {})
@@ -410,11 +410,11 @@ class LCCBreakdownTable(QWidget):
         table.setShowGrid(True)
         table.setWordWrap(True)
 
-        # change — custom header paints col colors directly: grey, steel blue, warm orange
+        # change - custom header paints col colors directly: grey, steel blue, warm orange
         _breakdown_header_colors = [
             COLORS["summary_neutral"]["stage_col"],   # col 0: stage strip (empty label)
-            "#B0C4DE",                                 # col 1: Costs — steel blue
-            COLORS["summary_neutral"]["total_col"],   # col 2: Cost in Present Time — warm orange
+            "#B0C4DE",                                 # col 1: Costs - steel blue
+            COLORS["summary_neutral"]["total_col"],   # col 2: Cost in Present Time - warm orange
         ]
 
         class _BreakdownHeader(QHeaderView):
@@ -450,7 +450,7 @@ class LCCBreakdownTable(QWidget):
         table.setColumnWidth(2, 190)
 
         table.setItemDelegateForColumn(0, _VerticalTextDelegate(table))
-        # change — _ColorDelegate on cols 1 & 2 to bypass dark-theme QSS overrides
+        # change - _ColorDelegate on cols 1 & 2 to bypass dark-theme QSS overrides
         table.setItemDelegateForColumn(1, _ColorDelegate(table))
         table.setItemDelegateForColumn(2, _ColorDelegate(table))
 
@@ -475,7 +475,7 @@ class LCCBreakdownTable(QWidget):
             stage_bg = QColor(stage_def["stage_color"])
             n        = len(stage_rows)
 
-            # change — resolve stage tint color for "Cost in Present Time" col
+            # change - resolve stage tint color for "Cost in Present Time" col
             _result_key_to_stage = {
                 "initial_stage":  "Initial",
                 "use_stage":      "Use",
@@ -487,7 +487,7 @@ class LCCBreakdownTable(QWidget):
                 COLORS["stage_cost_tints"].get(_stage_name, "#EEEEEE")
             )
 
-            # Stage label cell — spans all rows in this stage
+            # Stage label cell - spans all rows in this stage
             table.setItem(row_idx, 0, _cell(stage_def["label"], stage_bg, font=bold))
             if n > 1:
                 table.setSpan(row_idx, 0, n, 1)
@@ -529,7 +529,7 @@ class LCCBreakdownTable(QWidget):
                 table.setItem(r, 1, desc_item)
 
                 # --- column 2: white background ─────────────────────────────────────────
-                # change — white background for uniform "Cost in Present Time" col
+                # change - white background for uniform "Cost in Present Time" col
                 cost_item = _cell(
                     f"INR \u20b9{val:,.2f}", QColor("#FFFFFF"),
                     align=Qt.AlignRight | Qt.AlignVCenter,
@@ -540,7 +540,7 @@ class LCCBreakdownTable(QWidget):
 
             row_idx += n
 
-        # change — fix row height to 32px instead of resizeRowsToContents which was too tall
+        # change - fix row height to 32px instead of resizeRowsToContents which was too tall
         for row in range(total_rows):
             table.setRowHeight(row, 32)
         table.setSizeAdjustPolicy(QTableWidget.AdjustToContents)

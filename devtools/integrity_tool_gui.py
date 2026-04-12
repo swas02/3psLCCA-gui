@@ -1,7 +1,7 @@
 """
 devtools/integrity_tool_gui.py
 
-File Integrity Checker — records MD5 hashes of static data files
+File Integrity Checker - records MD5 hashes of static data files
 and detects changes (accidental corruption, tampering, unknown edits).
 
 integrity.json (stored in devtools/) is the source of truth.
@@ -202,7 +202,7 @@ class _Worker(QThread):
             else:   # regen
                 abs_path = _abs(rel)
                 if not os.path.isfile(abs_path):
-                    status, detail = _MISSING, "File not found — skipped."
+                    status, detail = _MISSING, "File not found - skipped."
                 else:
                     try:
                         rec = _hash_file(rel)
@@ -404,8 +404,8 @@ class IntegrityToolDialog(QDialog):
         s_item.setFlags(s_item.flags() & ~Qt.ItemIsEditable)
         self._table.setItem(row, 1, s_item)
 
-        regen_at = stored.get("regen_at", "—")
-        if regen_at and regen_at != "—":
+        regen_at = stored.get("regen_at", "-")
+        if regen_at and regen_at != "-":
             regen_at = regen_at[:19].replace("T", "  ")
         self._table.setItem(row, 2, self._cell(regen_at, _DIM))
         self._table.setItem(row, 3, self._cell(detail))
@@ -458,7 +458,7 @@ class IntegrityToolDialog(QDialog):
         color = _GREEN if bad == 0 else _RED
         self._status_lbl.setStyleSheet(f"color: {color}; font-size: 11px; font-weight: bold;")
         self._status_lbl.setText(
-            f"Verified {len(self._statuses)} file(s) — {ok} OK, {bad} issue(s)"
+            f"Verified {len(self._statuses)} file(s) - {ok} OK, {bad} issue(s)"
         )
         self._set_busy(False)
         self._set_busy(False)  # re-enable buttons

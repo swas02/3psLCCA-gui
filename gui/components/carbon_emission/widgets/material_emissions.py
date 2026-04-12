@@ -42,7 +42,7 @@ def _fmt_carbon_unit(carbon_unit: str) -> str:
     return unit
 
 
-# Cache for unit analysis — keyed by (unit, carbon_denom, conv_factor)
+# Cache for unit analysis - keyed by (unit, carbon_denom, conv_factor)
 _analysis_cache: dict = {}
 
 
@@ -64,7 +64,7 @@ CHUNKS = [
     ("str_misc", "Misc"),
 ]
 
-# Row background states — sourced from active theme; fallback keeps original colour
+# Row background states - sourced from active theme; fallback keeps original colour
 BG_INVALID    = get_token("danger")
 BG_SUSPICIOUS = get_token("warning")
 BG_DISABLED   = get_token("surface")
@@ -199,7 +199,7 @@ class _CarbonActionDelegate(BaseActionDelegate):
 
 
 # ---------------------------------------------------------------------------
-# Frozen Action overlay — single-column widget pinned to the right edge
+# Frozen Action overlay - single-column widget pinned to the right edge
 # ---------------------------------------------------------------------------
 
 
@@ -302,7 +302,7 @@ class CarbonTable(TooltipTableMixin, QTableWidget):
         ("Total kgCO₂e", _R),  # 7
         ("Warning", _L),  # 8
         ("Action", _C),  # 9
-        ("", _C),  # 10 placeholder — reserves space for frozen overlay
+        ("", _C),  # 10 placeholder - reserves space for frozen overlay
     ]
     EXCLUDED_HEADERS = [
         ("Category", _L),  # 0
@@ -314,7 +314,7 @@ class CarbonTable(TooltipTableMixin, QTableWidget):
         ("Unit", _C),  # 6  ┘
         ("Reason", _L),  # 7
         ("Action", _C),  # 8
-        ("", _C),  # 9 placeholder — reserves space for frozen overlay
+        ("", _C),  # 9 placeholder - reserves space for frozen overlay
     ]
 
     def __init__(self, is_included: bool, parent=None):
@@ -342,7 +342,7 @@ class CarbonTable(TooltipTableMixin, QTableWidget):
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
-        # Hide the real action col — frozen overlay renders it
+        # Hide the real action col - frozen overlay renders it
         action_col = len(headers) - 2  # second-to-last (last is placeholder)
         self.horizontalHeader().setSectionResizeMode(action_col, QHeaderView.Fixed)
         self.setColumnWidth(action_col, 0)
@@ -479,7 +479,7 @@ class MaterialEmissions(QWidget):
             controller.project_loaded.connect(self._on_project_reloaded)
 
         # Outer layout holds only the scroll area, so growing tables never
-        # overlap sibling widgets — the scroll area absorbs all extra height.
+        # overlap sibling widgets - the scroll area absorbs all extra height.
         outer_layout = QVBoxLayout(self)
         outer_layout.setContentsMargins(0, 0, 0, 0)
         outer_layout.setSpacing(0)
@@ -496,7 +496,7 @@ class MaterialEmissions(QWidget):
         self.summary_bar = QWidget()
         summary_layout = QHBoxLayout(self.summary_bar)
         self.total_lbl = QLabel("Total: - kgCO₂e")
-        self.count_lbl = QLabel("Included: — of — items")
+        self.count_lbl = QLabel("Included: - of - items")
         self.details_btn = QPushButton("Show Details ▼")
         self.details_btn.setFlat(True)
         self.details_btn.clicked.connect(self._toggle_details)
@@ -510,10 +510,10 @@ class MaterialEmissions(QWidget):
         # Details Row
         self.details_widget = QWidget()
         details_layout = QHBoxLayout(self.details_widget)
-        self.foundation_lbl = QLabel("Foundation: —")
-        self.sub_lbl = QLabel("Sub Structure: —")
-        self.super_lbl = QLabel("Super Structure: —")
-        self.misc_lbl = QLabel("Misc: —")
+        self.foundation_lbl = QLabel("Foundation: -")
+        self.sub_lbl = QLabel("Sub Structure: -")
+        self.super_lbl = QLabel("Super Structure: -")
+        self.misc_lbl = QLabel("Misc: -")
         for lbl in [self.foundation_lbl, self.sub_lbl, self.super_lbl, self.misc_lbl]:
             details_layout.addWidget(lbl)
             details_layout.addWidget(self._vline())
@@ -599,7 +599,7 @@ class MaterialEmissions(QWidget):
                         carbon_unit.split("/")[-1] if "/" in carbon_unit else ""
                     )
 
-                    # Unit resolver analysis (cached — same inputs always yield same result)
+                    # Unit resolver analysis (cached - same inputs always yield same result)
                     analysis = _cached_analysis(
                         v.get("unit", ""), carbon_denom, _cf_value(v)
                     )
@@ -650,7 +650,7 @@ class MaterialEmissions(QWidget):
             t.setItem(row, 2, _ri(fmt(v.get("quantity", 0))))
             t.setItem(row, 3, QTableWidgetItem(_fmt_unit(v.get("unit", ""))))
             _cf_raw = v.get("conversion_factor", "not_available")
-            t.setItem(row, 4, _ri(fmt(_cf_raw) if _cf_raw not in _NA else "—"))
+            t.setItem(row, 4, _ri(fmt(_cf_raw) if _cf_raw not in _NA else "-"))
             t.setItem(row, 5, _ri(fmt(v.get("carbon_emission", 0))))
             t.setItem(
                 row, 6, QTableWidgetItem(_fmt_carbon_unit(v.get("carbon_unit", "")))
@@ -715,7 +715,7 @@ class MaterialEmissions(QWidget):
             t.setItem(row, 2, _ri(fmt(v.get("quantity", 0))))
             t.setItem(row, 3, QTableWidgetItem(_fmt_unit(v.get("unit", ""))))
             _cf_raw = v.get("conversion_factor", "not_available")
-            t.setItem(row, 4, _ri(fmt(_cf_raw) if _cf_raw not in _NA else "—"))
+            t.setItem(row, 4, _ri(fmt(_cf_raw) if _cf_raw not in _NA else "-"))
             t.setItem(row, 5, _ri(fmt(v.get("carbon_emission", 0))))
             t.setItem(
                 row, 6, QTableWidgetItem(_fmt_carbon_unit(v.get("carbon_unit", "")))
@@ -897,11 +897,11 @@ class MaterialEmissions(QWidget):
 
         if result["total_count"] == 0:
             warnings.append(
-                "No materials found — add items in the Construction Work Data section."
+                "No materials found - add items in the Construction Work Data section."
             )
         elif result["total_carbon"] == 0.0:
             warnings.append(
-                f"Total material carbon is 0 kgCO₂e — "
+                f"Total material carbon is 0 kgCO₂e - "
                 f"{result['included_count']} of {result['total_count']} items are included."
             )
 
@@ -915,11 +915,11 @@ class MaterialEmissions(QWidget):
         )
         if missing:
             warnings.append(
-                f"{missing} item{'s' if missing != 1 else ''} excluded — missing emission factor data."
+                f"{missing} item{'s' if missing != 1 else ''} excluded - missing emission factor data."
             )
         if suspicious:
             warnings.append(
-                f"{suspicious} item{'s' if suspicious != 1 else ''} excluded — "
+                f"{suspicious} item{'s' if suspicious != 1 else ''} excluded - "
                 f"suspicious conversion factor (not confirmed)."
             )
 

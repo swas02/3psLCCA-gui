@@ -90,7 +90,7 @@ class ProjectController(QObject):
             self.chunk_updated.emit(chunk_name)
 
     def get_chunk(self, chunk_name: str) -> dict:
-        """Returns chunk data — from cache if available, otherwise reads engine."""
+        """Returns chunk data - from cache if available, otherwise reads engine."""
         if not self.engine or not self.engine.is_active():
             return {}
         if chunk_name not in self._chunk_cache:
