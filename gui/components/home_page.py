@@ -15,6 +15,7 @@ import zipfile
 import getpass
 from datetime import datetime
 
+from gui.version import VERSION
 from PySide6.QtCore import Qt, QSize, QPoint, QPointF, QRect, QRectF, QTimer, Signal
 from PySide6.QtGui import QFont, QColor, QPainter, QBrush, QPen, QPalette, QPolygonF, QPixmap
 from PySide6.QtSvg import QSvgRenderer
@@ -988,8 +989,10 @@ class HomePage(QWidget):
         sup_h.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         self.cs_logo = QLabel()
         self.mos_logo = QLabel()
+        self.insdag_logo = QLabel()
         sup_h.addWidget(self.cs_logo)
         sup_h.addWidget(self.mos_logo)
+        sup_h.addWidget(self.insdag_logo)
         sup_v.addLayout(sup_h)
         fl.addLayout(sup_v)
 
@@ -1026,24 +1029,46 @@ class HomePage(QWidget):
         label.setFixedSize(width, height)
         label.setScaledContents(True)
 
+    def _set_themed_logo(self, label: QLabel, dark_path: str, light_path: str, height: int, is_dk: bool):
+        """Pick dark or light SVG variant based on theme."""
+        path = dark_path if is_dk else light_path
+        self._set_svg_logo(label, path, height)
+
     def _refresh_styles(self):
         """Update theme-aware logos and dynamic QSS."""
         from gui.themes import is_dark
         is_dk = is_dark()
         
-        # 1. Main Logo
-        main_logo = "gui/assets/logo/logo-3psLCCA.svg" if is_dk else "gui/assets/logo/logo-3psLCCA.svg"
-        self._set_svg_logo(self.logo_lbl, main_logo, 55)
+        # 1. Main Logo (Always the same file in this case)
+        self._set_svg_logo(self.logo_lbl, "gui/assets/logo/logo-3psLCCA.svg", 55)
         
         # 2. Footer: Developed At (IITB)
-        iitb = "gui/assets/logo/special/IITB_logo_dark.svg" if is_dk else "gui/assets/logo/special/IITB_logo_light.svg"
-        self._set_svg_logo(self.iitb_logo, iitb, 50)
+        self._set_themed_logo(
+            self.iitb_logo, 
+            "gui/assets/logo/special/IITB_logo_dark.svg",
+            "gui/assets/logo/special/IITB_logo_light.svg",
+            50, is_dk
+        )
         
-        # 3. Footer: Supported By (ConstructSteel, MOS)
-        cs = "gui/assets/logo/special/ConstructSteel_dark.svg" if is_dk else "gui/assets/logo/special/ConstructSteel_light.svg"
-        mos = "gui/assets/logo/special/MOS_dark.svg" if is_dk else "gui/assets/logo/special/MOS_light.svg"
-        self._set_svg_logo(self.cs_logo, cs, 20)
-        self._set_svg_logo(self.mos_logo, mos, 40)
+        # 3. Footer: Supported By (ConstructSteel, MOS, INSDAG)
+        self._set_themed_logo(
+            self.cs_logo,
+            "gui/assets/logo/special/ConstructSteel_dark.svg",
+            "gui/assets/logo/special/ConstructSteel_light.svg",
+            20, is_dk
+        )
+        self._set_themed_logo(
+            self.mos_logo,
+            "gui/assets/logo/special/MOS_dark.svg",
+            "gui/assets/logo/special/MOS_light.svg",
+            40, is_dk
+        )
+        self._set_themed_logo(
+            self.insdag_logo,
+            "gui/assets/logo/special/INSDAG_dark.svg",
+            "gui/assets/logo/special/INSDAG_light.svg",
+            40, is_dk
+        )
 
         # 4. Refresh Button
         self.refresh_btn.setStyleSheet(

@@ -10,12 +10,13 @@ from PySide6.QtWidgets import (
     QLabel,
     QProgressBar,
     QPushButton,
+    QScrollArea,
     QTextEdit,
     QVBoxLayout,
     QWidget,
 )
 from PySide6.QtCore import Qt, QObject, QThread, QTimer, Signal, QSize
-from PySide6.QtGui import QFont
+from PySide6.QtGui import QFont, QColor, QPalette
 from gui.themes import get_token
 
 from gui.styles import (
@@ -45,35 +46,9 @@ from gui.components.utils.validation_helpers import (
 )
 from .lcc_plot import LCCBreakdownTable, LCCChartWidget, LCCDetailsTable
 from .Pie import LCCPieWidget
+from .data_preparer import DataPreparer
 
-
-from three_ps_lcca_core.inputs.input import (
-    InputMetaData,
-    GeneralParameters,
-    TrafficAndRoadData,
-    VehicleData,
-    VehicleMetaData,
-    AccidentSeverityDistribution,
-    AdditionalInputs,
-    MaintenanceAndStageParameters,
-    UseStageCost,
-    Routine,
-    RoutineInspection,
-    RoutineMaintenance,
-    Major,
-    MajorInspection,
-    MajorRepair,
-    ReplacementCost,
-    EndOfLifeStageCosts,
-    DemolitionDisposal,
-)
-from three_ps_lcca_core.inputs.input_global import (
-    InputGlobalMetaData,
-    DailyRoadUserCost,
-    TotalCarbonEmission,
-)
 from three_ps_lcca_core.core.main import run_full_lcc_analysis
-from three_ps_lcca_core.inputs.wpi import WPIMetaData
 
 
 CHUNK = "outputs_data"
@@ -121,41 +96,39 @@ class _LCCAWorker(QObject):
     errored(exc, tb)    - emitted with the exception and formatted traceback on failure.
     """
 
-    finished = Signal(object)  # results dict
+    # Carries (results, all_data, lcc_breakdown) — all owned by main thread on receipt.
+    finished = Signal(object, object, object)
     errored = Signal(object, str)  # (Exception, traceback_str)
 
-    def __init__(self, page: "OutputsPage", all_data: dict):
+    def __init__(self, all_data: dict, analysis_period_years: int):
         super().__init__()
-        self._page = page
         self._all_data = all_data
+        self._analysis_period_years = analysis_period_years
 
     def run(self):
         try:
             all_data = self._all_data
-            page = self._page
 
-            _dbg("Worker: calling _prepare_data_object …")
-            is_global, data_object = page._prepare_data_object(all_data)
+            _dbg("Worker: calling DataPreparer.prepare_data_object …")
+            is_global, data_object = DataPreparer.prepare_data_object(
+                all_data, self._analysis_period_years
+            )
             _dbg(
                 f"Worker: is_global={is_global}  data_object={type(data_object).__name__}"
             )
 
             wpi_metadata = None
             if not is_global:
-                _dbg("Worker: calling _prepare_wpi_object …")
-                wpi_metadata = page._prepare_wpi_object(all_data)
+                _dbg("Worker: calling DataPreparer.prepare_wpi_object …")
+                wpi_metadata = DataPreparer.prepare_wpi_object(all_data)
 
-            _dbg("Worker: calling _prepare_life_cycle_construction_cost …")
-            life_cycle_construction_cost_breakdown = (
-                page._prepare_life_cycle_construction_cost(all_data)
-            )
+            _dbg("Worker: calling DataPreparer.prepare_life_cycle_construction_cost …")
+            lcc_breakdown = DataPreparer.prepare_life_cycle_construction_cost(all_data)
 
             _dbg("Worker: calling run_full_lcc_analysis …")
-            
-
             results = run_full_lcc_analysis(
                 data_object,
-                life_cycle_construction_cost_breakdown,
+                lcc_breakdown,
                 wpi=wpi_metadata,
                 debug=True,
             )
@@ -163,13 +136,9 @@ class _LCCAWorker(QObject):
                 f"Worker: run_full_lcc_analysis returned: {list(results.keys()) if isinstance(results, dict) else type(results).__name__}"
             )
 
-            # Stash data on the page so _show_calculation_success can reference it.
-            # Safe because these writes happen before the finished signal is processed
-            # by the main thread (Qt queued connection orders them correctly).
-            page._last_all_data = all_data
-            page._last_lcc_breakdown = life_cycle_construction_cost_breakdown
-
-            self.finished.emit(results)
+            # Emit all three payloads so the main thread owns the data — no
+            # cross-thread attribute writes on the page object.
+            self.finished.emit(results, all_data, lcc_breakdown)
 
         except Exception as exc:
             import traceback as _tb
@@ -263,7 +232,7 @@ class OutputsPage(ScrollableForm):
 
         # ── Container ──────────────────────────────────────────────────────
         container = QWidget()
-        container.setStyleSheet(f"border-radius: {RADIUS_MD}px; border: 1px solid {get_token('surface_mid')};")
+        container.setStyleSheet(f"background: transparent; border-radius: {RADIUS_MD}px; border: 1px solid {get_token('surface_mid')};")
         v = QVBoxLayout(container)
         v.setContentsMargins(SP4, SP4, SP4, SP4)
         v.setSpacing(SP2)
@@ -379,8 +348,7 @@ class OutputsPage(ScrollableForm):
         self._stop_timers()
 
         if self._calc_thread and self._calc_thread.isRunning():
-            self._calc_thread.terminate()  # forceful stop
-            self._calc_thread.wait(2000)  # give it 2 s to die cleanly
+            self._calc_thread.terminate()  # forceful stop — never call wait() on main thread
 
         self.btn_calculate.setEnabled(True)
         timeout_exc = TimeoutError(
@@ -397,7 +365,7 @@ class OutputsPage(ScrollableForm):
         if all_errors:
             banner = QGroupBox()
             banner.setStyleSheet(
-                f"QGroupBox {{ border: 1px solid {get_token('danger')}; "
+                f"QGroupBox {{ background: transparent; border: 1px solid {get_token('danger')}; "
                 f"border-radius: {RADIUS_MD}px; padding: {SP3}px; }}"
             )
             layout = QVBoxLayout(banner)
@@ -416,7 +384,7 @@ class OutputsPage(ScrollableForm):
                 self._status_layout.addSpacing(SP4)
             banner = QGroupBox()
             banner.setStyleSheet(
-                f"QGroupBox {{ border: 1px solid {get_token('warning')}; "
+                f"QGroupBox {{ background: transparent; border: 1px solid {get_token('warning')}; "
                 f"border-radius: {RADIUS_MD}px; padding: {SP3}px; }}"
             )
             layout = QVBoxLayout(banner)
@@ -460,7 +428,7 @@ class OutputsPage(ScrollableForm):
         self._clear_status()
         banner = QGroupBox()
         banner.setStyleSheet(
-            f"QGroupBox {{ border: 1px solid {get_token('success')}; "
+            f"QGroupBox {{ background: transparent; border: 1px solid {get_token('success')}; "
             f"border-radius: {RADIUS_MD}px; padding: {SP3}px; }}"
         )
         layout = QVBoxLayout(banner)
@@ -554,8 +522,9 @@ class OutputsPage(ScrollableForm):
         self._show_calculating()
 
         # Build worker + thread
+        analysis_period_years = int(self.analysis_period.value())
         self._calc_thread = QThread(self)
-        self._calc_worker = _LCCAWorker(self, all_data)
+        self._calc_worker = _LCCAWorker(all_data, analysis_period_years)
         self._calc_worker.moveToThread(self._calc_thread)
 
         self._calc_thread.started.connect(self._calc_worker.run)
@@ -567,14 +536,19 @@ class OutputsPage(ScrollableForm):
         self._calc_worker.errored.connect(self._calc_thread.quit)
         self._calc_thread.finished.connect(self._calc_thread.deleteLater)
 
-        self._calc_thread.start()
-        _dbg("Calculation thread started.")
+        # Bug fix: defer start by one event-loop cycle so Qt can paint the
+        # progress bar before the thread begins consuming CPU.
+        QTimer.singleShot(0, self._calc_thread.start)
+        _dbg("Calculation thread start deferred.")
 
     # ── Thread result handlers (called on main thread via queued signal) ──────
 
-    def _on_calc_finished(self, results):
+    def _on_calc_finished(self, results, all_data, lcc_breakdown):
         _dbg(f"_on_calc_finished: results type={type(results).__name__}")
         self._stop_timers()
+        # Store on main thread — no cross-thread writes needed anymore.
+        self._last_all_data = all_data
+        self._last_lcc_breakdown = lcc_breakdown
         self._show_calculation_success(results)
 
     def _on_calc_errored(self, exc, tb):
@@ -664,22 +638,21 @@ class OutputsPage(ScrollableForm):
         # ── Success banner + Action buttons ───────────────────────────────
         banner = QGroupBox()
         banner.setStyleSheet(
-            f"QGroupBox {{ border: 1px solid {get_token('success')}; "
+            f"QGroupBox {{ background: transparent; border: 1px solid {get_token('success')}; "
             f"border-radius: {RADIUS_MD}px; padding: {SP3}px; }}"
         )
         banner_lay = QVBoxLayout(banner)
-        
+
         top_row = QHBoxLayout()
         title = QLabel("✅  Analysis completed successfully.")
         title.setFont(_f(FS_MD, FW_BOLD))
         title.setStyleSheet(f"color: {get_token('success')};")
         top_row.addWidget(title, stretch=1)
-        
         banner_lay.addLayout(top_row)
-        
+
         actions_row = QHBoxLayout()
         actions_row.setSpacing(SP3)
-        
+
         dl_btn = QPushButton("⬇  Export Data")
         dl_btn.setFixedHeight(34)
         dl_btn.setMinimumWidth(150)
@@ -697,10 +670,9 @@ class OutputsPage(ScrollableForm):
         pdf_btn.setToolTip("Create a formatted PDF document with charts and tables")
         pdf_btn.clicked.connect(self._generate_pdf_report)
         actions_row.addWidget(pdf_btn)
-        
+
         actions_row.addStretch()
         banner_lay.addLayout(actions_row)
-
         self._status_layout.addWidget(banner)
 
         # ── Warnings from Core ─────────────────────────────────────────────
@@ -719,28 +691,56 @@ class OutputsPage(ScrollableForm):
                 wv.addWidget(lbl)
             self._status_layout.addWidget(warn_container)
 
-        # ── Visuals (Charts/Tables) ────────────────────────────────────────
-        try:
-
-            chart = LCCChartWidget(results)
-            self._status_layout.addWidget(chart)
-            pie = LCCPieWidget(results)
-            self._status_layout.addWidget(pie)
-            breakdown = LCCBreakdownTable(results)
-            self._status_layout.addWidget(breakdown)
-            table = LCCDetailsTable(results)
-            self._status_layout.addWidget(table)
-        except Exception as e:
-            import traceback
-
-            err = QLabel(f"Chart error: {e}\n{traceback.format_exc(limit=4)}")
-            err.setStyleSheet("color: gray; font-style: italic;")
-            self._status_layout.addWidget(err)
-
+        # ── Loading placeholder — replaced once charts are built ──────────
+        self._charts_loading_lbl = QLabel("Building charts…")
+        self._charts_loading_lbl.setFont(_f(FS_SM))
+        self._charts_loading_lbl.setStyleSheet(
+            f"color: {get_token('text_secondary')}; font-style: italic;"
+        )
+        self._status_layout.addWidget(self._charts_loading_lbl)
         self._status_layout.addStretch()
 
+        # Emit now so the project window can react (e.g. unlock navigation)
+        # before the heavy widget construction below runs.
         self._has_results = True
         self.calculation_completed.emit()
+
+        # ── Defer heavy widget construction so the banner paints first ─────
+        # Each widget is added in its own event-loop cycle to keep the UI
+        # responsive. The order matches the visual top-to-bottom layout.
+        self._pending_results = results
+        self._result_build_steps = [
+            lambda r: LCCChartWidget(r),
+            lambda r: LCCPieWidget(r),
+            lambda r: LCCBreakdownTable(r),
+            lambda r: LCCDetailsTable(r),
+        ]
+        QTimer.singleShot(0, self._build_next_result_widget)
+
+    def _build_next_result_widget(self):
+        """Add one result widget per event-loop cycle to avoid a UI freeze."""
+        if not self._result_build_steps:
+            # All done — remove the loading label
+            if hasattr(self, "_charts_loading_lbl") and self._charts_loading_lbl:
+                self._charts_loading_lbl.hide()
+                self._charts_loading_lbl.setParent(None)
+                self._charts_loading_lbl = None
+            return
+
+        factory = self._result_build_steps.pop(0)
+        try:
+            widget = factory(self._pending_results)
+            # Insert before the trailing stretch (last item)
+            stretch_idx = self._status_layout.count() - 1
+            self._status_layout.insertWidget(stretch_idx, widget)
+        except Exception as e:
+            import traceback
+            err = QLabel(f"Chart error: {e}\n{traceback.format_exc(limit=4)}")
+            err.setStyleSheet("color: gray; font-style: italic;")
+            stretch_idx = self._status_layout.count() - 1
+            self._status_layout.insertWidget(stretch_idx, err)
+
+        QTimer.singleShot(0, self._build_next_result_widget)
 
     def reset_for_edit(self):
         """Clear results and return to idle state so inputs can be edited."""
@@ -777,447 +777,6 @@ class OutputsPage(ScrollableForm):
             return
         self._loaded_data = data
         self.load_data_dict(data)
-
-    # ==========Prepare-Mapping-for-Core==============================================
-
-    def _prepare_life_cycle_construction_cost(self, data: dict):
-        """
-        This function creates the life cycle construction cost breakdown dict using the data from saved chunks.
-        ex. life_cycle_construction_cost_breakdown = {
-                    "initial_construction_cost": 12843979.44,
-                    "initial_carbon_emissions_cost": 2065434.91,
-                    "superstructure_construction_cost": 9356038.92,
-                    "total_scrap_value": 2164095.02,
-                }
-        """
-        _dbg("=== _prepare_life_cycle_construction_cost START ===")
-        carbon_emissions = data.get("carbon_emission_data")
-        _dbg(
-            f"  carbon_emission_data keys: {list(carbon_emissions.keys()) if carbon_emissions else 'MISSING'}"
-        )
-
-        carbon_cost_per_kg = (
-            carbon_emissions.get("social_cost_data")
-            .get("result")
-            .get("cost_of_carbon_local")
-        )
-        _dbg(f"  carbon_cost_per_kg={carbon_cost_per_kg!r}")
-
-        mat_co2 = float(
-            carbon_emissions.get("material_emissions_data").get("total_kgCO2e")
-        )
-        trans_co2 = float(
-            carbon_emissions.get("transport_emissions_data").get("total_kgCO2e")
-        )
-        mach_co2 = float(
-            carbon_emissions.get("machinery_emissions_data").get("total_kgCO2e")
-        )
-        total_kgCO2e = mat_co2 + trans_co2 + mach_co2
-        _dbg(
-            f"  material_kgCO2e={mat_co2}  transport_kgCO2e={trans_co2}  machinery_kgCO2e={mach_co2}  total_kgCO2e={total_kgCO2e}"
-        )
-
-        construction_work_data = data.get("construction_work_data")
-        _dbg(
-            f"  construction_work_data keys: {list(construction_work_data.keys()) if construction_work_data else 'MISSING'}"
-        )
-        grand_total = float(construction_work_data.get("grand_total"))
-        super_total = float(construction_work_data.get("Super Structure").get("total"))
-        scrap_value = float(data.get("recycling_data").get("total_recovered_value"))
-        _dbg(
-            f"  grand_total={grand_total}  super_total={super_total}  scrap_value={scrap_value}"
-        )
-
-        return {
-            "initial_construction_cost": grand_total,
-            "initial_carbon_emissions_cost": total_kgCO2e * carbon_cost_per_kg,
-            "superstructure_construction_cost": super_total,
-            "total_scrap_value": scrap_value,
-        }
-
-    def _prepare_wpi_object(self, data: dict):
-        """
-        This function creates a WPI object using the data from saved chunks.
-        """
-        _dbg("=== _prepare_wpi_object START ===")
-        wpi_data = data.get("traffic_and_road_data").get("wpi")
-        _dbg(f"  wpi_data keys: {list(wpi_data.keys()) if wpi_data else 'MISSING'}")
-        wpi_dict = wpi_data.get("data_snapshot").get("ratio")
-        _dbg(
-            f"  wpi_dict (first 3 keys): { {k: wpi_dict[k] for k in list(wpi_dict)[:3]} if wpi_dict else 'MISSING' }"
-        )
-        year = int(
-            wpi_data.get("selected_profile_year")
-            or wpi_data.get("selected_profile_name", 0)
-        )
-        _dbg(f"  year={year}")
-
-        return WPIMetaData.from_dict({"year": year, "WPI": wpi_dict})
-
-    def _prepare_data_object(self, data: dict):
-        """
-        This function creates Core Data Object using the data from saved chunks.
-        To be passed to 3psLCCAFile-core for calculation.
-        """
-
-        # --------------Prepare-General-Parameters-Start-------------------------------------------------
-        _dbg("=== _prepare_data_object START ===")
-        _dbg(f"  all_data keys present: {list(data.keys())}")
-
-        _financial_data = data.get("financial_data")
-        _dbg(f"  financial_data: {_financial_data!r}")
-        if _financial_data is None:
-            raise ValueError(
-                "Financial Data is missing from the calculation inputs.\n"
-                "Fill in the Financial Data page and try again."
-            )
-
-        analysis_period_years = int(self.analysis_period.value())
-        discount_rate_percent = float(_financial_data.get("discount_rate"))
-        inflation_rate_percent = float(_financial_data.get("inflation_rate"))
-        interest_rate_percent = float(_financial_data.get("interest_rate"))
-        investment_ratio = float(_financial_data.get("investment_ratio"))
-        _dbg(
-            f"  financial => analysis_period={analysis_period_years}  discount={discount_rate_percent}  inflation={inflation_rate_percent}  interest={interest_rate_percent}  inv_ratio={investment_ratio}"
-        )
-
-        # cost_of_carbon_local is in local_currency/kgCO2e (user-selected source).
-        # The engine expects social_cost_of_carbon_per_mtco2e in local_currency/mtCO2e,
-        # so multiply by 1000.
-        scc_from_fin = _financial_data.get("social_cost_of_carbon")
-        if scc_from_fin is not None:
-            social_cost_of_carbon_per_mtco2e = float(scc_from_fin) * 1000
-        else:
-            _result = data.get("carbon_emission_data", {}).get("social_cost_data", {}).get("result", {})
-            social_cost_of_carbon_per_mtco2e = (
-                float(_result.get("cost_of_carbon_local", 0.0)) * 1000
-            )
-        
-        currency_conversion = float(_financial_data.get("currency_conversion", 1.0))
-        _dbg(f"  social_cost_of_carbon_per_mtco2e={social_cost_of_carbon_per_mtco2e}  currency_conversion={currency_conversion}")
-
-        _bridge_data = data.get("bridge_data")
-        _dbg(f"  bridge_data: {_bridge_data!r}")
-        service_life_years = int(_bridge_data.get("design_life"))
-        construction_period_months = float(
-            _bridge_data.get("duration_construction_months")
-        )
-        working_days_per_month = float(_bridge_data.get("working_days_per_month"))
-        days_per_month = float(_bridge_data.get("days_per_month"))
-        _dbg(
-            f"  bridge => service_life={service_life_years}  construction_months={construction_period_months}  working_days={working_days_per_month}  days_per_month={days_per_month}"
-        )
-
-        use_global_road_user_calculations = (
-            data.get("traffic_and_road_data").get("mode") == "GLOBAL"
-        )
-        _dbg(
-            f"  traffic mode='{data.get('traffic_and_road_data').get('mode')}'  use_global={use_global_road_user_calculations}"
-        )
-
-        general_parameters = GeneralParameters(
-            service_life_years=service_life_years,
-            analysis_period_years=analysis_period_years,
-            discount_rate_percent=discount_rate_percent,
-            inflation_rate_percent=inflation_rate_percent,
-            interest_rate_percent=interest_rate_percent,
-            investment_ratio=investment_ratio,
-            social_cost_of_carbon_per_mtco2e=social_cost_of_carbon_per_mtco2e,
-            currency_conversion=currency_conversion,
-            construction_period_months=construction_period_months,
-            working_days_per_month=working_days_per_month,
-            days_per_month=days_per_month,
-            use_global_road_user_calculations=use_global_road_user_calculations,
-        )
-        # --------------Prepare-General-Parameters-End-------------------------------------------------
-
-        # --------------Prepare-Maintenance-&-EOL-Start-------------------------------------------------
-        _maintenance_data = data.get("maintenance_data")
-        _demolition_data = data.get("demolition_data")
-        _dbg(f"  maintenance_data: {_maintenance_data!r}")
-        _dbg(f"  demolition_data: {_demolition_data!r}")
-
-        routine_inspection_picc_per_year = float(
-            _maintenance_data.get("routine_inspection_cost")
-        )
-        routine_inspection_interval_in_years = int(
-            _maintenance_data.get("routine_inspection_freq")
-        )
-
-        routine_maintenance_picc_per_year = float(
-            _maintenance_data.get("periodic_maintenance_cost")
-        )
-        routine_maintenance_picec = float(
-            _maintenance_data.get("periodic_maintenance_carbon_cost")
-        )
-        routine_maintenance_interval_in_years = int(
-            _maintenance_data.get("periodic_maintenance_freq")
-        )
-
-        major_inspection_picc = float(_maintenance_data.get("major_inspection_cost"))
-        major_inspection_interval_in_years = int(
-            _maintenance_data.get("major_inspection_freq")
-        )
-
-        major_repair_picc = float(_maintenance_data.get("major_repair_cost"))
-        major_repair_picec = float(_maintenance_data.get("major_repair_carbon_cost"))
-        major_repair_interval_in_years = int(_maintenance_data.get("major_repair_freq"))
-        major_repair_duration_months = int(
-            _maintenance_data.get("major_repair_duration")
-        )
-
-        replace_bne_joint_pssc = float(_maintenance_data.get("bearing_exp_joint_cost"))
-        replace_bne_joint_interval_in_years = int(
-            _maintenance_data.get("bearing_exp_joint_freq")
-        )
-        replace_bne_joint_duration_in_days = int(
-            _maintenance_data.get("bearing_exp_joint_duration")
-        )
-
-        eol_picc = float(_demolition_data.get("demolition_cost_pct"))
-        eol_picec = float(_demolition_data.get("demolition_carbon_cost_pct"))
-        eol_dd_in_months = int(_demolition_data.get("demolition_duration"))
-
-        maintenance_and_stage_parameters = MaintenanceAndStageParameters(
-            use_stage_cost=UseStageCost(
-                routine=Routine(
-                    inspection=RoutineInspection(
-                        percentage_of_initial_construction_cost_per_year=routine_inspection_picc_per_year,
-                        interval_in_years=routine_inspection_interval_in_years,
-                    ),
-                    maintenance=RoutineMaintenance(
-                        percentage_of_initial_construction_cost_per_year=routine_maintenance_picc_per_year,
-                        percentage_of_initial_carbon_emission_cost=routine_maintenance_picec,
-                        interval_in_years=routine_maintenance_interval_in_years,
-                    ),
-                ),
-                major=Major(
-                    inspection=MajorInspection(
-                        percentage_of_initial_construction_cost=major_inspection_picc,
-                        interval_for_repair_and_rehabitation_in_years=major_inspection_interval_in_years,
-                    ),
-                    repair=MajorRepair(
-                        percentage_of_initial_construction_cost=major_repair_picc,
-                        percentage_of_initial_carbon_emission_cost=major_repair_picec,
-                        interval_for_repair_and_rehabitation_in_years=major_repair_interval_in_years,
-                        repairs_duration_months=major_repair_duration_months,
-                    ),
-                ),
-                replacement_costs_for_bearing_and_expansion_joint=ReplacementCost(
-                    percentage_of_super_structure_cost=replace_bne_joint_pssc,
-                    interval_of_replacement_in_years=replace_bne_joint_interval_in_years,
-                    duration_of_replacement_in_days=replace_bne_joint_duration_in_days,
-                ),
-            ),
-            end_of_life_stage_costs=EndOfLifeStageCosts(
-                demolition_and_disposal=DemolitionDisposal(
-                    percentage_of_initial_construction_cost=eol_picc,
-                    percentage_of_initial_carbon_emission_cost=eol_picec,
-                    duration_for_demolition_and_disposal_in_months=eol_dd_in_months,
-                )
-            ),
-        )
-
-        # --------------Prepare-Maintenance-&-EOL-End-------------------------------------------------
-
-        # Object to return
-        object = None
-
-        if not use_global_road_user_calculations:
-            # ------------------------------------Traffic-and-Road-Data-India-Start--------------------------------------------
-            _dbg("Branch: INDIA (non-global) road user calculations")
-            _traffic_road_data = data.get("traffic_and_road_data")
-            _dbg(
-                f"  traffic_road_data keys: {list(_traffic_road_data.keys()) if _traffic_road_data else 'MISSING'}"
-            )
-            _traffic_vehicle_data = _traffic_road_data.get("vehicle_data")
-            _dbg(
-                f"  vehicle_data keys: {list(_traffic_vehicle_data.keys()) if _traffic_vehicle_data else 'MISSING'}"
-            )
-            _ef = (
-                data.get("carbon_emission_data", {})
-                .get("diversion_emissions", {})
-                .get("emission_factors", {})
-            )
-            _emission_factors = {k: float(v or 0.0) for k, v in _ef.items()}
-            _dbg(f"  emission_factors: {_emission_factors}")
-
-            small_cars = VehicleMetaData(
-                int(_traffic_vehicle_data.get("small_cars").get("vehicles_per_day")),
-                _emission_factors.get("small_cars", 0.0),
-                float(
-                    _traffic_vehicle_data.get("small_cars").get("accident_percentage")
-                ),
-            )
-            big_cars = VehicleMetaData(
-                int(_traffic_vehicle_data.get("big_cars").get("vehicles_per_day")),
-                _emission_factors.get("big_cars", 0.0),
-                float(_traffic_vehicle_data.get("big_cars").get("accident_percentage")),
-            )
-            two_wheelers = VehicleMetaData(
-                int(_traffic_vehicle_data.get("two_wheelers").get("vehicles_per_day")),
-                _emission_factors.get("two_wheelers", 0.0),
-                float(
-                    _traffic_vehicle_data.get("two_wheelers").get("accident_percentage")
-                ),
-            )
-            o_buses = VehicleMetaData(
-                int(_traffic_vehicle_data.get("o_buses").get("vehicles_per_day")),
-                _emission_factors.get("o_buses", 0.0),
-                float(_traffic_vehicle_data.get("o_buses").get("accident_percentage")),
-            )
-            d_buses = VehicleMetaData(
-                int(_traffic_vehicle_data.get("d_buses").get("vehicles_per_day")),
-                _emission_factors.get("d_buses", 0.0),
-                float(_traffic_vehicle_data.get("d_buses").get("accident_percentage")),
-            )
-            lcv = VehicleMetaData(
-                int(_traffic_vehicle_data.get("lcv").get("vehicles_per_day")),
-                _emission_factors.get("lcv", 0.0),
-                float(_traffic_vehicle_data.get("lcv").get("accident_percentage")),
-            )
-            hcv = VehicleMetaData(
-                int(_traffic_vehicle_data.get("hcv").get("vehicles_per_day")),
-                _emission_factors.get("hcv", 0.0),
-                float(_traffic_vehicle_data.get("hcv").get("accident_percentage")),
-                pwr=float(_traffic_vehicle_data.get("hcv").get("pwr")),
-            )
-            mcv = VehicleMetaData(
-                int(_traffic_vehicle_data.get("mcv").get("vehicles_per_day")),
-                _emission_factors.get("mcv", 0.0),
-                float(_traffic_vehicle_data.get("mcv").get("accident_percentage")),
-                pwr=float(_traffic_vehicle_data.get("mcv").get("pwr")),
-            )
-
-            minor = float(_traffic_road_data.get("severity_minor"))
-            major = float(_traffic_road_data.get("severity_major"))
-            fatal = float(_traffic_road_data.get("severity_fatal"))
-
-            alternate_road_carriageway = _traffic_road_data.get(
-                "alternate_road_carriageway"
-            )
-            carriage_width_in_m = float(_traffic_road_data.get("carriage_width_in_m"))
-            road_roughness_mm_per_km = float(
-                _traffic_road_data.get("road_roughness_mm_per_km")
-            )
-            road_rise_m_per_km = float(_traffic_road_data.get("road_rise_m_per_km"))
-            road_fall_m_per_km = float(_traffic_road_data.get("road_fall_m_per_km"))
-            additional_reroute_distance_km = float(
-                _traffic_road_data.get("additional_reroute_distance_km")
-            )
-            additional_travel_time_min = float(
-                _traffic_road_data.get("additional_travel_time_min")
-            )
-            crash_rate_accidents_per_million_km = float(
-                _traffic_road_data.get("crash_rate_accidents_per_million_km")
-            )
-            work_zone_multiplier = float(_traffic_road_data.get("work_zone_multiplier"))
-            # Make the list of values for each hour of the day from the dict with hour keys
-            peak_hour_traffic_percent_per_hour = list(
-                _traffic_road_data.get("peak_hour_distribution").values()
-            )
-            hourly_capacity = int(_traffic_road_data.get("hourly_capacity"))
-            force_free_flow_off_peak = bool(
-                _traffic_road_data.get("force_free_flow_off_peak")
-            )
-
-            traffic_and_road_data = TrafficAndRoadData(
-                vehicle_data=VehicleData(
-                    small_cars=small_cars,
-                    big_cars=big_cars,
-                    two_wheelers=two_wheelers,
-                    o_buses=o_buses,
-                    d_buses=d_buses,
-                    lcv=lcv,
-                    hcv=hcv,
-                    mcv=mcv,
-                ),
-                accident_severity_distribution=AccidentSeverityDistribution(
-                    minor=minor,
-                    major=major,
-                    fatal=fatal,
-                ),
-                additional_inputs=AdditionalInputs(
-                    alternate_road_carriageway=alternate_road_carriageway,
-                    carriage_width_in_m=carriage_width_in_m,
-                    road_roughness_mm_per_km=road_roughness_mm_per_km,
-                    road_rise_m_per_km=road_rise_m_per_km,
-                    road_fall_m_per_km=road_fall_m_per_km,
-                    additional_reroute_distance_km=additional_reroute_distance_km,
-                    additional_travel_time_min=additional_travel_time_min,
-                    crash_rate_accidents_per_million_km=crash_rate_accidents_per_million_km,
-                    work_zone_multiplier=work_zone_multiplier,
-                    peak_hour_traffic_percent_per_hour=peak_hour_traffic_percent_per_hour,
-                    hourly_capacity=hourly_capacity,
-                    force_free_flow_off_peak=force_free_flow_off_peak,
-                ),
-            )
-            # ------------------------------------Traffic-and-Road-Data-India-End--------------------------------------------
-
-            _dbg(f"  severity => minor={minor}  major={major}  fatal={fatal}")
-            _dbg(
-                f"  road => carriageway='{alternate_road_carriageway}'  width={carriage_width_in_m}  roughness={road_roughness_mm_per_km}  rise={road_rise_m_per_km}  fall={road_fall_m_per_km}"
-            )
-            _dbg(
-                f"  diversion => reroute_km={additional_reroute_distance_km}  travel_time_min={additional_travel_time_min}  crash_rate={crash_rate_accidents_per_million_km}"
-            )
-            _dbg(
-                f"  work_zone_multiplier={work_zone_multiplier}  hourly_capacity={hourly_capacity}  force_free_flow={force_free_flow_off_peak}"
-            )
-            _dbg(
-                f"  peak_hour_distribution (sum)={sum(peak_hour_traffic_percent_per_hour):.4f}"
-            )
-            _dbg("Building InputMetaData (India) ...")
-            object = InputMetaData(
-                general_parameters=general_parameters,
-                traffic_and_road_data=traffic_and_road_data,
-                maintenance_and_stage_parameters=maintenance_and_stage_parameters,
-            )
-        else:
-            # ------------------------------------Traffic-and-Road-Data-Global-Start--------------------------------------------
-            _dbg("Branch: GLOBAL road user calculations")
-            _global_diversion = data.get("carbon_emission_data", {}).get(
-                "diversion_emissions", {}
-            )
-            _dbg(
-                f"  diversion_emissions keys: {list(_global_diversion.keys()) if _global_diversion else 'MISSING'}"
-            )
-            _dbg(f"  diversion mode: {_global_diversion.get('mode')!r}")
-            if _global_diversion.get("mode") == "Calculate by Vehicle":
-                total_vehicular_carbon_emission = float(
-                    _global_diversion.get("total_calculated_emissions", 0.0)
-                )
-            else:
-                total_vehicular_carbon_emission = float(
-                    _global_diversion.get("total_direct_emissions", 0.0)
-                )
-            _dbg(f"  total_vehicular_carbon_emission={total_vehicular_carbon_emission}")
-            total_daily_ruc = float(
-                data.get("traffic_and_road_data").get("road_user_cost_per_day")
-            )
-            _dbg(f"  total_daily_ruc={total_daily_ruc}")
-
-            daily_road_user_cost_with_vehicular_emissions = DailyRoadUserCost(
-                total_daily_ruc=total_daily_ruc,
-                total_carbon_emission=TotalCarbonEmission(
-                    total_emission_kgCO2e=total_vehicular_carbon_emission
-                ),
-            )
-            # ------------------------------------Traffic-and-Road-Data-Global-End--------------------------------------------
-
-            _dbg("Building InputGlobalMetaData ...")
-            object = InputGlobalMetaData(
-                general_parameters=general_parameters,
-                daily_road_user_cost_with_vehicular_emissions=daily_road_user_cost_with_vehicular_emissions,
-                maintenance_and_stage_parameters=maintenance_and_stage_parameters,
-            )
-
-        _dbg(
-            f"=== _prepare_data_object END => returning is_global={use_global_road_user_calculations}  object={type(object).__name__} ==="
-        )
-        return use_global_road_user_calculations, object
-
-    # ===================================================================================
 
     # ── Report download ───────────────────────────────────────────────────────
 

@@ -21,8 +21,7 @@ from gui.project_manager import ProjectManager
 from gui.themes import reapply as _reapply
 import ctypes
 from gui.components.utils.unit_resolver import load_custom_units
-
-
+from gui.version import VERSION
 
 # ── Global UI Behavior Overrides ──────────────────────────────────────────────
 

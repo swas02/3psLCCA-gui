@@ -309,7 +309,7 @@ class ReportSectionDialog(QDialog):
 
     def __init__(self, build_export_dict, all_data, lcc_breakdown, results, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("LCCA Report Customization")
+        self.setWindowTitle("3psLCCA Report Customization")
         self.setObjectName("report_section_dialog")
         self.resize(650, 750)
         self._build_export_dict = build_export_dict

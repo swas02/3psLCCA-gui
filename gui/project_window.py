@@ -33,6 +33,7 @@ from gui.theme import (
 )
 from gui.styles import font as _f
 from PySide6.QtWidgets import QToolTip
+from gui.version import VERSION
 from gui.project_controller import ProjectController
 from gui.themes import get_token, theme_manager
 from gui.components.home_page import HomePage
@@ -320,7 +321,7 @@ class ProjectWindow(QMainWindow):
 
         self.project_id = None
 
-        self.setWindowTitle("LCCA - Home")
+        self.setWindowTitle("3psLCCA - Home")
         _icon_path = os.path.join("gui", "assets", "logo", "logo-3psLCCA.ico")
         if os.path.exists(_icon_path):
             self.setWindowIcon(QIcon(_icon_path))
@@ -331,6 +332,11 @@ class ProjectWindow(QMainWindow):
 
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
+        
+        # Add version to the right of the status bar
+        self.version_lbl = QLabel(VERSION)
+        self.version_lbl.setStyleSheet(f"color: {get_token('text_disabled')}; margin-right: 10px;")
+        self.status_bar.addPermanentWidget(self.version_lbl)
 
         self._project_ui_ready = False
         self._setup_home_ui()  # index 0
@@ -466,6 +472,7 @@ class ProjectWindow(QMainWindow):
         self._frozen = False
         self._lock_tooltip = "Click to lock this project and prevent accidental edits."
         self.btn_lock = make_icon_btn("lock-open", tooltip=self._lock_tooltip, size=30)
+        self.btn_lock.setFixedSize(30, 30)
         self.btn_lock.setStyleSheet(
             "QPushButton               { border-radius:15px; padding:0px; border:none; background:transparent; }"
             "QPushButton:hover         { border-radius:15px; padding:0px; background:palette(midlight); }"
@@ -623,7 +630,7 @@ class ProjectWindow(QMainWindow):
     # ── View switching ────────────────────────────────────────────────────────
 
     def show_home(self):
-        self.setWindowTitle("LCCA - Home")
+        self.setWindowTitle("3psLCCA - Home")
         self.home_widget.set_active_project(
             self.project_id if self.has_project_loaded() else None
         )
@@ -638,7 +645,7 @@ class ProjectWindow(QMainWindow):
             self._setup_project_ui()
             self._project_ui_ready = True
         display = self.controller.active_display_name or self.project_id
-        self.setWindowTitle(f"LCCA - {display}")
+        self.setWindowTitle(f"3psLCCA - {display}")
         self.main_stack.setCurrentWidget(self.project_widget)
         self.content_stack.setCurrentWidget(self._get_or_create_widget("General Information"))
         items = self.sidebar.findItems("General Information", Qt.MatchExactly)
@@ -752,7 +759,7 @@ class ProjectWindow(QMainWindow):
             return
         self.project_id = self.controller.active_project_id
         display = self.controller.active_display_name or self.project_id
-        self.setWindowTitle(f"LCCA - {display}")
+        self.setWindowTitle(f"3psLCCA - {display}")
         self.status_bar.showMessage(f"Project: {display}")
 
         # Apply project's unit system to the unit dropdowns
@@ -776,7 +783,7 @@ class ProjectWindow(QMainWindow):
             return
         self.controller.close_project()
         self.project_id = None
-        self.setWindowTitle("LCCA - Home")
+        self.setWindowTitle("3psLCCA - Home")
         self.show_home()
 
     def _save_now(self):
@@ -796,7 +803,7 @@ class ProjectWindow(QMainWindow):
             return
         self.controller.engine.rename(new_name)
         self.controller.active_display_name = new_name
-        self.setWindowTitle(f"LCCA - {new_name}")
+        self.setWindowTitle(f"3psLCCA - {new_name}")
         self.manager.refresh_all_home_screens()
 
     def _export_project(self):

@@ -330,9 +330,9 @@ def _build_pie_figure(data: dict):
     # Shared mutable hover state — rebuilt on every _draw()
     _hover = {"annot": None, "items": []}  # items: [(wedge, title, value_M_INR)]
 
-    palette = QApplication.instance().palette()
-    bg = palette.window().color().name()
-    fg = palette.windowText().color().name()
+    # Force white background and dark text for the graph
+    bg = "#FFFFFF"
+    fg = "#000000"
 
     fig = plt.figure(figsize=(10, 8))
     fig.patch.set_facecolor(bg)
