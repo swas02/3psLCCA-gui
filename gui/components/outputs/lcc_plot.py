@@ -5,6 +5,9 @@ Creates an interactive matplotlib chart from LCC analysis results.
 Use LCCChartWidget(results) to get a QWidget ready to embed in Qt.
 """
 
+
+from .Pie import COLORS # for consistent color scheme with the pie chart
+
 import numpy as np
 import matplotlib
 matplotlib.use("QtAgg")
@@ -320,7 +323,8 @@ class LCCDetailsTable(QWidget):
             eco  = totals.get("Economic",      0.0)
             env  = totals.get("Environmental", 0.0)
             soc  = totals.get("Social",        0.0)
-            stage_rows.append((stage_label, eco, env, soc, eco + env + soc))
+            # change — store result_key for stage color lookup per row
+            stage_rows.append((stage_label, result_key, eco, env, soc, eco + env + soc))
 
         n_rows = len(stage_rows) + 1  # +1 grand total
 
@@ -335,47 +339,130 @@ class LCCDetailsTable(QWidget):
         table.verticalHeader().setVisible(False)
         table.setEditTriggers(QTableWidget.NoEditTriggers)
         table.setSelectionBehavior(QTableWidget.SelectRows)
-        table.setAlternatingRowColors(True)
+        # table.setAlternatingRowColors(True)
+        table.setAlternatingRowColors(False)
         table.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         table.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+
+        # change — map result_key → stage name for color lookups
+        _result_key_to_stage = {
+            "initial_stage":  "Initial",
+            "use_stage":      "Use",
+            "reconstruction": "Reconstruction",
+            "end_of_life":    "End-of-Life",
+        }
+
+        # change — custom header paints section colors directly, bypassing unreliable QSS nth-child
+        _header_colors = [
+            COLORS["summary_neutral"]["stage_col"],    # col 0: Stage
+            COLORS["pillars"]["Economic"],             # col 1: Economic
+            COLORS["pillars"]["Environmental"],        # col 2: Environmental
+            COLORS["pillars"]["Social"],               # col 3: Social
+            COLORS["summary_neutral"]["total_col"],    # col 4: Stage Total
+        ]
+
+        class _ColoredHeader(QHeaderView):
+            """Paints each header section with its designated pillar/neutral color."""
+            def __init__(self, orientation, parent=None):
+                super().__init__(orientation, parent)
+                self.setSectionsClickable(False)
+
+            def paintSection(self, painter, rect, logical_index):
+                painter.save()
+                # Fill with designated color
+                if logical_index < len(_header_colors):
+                    painter.fillRect(rect, QColor(_header_colors[logical_index]))
+                else:
+                    painter.fillRect(rect, self.palette().button().color())
+                # Draw border
+                painter.setPen(QColor("#aaaaaa"))
+                painter.drawRect(rect.adjusted(0, 0, -1, -1))
+                # Draw text bold black
+                bold_font = self.font()
+                bold_font.setBold(True)
+                painter.setFont(bold_font)
+                painter.setPen(QColor("#000000"))
+                painter.drawText(rect.adjusted(4, 0, -4, 0),
+                                 Qt.AlignCenter | Qt.TextWordWrap,
+                                 self.model().headerData(logical_index, Qt.Horizontal) or "")
+                painter.restore()
+
+        colored_header = _ColoredHeader(Qt.Horizontal, table)
+        table.setHorizontalHeader(colored_header)
+        # Re-apply labels and resize modes after replacing header
+        table.setHorizontalHeaderLabels([
+            "Stage", "Economic\n(M INR)", "Environmental\n(M INR)",
+            "Social\n(M INR)", "Stage Total\n(M INR)",
+        ])
+        table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        for col in range(1, 5):
+            table.horizontalHeader().setSectionResizeMode(col, QHeaderView.Stretch)
+
+        table.setStyleSheet("QTableWidget { gridline-color: #aaaaaa; }")
 
         bold = QFont()
         bold.setBold(True)
 
-        def _item(text, align=Qt.AlignLeft | Qt.AlignVCenter, font=None, green=False):
+        from PySide6.QtGui import QBrush
+
+        # change — _item sets BackgroundRole as QBrush so _ColorDelegate paints correctly
+        def _item(text, align=Qt.AlignLeft | Qt.AlignVCenter, font=None,
+                  green=False, bg: QColor = None):
             it = QTableWidgetItem(text)
             it.setTextAlignment(align)
             if font:
                 it.setFont(font)
+            if bg:
+                it.setData(Qt.BackgroundRole, QBrush(bg))
+                it.setData(Qt.ForegroundRole, QBrush(QColor("#000000")))
             if green:
-                it.setForeground(QColor("#2e7d32"))
+                it.setData(Qt.ForegroundRole, QBrush(QColor("#2e7d32")))
             it.setFlags(Qt.ItemIsEnabled | Qt.ItemIsSelectable)
             return it
 
-        def _val(v, bold_font=None):
+        def _val(v, bold_font=None, bg: QColor = None):
             text = f"{v:.4f}"
-            return _item(text, Qt.AlignRight | Qt.AlignVCenter, bold_font, green=(v < 0))
+            return _item(text, Qt.AlignRight | Qt.AlignVCenter, bold_font,
+                         green=(v < 0), bg=bg)
 
         grand_eco = grand_env = grand_soc = grand_total = 0.0
 
-        for row_idx, (label, eco, env, soc, total) in enumerate(stage_rows):
+        for row_idx, (label, result_key, eco, env, soc, total) in enumerate(stage_rows):
             grand_eco   += eco
             grand_env   += env
             grand_soc   += soc
             grand_total += total
-            table.setItem(row_idx, 0, _item(label))
-            table.setItem(row_idx, 1, _val(eco))
-            table.setItem(row_idx, 2, _val(env))
-            table.setItem(row_idx, 3, _val(soc))
-            table.setItem(row_idx, 4, _val(total))
 
-        # Grand total row
+            # change — col 0 gets stage strip color, cols 1-4 get white
+            stage_name  = _result_key_to_stage.get(result_key, "")
+            strip_color = QColor(COLORS["stages"].get(stage_name, "#DDDDDD"))
+            white       = QColor("#FFFFFF")
+
+            # col 0: stage strip color (same as LCC Breakdown left sidebar)
+            table.setItem(row_idx, 0, _item(label, font=bold, bg=strip_color))
+            # cols 1-4: white data cells — color identity lives in the headers
+            table.setItem(row_idx, 1, _val(eco,   bold_font=bold, bg=white))
+            table.setItem(row_idx, 2, _val(env,   bold_font=bold, bg=white))
+            table.setItem(row_idx, 3, _val(soc,   bold_font=bold, bg=white))
+            table.setItem(row_idx, 4, _val(total, bold_font=bold, bg=white))
+
+        # change — Grand Total: col 0 silver-grey, cols 1-4 white
         tr = len(stage_rows)
-        table.setItem(tr, 0, _item("Grand Total", font=bold))
-        for col, val in enumerate([grand_eco, grand_env, grand_soc, grand_total], start=1):
-            table.setItem(tr, col, _val(val, bold_font=bold))
+        grand_stage_bg = QColor(COLORS["summary_neutral"]["stage_col"])
+        white          = QColor("#FFFFFF")
 
-        table.resizeRowsToContents()
+        table.setItem(tr, 0, _item("Grand Total", font=bold, bg=grand_stage_bg))
+        for col, val in enumerate([grand_eco, grand_env, grand_soc], start=1):
+            table.setItem(tr, col, _val(val, bold_font=bold, bg=white))
+        table.setItem(tr, 4, _val(grand_total, bold_font=bold, bg=white))
+
+        # change — _ColorDelegate on all 5 cols to bypass dark-theme QSS
+        for col in range(5):
+            table.setItemDelegateForColumn(col, _ColorDelegate(table))
+
+        # change — fix row height to 32px for compact summary table
+        for row in range(n_rows):
+            table.setRowHeight(row, 32)
         table.setSizeAdjustPolicy(QTableWidget.AdjustToContents)
         table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
 
@@ -393,17 +480,20 @@ class LCCDetailsTable(QWidget):
 # Detailed breakdown table
 # ---------------------------------------------------------------------------
 
-_CATEGORY_COLORS = {
-    "economic":     "#DBEAFE",   # soft blue
-    "environmental":"#DCFCE7",   # soft green
-    "social":       "#FEF3C7",   # soft amber
-}
+# change — _CATEGORY_COLORS derived from COLORS["pillars"] in Pie.py, auto-propagates
+_CATEGORY_COLORS = {k.lower(): v for k, v in COLORS["pillars"].items()}
 
 _BREAKDOWN_STAGES = [
     {
+        # "label": "Initial Stage\nCosts",
+        # "stage_color": "#F9C74F",
+        # "result_key": "initial_stage",
+        
         "label": "Initial Stage\nCosts",
-        "stage_color": "#F9C74F",
+        "stage_color": COLORS["stages"]["Initial"],
         "result_key": "initial_stage",
+
+
         "optional": False,
         "rows": [
             ("economic",     "initial_construction_cost",
@@ -419,9 +509,14 @@ _BREAKDOWN_STAGES = [
         ],
     },
     {
+        # "label": "Use Stage\nCosts",
+        # "stage_color": "#82E0AA",
+        # "result_key": "use_stage",
+        
         "label": "Use Stage\nCosts",
-        "stage_color": "#82E0AA",
+        "stage_color": COLORS["stages"]["Use"],
         "result_key": "use_stage",
+        
         "optional": False,
         "rows": [
             ("economic",     "routine_inspection_costs",
@@ -449,9 +544,15 @@ _BREAKDOWN_STAGES = [
         ],
     },
     {
+        # "label": "Reconstruction\nStage",
+        # "stage_color": "#F5B041",
+        # "result_key": "reconstruction",
+
+        
         "label": "Reconstruction\nStage",
-        "stage_color": "#F5B041",
+        "stage_color": COLORS["stages"]["Reconstruction"],
         "result_key": "reconstruction",
+        
         "optional": True,
         "rows": [
             ("economic",     "cost_of_reconstruction_after_demolition",
@@ -475,9 +576,15 @@ _BREAKDOWN_STAGES = [
         ],
     },
     {
+        # "label": "End-of-Life\nStage",
+        # "stage_color": "#E59866",
+        # "result_key": "end_of_life",
+
+        
         "label": "End-of-Life\nStage",
-        "stage_color": "#E59866",
+        "stage_color": COLORS["stages"]["End-of-Life"],
         "result_key": "end_of_life",
+        
         "optional": False,
         "rows": [
             ("economic",     "total_demolition_and_disposal_costs",
@@ -528,6 +635,41 @@ class _VerticalTextDelegate(QStyledItemDelegate):
         return QSize(64, 80)
 
 
+
+class _ColorDelegate(QStyledItemDelegate):
+    """Paints cell background from BackgroundRole brush, ignoring QSS overrides.
+    This is the only reliable way to force per-item colors in a dark-themed Qt app."""
+
+    def paint(self, painter, option, index):
+        painter.save()
+        # Fill background from the item's BackgroundRole brush
+        bg = index.data(Qt.BackgroundRole)
+        if bg:
+            color = bg.color() if hasattr(bg, 'color') else QColor(bg)
+            painter.fillRect(option.rect, color)
+        else:
+            painter.fillRect(option.rect, option.palette.base())
+
+        # Draw text with ForegroundRole color
+        fg = index.data(Qt.ForegroundRole)
+        text_color = fg.color() if fg and hasattr(fg, 'color') else QColor("#000000")
+        painter.setPen(text_color)
+
+        text = index.data(Qt.DisplayRole) or ""
+        align = index.data(Qt.TextAlignmentRole)
+        if align is None:
+            align = Qt.AlignLeft | Qt.AlignVCenter
+
+        padding = 6
+        text_rect = option.rect.adjusted(padding, 0, -padding, 0)
+        painter.drawText(text_rect, int(align), text)
+        painter.restore()
+
+    def sizeHint(self, option, index):
+        base = super().sizeHint(option, index)
+        return base
+
+
 class LCCBreakdownTable(QWidget):
     """Detailed row-by-row LCC cost breakdown with stage-coloured groups."""
 
@@ -553,6 +695,7 @@ class LCCBreakdownTable(QWidget):
         total_rows = sum(len(r) for _, r in active_stages)
 
         table = QTableWidget(total_rows, 3, self)
+        table.setStyleSheet("QTableWidget { gridline-color: #aaaaaa; }")
         table.setHorizontalHeaderLabels(["", "Costs", "Cost in Present Time"])
         table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Fixed)
         table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
@@ -564,15 +707,62 @@ class LCCBreakdownTable(QWidget):
         table.setSelectionMode(QTableWidget.NoSelection)
         table.setShowGrid(True)
         table.setWordWrap(True)
+
+        # change — custom header paints col colors directly: grey, steel blue, warm orange
+        _breakdown_header_colors = [
+            COLORS["summary_neutral"]["stage_col"],   # col 0: stage strip (empty label)
+            "#B0C4DE",                                 # col 1: Costs — steel blue
+            COLORS["summary_neutral"]["total_col"],   # col 2: Cost in Present Time — warm orange
+        ]
+
+        class _BreakdownHeader(QHeaderView):
+            """Paints LCCBreakdownTable header sections with designated colors."""
+            def __init__(self, orientation, parent=None):
+                super().__init__(orientation, parent)
+                self.setSectionsClickable(False)
+
+            def paintSection(self, painter, rect, logical_index):
+                painter.save()
+                if logical_index < len(_breakdown_header_colors):
+                    painter.fillRect(rect, QColor(_breakdown_header_colors[logical_index]))
+                else:
+                    painter.fillRect(rect, self.palette().button().color())
+                painter.setPen(QColor("#aaaaaa"))
+                painter.drawRect(rect.adjusted(0, 0, -1, -1))
+                bold_font = self.font()
+                bold_font.setBold(True)
+                painter.setFont(bold_font)
+                painter.setPen(QColor("#000000"))
+                label = self.model().headerData(logical_index, Qt.Horizontal) or ""
+                painter.drawText(rect.adjusted(4, 0, -4, 0), Qt.AlignCenter, label)
+                painter.restore()
+
+        breakdown_header = _BreakdownHeader(Qt.Horizontal, table)
+        table.setHorizontalHeader(breakdown_header)
+        # Re-apply labels and column widths after replacing header
+        table.setHorizontalHeaderLabels(["", "Costs", "Cost in Present Time"])
+        table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Fixed)
+        table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
+        table.horizontalHeader().setSectionResizeMode(2, QHeaderView.Fixed)
+        table.setColumnWidth(0, 64)
+        table.setColumnWidth(2, 190)
+
         table.setItemDelegateForColumn(0, _VerticalTextDelegate(table))
+        # change — _ColorDelegate on cols 1 & 2 to bypass dark-theme QSS overrides
+        table.setItemDelegateForColumn(1, _ColorDelegate(table))
+        table.setItemDelegateForColumn(2, _ColorDelegate(table))
 
         bold = QFont()
         bold.setBold(True)
 
+        from PySide6.QtGui import QBrush
+
         def _cell(text, bg: QColor, align=Qt.AlignCenter | Qt.AlignVCenter, font=None):
             it = QTableWidgetItem(text)
             it.setTextAlignment(align)
-            it.setBackground(bg)
+            # Use QBrush so BackgroundRole is set correctly regardless of QSS
+            it.setData(Qt.BackgroundRole, QBrush(bg))
+            it.setData(Qt.ForegroundRole, QBrush(QColor("#000000")))
             if font:
                 it.setFont(font)
             it.setFlags(Qt.ItemIsEnabled)
@@ -583,6 +773,18 @@ class LCCBreakdownTable(QWidget):
             stage_bg = QColor(stage_def["stage_color"])
             n        = len(stage_rows)
 
+            # change — resolve stage tint color for "Cost in Present Time" col
+            _result_key_to_stage = {
+                "initial_stage":  "Initial",
+                "use_stage":      "Use",
+                "reconstruction": "Reconstruction",
+                "end_of_life":    "End-of-Life",
+            }
+            _stage_name = _result_key_to_stage.get(stage_def["result_key"], "")
+            stage_tint_bg = QColor(
+                COLORS["stage_cost_tints"].get(_stage_name, "#EEEEEE")
+            )
+
             # Stage label cell — spans all rows in this stage
             table.setItem(row_idx, 0, _cell(stage_def["label"], stage_bg, font=bold))
             if n > 1:
@@ -590,19 +792,55 @@ class LCCBreakdownTable(QWidget):
 
             for i, (desc, val, cat) in enumerate(stage_rows):
                 r      = row_idx + i
-                row_bg = QColor(_CATEGORY_COLORS.get(cat, "#FFFFFF"))
-                table.setItem(r, 1, _cell(desc, row_bg, align=Qt.AlignLeft | Qt.AlignVCenter))
+                cat_str = ""
+
+                # handle enum or object safely
+                if hasattr(cat, "name"):
+                    cat_str = cat.name.lower()
+                else:
+                    cat_str = str(cat).lower()
+
+                # mapping
+                if "economic" in cat_str:
+                    row_bg = QColor(_CATEGORY_COLORS["economic"])
+                elif "environmental" in cat_str or "emission" in cat_str:
+                    row_bg = QColor(_CATEGORY_COLORS["environmental"])
+                elif "social" in cat_str or "user" in cat_str or "time" in cat_str:
+                    row_bg = QColor(_CATEGORY_COLORS["social"])
+                else:
+                    print("⚠️ UNKNOWN CATEGORY:", cat)
+                    row_bg = QColor("#FF0000")  # debug)
+
+                
+                # table.setItem(r, 1, _cell(desc, row_bg, align=Qt.AlignLeft | Qt.AlignVCenter))
+                # cost_item = _cell(
+                #     f"INR \u20b9{val:,.2f}", row_bg,
+                #     align=Qt.AlignRight | Qt.AlignVCenter,
+                # )
+                # if val < 0:
+                #     cost_item.setForeground(QColor("#2e7d32"))
+                # table.setItem(r, 2, cost_item)
+
+
+                # --- column 1: pillar color (Economic / Environmental / Social) ---
+                desc_item = _cell(desc, row_bg, align=Qt.AlignLeft | Qt.AlignVCenter)
+                table.setItem(r, 1, desc_item)
+
+                # --- column 2: white background ─────────────────────────────────────────
+                # change — white background for uniform "Cost in Present Time" col
                 cost_item = _cell(
-                    f"INR \u20b9{val:,.2f}", row_bg,
+                    f"INR \u20b9{val:,.2f}", QColor("#FFFFFF"),
                     align=Qt.AlignRight | Qt.AlignVCenter,
                 )
                 if val < 0:
-                    cost_item.setForeground(QColor("#2e7d32"))
+                    cost_item.setData(Qt.ForegroundRole, QBrush(QColor("#2e7d32")))
                 table.setItem(r, 2, cost_item)
 
             row_idx += n
 
-        table.resizeRowsToContents()
+        # change — fix row height to 32px instead of resizeRowsToContents which was too tall
+        for row in range(total_rows):
+            table.setRowHeight(row, 32)
         table.setSizeAdjustPolicy(QTableWidget.AdjustToContents)
         table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
 
@@ -734,5 +972,3 @@ def create_lcc_figure(results: dict):
     values, labels, stage_info = _build_chart_data(results)
     fig, _ = _create_figure(values, labels, stage_info, text_color, bg_color)
     return fig
-
-

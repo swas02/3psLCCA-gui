@@ -5,6 +5,7 @@ Interactive nested pie chart — LCC cost distribution by stage (inner ring)
 and pillar (outer ring).  Embeds as a Qt widget via LCCPieWidget(results).
 """
 
+import os
 import matplotlib
 
 matplotlib.use("QtAgg")
@@ -12,6 +13,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.patches import Wedge
 from matplotlib.widgets import Button, CheckButtons, RadioButtons
+from matplotlib import font_manager as _fm
 
 try:
     from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
@@ -28,25 +30,109 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+# change — import FS_* tokens from theme.py for consistent font sizes
+from gui.theme import (
+    FONT_FAMILY,
+    FS_SM, FS_BASE, FS_LG, FS_XL,
+)
+
+# change — register Ubuntu .ttf files with matplotlib so it finds the font
+_UBUNTU_FONT_DIR = os.path.join("gui", "assets", "themes", "Ubuntu_font")
+for _ttf in [
+    "Ubuntu-Light.ttf", "Ubuntu-LightItalic.ttf",
+    "Ubuntu-Regular.ttf", "Ubuntu-Italic.ttf",
+    "Ubuntu-Medium.ttf", "Ubuntu-MediumItalic.ttf",
+    "Ubuntu-Bold.ttf",   "Ubuntu-BoldItalic.ttf",
+]:
+    _path = os.path.join(_UBUNTU_FONT_DIR, _ttf)
+    if os.path.exists(_path):
+        _fm.fontManager.addfont(_path)
+
+# change — set Ubuntu as default matplotlib font family for all pie chart text
+matplotlib.rcParams["font.family"] = FONT_FAMILY
+
+
+
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 
-_PILLARS = ["Economic", "Environmental", "Social"]
-
-_STAGE_COLORS = {
-    "Initial": "#F9C74F",
-    "Use": "#82E0AA",
-    "Reconstruction": "#F5B041",
-    "End-of-Life": "#E59866",
+# ── Centralized Color System ───────────────────────────────────── 
+# changes made here for cetralized color management across the app.
+COLORS = {
+    "stages": {
+        "Initial":        "#CCCCCC",  # light grey
+        "Use":            "#00C49A",  # teal green
+        "Reconstruction": "#F5B041",  # orange
+        "End-of-Life":    "#EA9E9E",  # soft pink
+    },
+    "pillars": {
+        "Economic":      "#9e9eff",   # periwinkle blue
+        "Environmental": "#89E88B",   # pastel green
+        "Social":        "#FF9800",   # amber orange
+    },
+    # change — stage_cost_tints: mirrors stages colors (same palette, used for cost-in-time col)
+    "stage_cost_tints": {
+        "Initial":        "#CCCCCC",   # light grey — same as stages
+        "Use":            "#00C49A",   # teal green — same as stages
+        "Reconstruction": "#F5B041",   # orange — same as stages
+        "End-of-Life":    "#EA9E9E",   # soft pink — same as stages
+    },
+    # change — summary_neutral: colors for Stage col, Stage Total col, and Grand Total row
+    "summary_neutral": {
+        "stage_col":        "#BDC3C7",   # silver grey
+        "total_col":        "#F0B27A",   # warm orange
+        "grand_total_cells":"#AED6F1",   # calm blue
+    },
+    "ui": {
+        "view": "#DBEAFE",
+        "background": "#2b2d42",
+        "text": "#222",
+    }
 }
 
-_PILLAR_COLORS = {
-    "Economic": "#DBEAFE",
-    "Environmental": "#DCFCE7",
-    "Social": "#FEF3C7",
-}
+_NEG_COLOR = "#333333"  # negative offset overlay color
+_PILLARS = list(COLORS["pillars"].keys())
 
-_NEG_COLOR = "#333333"
+# _PILLARS = ["Economic", "Environmental", "Social"]
+
+# _PANEL_COLORS = {
+#     "view": "#DBEAFE",          # match Economic (light blue)
+#     "stages": "#82E0AA",        # match Use stage color
+#     "pillars": "#FEF3C7",       # match Social (light yellow)
+#     "button": "#F5B041",        # match Reconstruction / accent
+# }
+
+# _STAGE_COLORS = {
+#     "Initial": "#F9C74F",
+#     "Use": "#82E0AA",
+#     "Reconstruction": "#F5B041",
+#     "End-of-Life": "#E59866",
+# }
+
+# _PILLAR_COLORS = {
+#     "Economic": "#DBEAFE",
+#     "Environmental": "#DCFCE7",
+#     "Social": "#FEF3C7",
+# }
+
+# _NEG_COLOR = "#333333"
+
+
+# ── Accessors for centralized color system ───────────────────────
+
+def get_pillars():
+    return list(COLORS["pillars"].keys())
+
+def get_pillar_color(p):
+    return COLORS["pillars"].get(p, "#CCCCCC")
+
+def get_stages():
+    return list(COLORS["stages"].keys())
+
+def get_stage_color(s):
+    return COLORS["stages"].get(s, "#AAAAAA")
+
+
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -211,7 +297,7 @@ def _label_center(ax, wedge, value, r):
         f"{value:.2f}",
         ha="center",
         va="center",
-        fontsize=8,
+        fontsize=FS_SM,     # change — use FS_SM token instead of hardcoded 8
         fontweight="bold",
     )
 
@@ -223,7 +309,7 @@ def _label_arrow(ax, theta1, theta2, text):
         xy=(0.92 * np.cos(ang), 0.92 * np.sin(ang)),
         xytext=(1.28 * np.cos(ang), 1.28 * np.sin(ang)),
         arrowprops=dict(arrowstyle="-", lw=0.8),
-        fontsize=8,
+        fontsize=FS_SM,     # change — use FS_SM token instead of hardcoded 8
         ha="center",
         va="center",
     )
@@ -236,7 +322,8 @@ def _build_pie_figure(data: dict):
     state = {
         "view": "Combined",
         "active_stages": set(stages_list),
-        "active_pillars": set(_PILLARS),
+        # "active_pillars": set(_PILLARS),
+        "active_pillars": set(get_pillars()),
         "show_negative": False,
     }
 
@@ -269,7 +356,8 @@ def _build_pie_figure(data: dict):
             if s not in state["active_stages"]:
                 continue
             stage_net = 0.0
-            for p in _PILLARS:
+            # for p in _PILLARS:
+            for p in get_pillars():
                 if p not in state["active_pillars"]:
                     continue
                 d = data[s][p]
@@ -281,14 +369,17 @@ def _build_pie_figure(data: dict):
 
                 if state["view"] != "Only Internal" and display_val > 0:
                     outer_vals.append(display_val)
-                    outer_cols.append(_PILLAR_COLORS[p])
+                    # outer_cols.append(_PILLAR_COLORS[p])
+                    outer_cols.append(get_pillar_color(p))
                     active_outer.append((s, p, actual_net))
                     if state["show_negative"] and neg > 0:
                         neg_overlays.append((len(outer_vals) - 1, neg, pos))
 
             if stage_net != 0 and state["view"] != "Only External":
                 inner_vals.append(stage_net)
-                inner_cols.append(_STAGE_COLORS.get(s, "#AAAAAA"))
+                # inner_cols.append(_STAGE_COLORS.get(s, "#AAAAAA"))
+                # inner_cols.append(COLORS["stages"].get(s, "#AAAAAA"))
+                inner_cols.append(get_stage_color(s))
                 active_inner.append((s, stage_net))
 
         if inner_vals:
@@ -337,11 +428,11 @@ def _build_pie_figure(data: dict):
             f"Net Total\n{total:.2f} M INR",
             ha="center",
             va="center",
-            fontsize=11,
+            fontsize=FS_LG,     # change — use FS_LG token instead of hardcoded 11
             fontweight="bold",
             color=fg,
         )
-        ax.set_title("LCC Cost Distribution (M INR)", fontsize=12, color=fg)
+        ax.set_title("LCC Cost Distribution (M INR)", fontsize=FS_XL, color=fg)  # change — use FS_XL token instead of hardcoded 12
         ax.axis("off")
 
         # Recreate annotation — ax.clear() destroys it
@@ -351,7 +442,7 @@ def _build_pie_figure(data: dict):
             xytext=(18, 18),
             textcoords="offset points",
             bbox=dict(boxstyle="round,pad=0.45", fc=bg, ec="#888888", alpha=0.95, lw=1),
-            fontsize=9,
+            fontsize=FS_BASE,   # change — use FS_BASE token instead of hardcoded 9
             color=fg,
             zorder=10,
         )
@@ -397,12 +488,37 @@ def _build_pie_figure(data: dict):
 
     for a, title in [(ax_view, "View"), (ax_stage, "Stages"), (ax_pillar, "Pillars")]:
         a.set_facecolor(bg)
-        a.set_title(title, fontsize=9, color=fg)
+        a.set_title(title, fontsize=FS_BASE, color=fg)  # change — use FS_BASE token instead of hardcoded 9
 
     radio_view = RadioButtons(ax_view, ["Combined", "Only Internal", "Only External"])
     check_stage = CheckButtons(ax_stage, stages_list, [True] * len(stages_list))
-    check_pillar = CheckButtons(ax_pillar, _PILLARS, [True] * len(_PILLARS))
+    # check_pillar = CheckButtons(ax_pillar, _PILLARS, [True] * len(_PILLARS))
+    pillars = get_pillars()
+    check_pillar = CheckButtons(ax_pillar, pillars, [True] * len(pillars))
     btn_neg = Button(ax_neg, "Show Negative Offset")
+
+    # ── Apply panel colors ─────────────────────────────
+    # ax_view.set_facecolor(_PANEL_COLORS["view"])
+    # ax_stage.set_facecolor(_PANEL_COLORS["stages"])
+    # ax_pillar.set_facecolor(_PANEL_COLORS["pillars"])
+    # ax_neg.set_facecolor(_PANEL_COLORS["button"])
+    ax_view.set_facecolor(COLORS["ui"]["view"])
+    ax_stage.set_facecolor(COLORS["stages"]["Use"])
+    ax_pillar.set_facecolor(COLORS["pillars"]["Environmental"])
+
+    # ── Improve text visibility ────────────────────────
+    for widget in [radio_view, check_stage, check_pillar]:
+        for label in widget.labels:
+            label.set_color("black")
+
+    # Button text color
+    btn_neg.label.set_color("black")
+
+    # ── Optional: panel borders ────────────────────────
+    for a in [ax_view, ax_stage, ax_pillar, ax_neg]:
+        for spine in a.spines.values():
+            spine.set_edgecolor("#444")
+            spine.set_linewidth(1.2)
 
     def on_view(label):
         state["view"] = label
@@ -499,5 +615,3 @@ class LCCPieWidget(QWidget):
         layout.addWidget(lbl)
         layout.addWidget(canvas)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-
-
