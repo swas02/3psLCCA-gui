@@ -8,6 +8,7 @@ A desktop application built with Python and PySide6 for performing Life Cycle Co
 
 - Python >= 3.12
 - Git
+- Conda (recommended if you want packaged LaTeX for PDF reports)
 
 ---
 
@@ -79,6 +80,37 @@ source venv/bin/activate
 ```bash
 pip install -r requirements.txt
 ```
+
+**5. Set up LaTeX environment (required for PDF report generation)**
+
+The app can run without this, but PDF export needs a working `pdflatex`.
+
+### Option A (Recommended): Conda packaged LaTeX env
+
+If you run the app from a Conda environment, install:
+
+```bash
+conda install osdag::osdag_latex_env
+```
+
+### Option B: Repo-local LaTeX assets (for venv/non-Conda workflows)
+
+```bash
+python core/report-env/setup_assets.py
+python core/report-env/setup_assets.py --status
+```
+
+### Option C: System LaTeX fallback
+
+Install MiKTeX/TeX Live and ensure `pdflatex` is available on PATH.
+
+### Quick verification
+
+```bash
+python -c "import sys; from pathlib import Path; sys.path.insert(0, str(Path('core/report-env').resolve())); from osdag_latex_env import OsdagLatexEnv; env=OsdagLatexEnv(); print('available=', env.available); print('pdflatex=', env.pdflatex); print('tex_root=', env.tex_root)"
+```
+
+For more details, see `core/report-env/readme.md`.
 
 ---
 

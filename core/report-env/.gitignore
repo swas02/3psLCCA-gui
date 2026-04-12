@@ -1,0 +1,26 @@
+# ─────────────────────────────────────────────
+# Report-Env .gitignore
+# ─────────────────────────────────────────────
+# The assets/ directory contains ~1.3 GB of TeX binaries and texmf trees.
+# These should NOT be committed to git. 
+#
+# Production users install assets via:
+#   conda install osdag::osdag_latex_env
+#
+# Developers can populate them locally via:
+#   python -m core.report-env.setup_assets
+# ─────────────────────────────────────────────
+
+# Platform TeX assets (populated at setup time, not tracked)
+assets/
+assets/win/
+assets/linux/
+assets/mac/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Python cache
+__pycache__/
+*.py[cod]

@@ -11,6 +11,7 @@ data/user_db/profile.json
 user_projects/
 debug/
 dev_notes/
+temp/
 # ─────────────────────────────────────────────
 # 3psLCCA Core (installed from GitHub, not local)
 # ─────────────────────────────────────────────
