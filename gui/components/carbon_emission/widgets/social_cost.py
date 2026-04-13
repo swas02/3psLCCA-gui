@@ -267,7 +267,7 @@ class SocialCost(ScrollableForm):
         # Scientific Paper Reference
         _ref_c, _ref_lbl = self._padded_label(
             "<b>Reference:</b> Ricke, K., Drouet, L., Caldeira, K. et al. <i>Country-level social cost of carbon.</i> "
-            "Nature Clim Change 8, 895–900 (2018). <a href='https://doi.org/10.1038/s41558-018-0282-y' style='color: palette(highlight);'>"
+            "Nature Clim Change 8, 895-900 (2018). <a href='https://doi.org/10.1038/s41558-018-0282-y' style='color: palette(highlight);'>"
             "doi:10.1038/s41558-018-0282-y</a>",
             top=0,
             bottom=10,

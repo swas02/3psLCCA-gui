@@ -2,23 +2,26 @@
 gui/components/outputs/outputs_page.py
 """
 
+import json
+import logging
+import traceback
+
 from PySide6.QtWidgets import (
     QApplication,
     QFileDialog,
     QGroupBox,
     QHBoxLayout,
     QLabel,
+    QMessageBox,
     QProgressBar,
     QPushButton,
-    QScrollArea,
     QTextEdit,
     QVBoxLayout,
     QWidget,
 )
-from PySide6.QtCore import Qt, QObject, QThread, QTimer, Signal, QSize
-from PySide6.QtGui import QFont, QColor, QPalette
-from gui.themes import get_token
+from PySide6.QtCore import Qt, QObject, QThread, QTimer, Signal
 
+from gui.themes import get_token
 from gui.styles import (
     font as _f,
     btn_primary,
@@ -26,13 +29,12 @@ from gui.styles import (
     btn_ghost,
 )
 from gui.theme import (
-    SP1, SP2, SP3, SP4, SP6, SP8, SP10,
-    RADIUS_SM, RADIUS_MD, RADIUS_LG,
+    SP1, SP2, SP3, SP4,
+    RADIUS_SM, RADIUS_MD,
     FS_XS, FS_SM, FS_BASE, FS_MD, FS_LG, FS_XL,
     FW_MEDIUM, FW_SEMIBOLD, FW_BOLD,
     BTN_MD, BTN_SM
 )
-
 from gui.components.base_widget import ScrollableForm
 from gui.components.utils.form_builder.form_definitions import (
     FieldDef,
@@ -44,11 +46,13 @@ from gui.components.utils.validation_helpers import (
     freeze_form,
     validate_form,
 )
+from three_ps_lcca_core.core.main import run_full_lcc_analysis
+
 from .lcc_plot import LCCBreakdownTable, LCCChartWidget, LCCDetailsTable
 from .Pie import LCCPieWidget
 from .data_preparer import DataPreparer
+from .report_section_dialog import ReportSectionDialog
 
-from three_ps_lcca_core.core.main import run_full_lcc_analysis
 
 
 CHUNK = "outputs_data"
@@ -76,15 +80,57 @@ OUTPUTS_WARN_RULES = {
         "Analysis period exceeds 500 years - please verify",
     ),
 }
-DEBUG = False
+_log = logging.getLogger(__name__)
 
 
-def _dbg(*args):
-    if DEBUG:
-        import inspect
+def _make_issue_card(page_name: str, issues: list, icon: str, navigate_cb) -> QGroupBox:
+    """Standalone card widget for a single page's validation errors or warnings."""
+    card = QGroupBox()
+    card.setStyleSheet(
+        f"QGroupBox {{ border: 1px solid {get_token('surface_mid')}; "
+        f"border-radius: {RADIUS_MD}px; padding: {SP3}px; }}"
+    )
+    layout = QVBoxLayout(card)
+    layout.setSpacing(SP2)
 
-        caller = inspect.stack()[1].function
-        print(f"[OUTPUTS DEBUG | {caller}]", *args)
+    h_row = QWidget()
+    h_lay = QHBoxLayout(h_row)
+    h_lay.setContentsMargins(0, 0, 0, 0)
+
+    name_lbl = QLabel(page_name.upper())
+    name_lbl.setFont(_f(FS_XS, FW_BOLD))
+    name_lbl.setStyleSheet(f"color: {get_token('text_disabled')}; letter-spacing: 1px;")
+    h_lay.addWidget(name_lbl, 0, Qt.AlignVCenter)
+    h_lay.addStretch()
+
+    go_btn = QPushButton("Fix Issues →")
+    go_btn.setFixedHeight(26)
+    go_btn.setFont(_f(FS_XS, FW_SEMIBOLD))
+    go_btn.setStyleSheet(btn_ghost())
+    go_btn.setCursor(Qt.PointingHandCursor)
+    go_btn.clicked.connect(lambda checked=False, p=page_name: navigate_cb(p))
+    h_lay.addWidget(go_btn, 0, Qt.AlignVCenter)
+
+    layout.addWidget(h_row)
+
+    for msg in issues:
+        issue_row = QHBoxLayout()
+        issue_row.setSpacing(SP2)
+
+        icon_lbl = QLabel(icon)
+        icon_lbl.setFont(_f(FS_SM))
+        issue_row.addWidget(icon_lbl, 0, Qt.AlignTop)
+
+        txt_lbl = QLabel(msg)
+        txt_lbl.setFont(_f(FS_BASE))
+        txt_lbl.setStyleSheet(f"color: {get_token('text')};")
+        txt_lbl.setWordWrap(True)
+        issue_row.addWidget(txt_lbl, 1)
+
+        layout.addLayout(issue_row)
+
+    return card
+
 
 
 class _LCCAWorker(QObject):
@@ -109,30 +155,30 @@ class _LCCAWorker(QObject):
         try:
             all_data = self._all_data
 
-            _dbg("Worker: calling DataPreparer.prepare_data_object …")
+            _log.debug("Worker: calling DataPreparer.prepare_data_object …")
             is_global, data_object = DataPreparer.prepare_data_object(
                 all_data, self._analysis_period_years
             )
-            _dbg(
+            _log.debug(
                 f"Worker: is_global={is_global}  data_object={type(data_object).__name__}"
             )
 
             wpi_metadata = None
             if not is_global:
-                _dbg("Worker: calling DataPreparer.prepare_wpi_object …")
+                _log.debug("Worker: calling DataPreparer.prepare_wpi_object …")
                 wpi_metadata = DataPreparer.prepare_wpi_object(all_data)
 
-            _dbg("Worker: calling DataPreparer.prepare_life_cycle_construction_cost …")
+            _log.debug("Worker: calling DataPreparer.prepare_life_cycle_construction_cost …")
             lcc_breakdown = DataPreparer.prepare_life_cycle_construction_cost(all_data)
 
-            _dbg("Worker: calling run_full_lcc_analysis …")
+            _log.debug("Worker: calling run_full_lcc_analysis …")
             results = run_full_lcc_analysis(
                 data_object,
                 lcc_breakdown,
                 wpi=wpi_metadata,
                 debug=True,
             )
-            _dbg(
+            _log.debug(
                 f"Worker: run_full_lcc_analysis returned: {list(results.keys()) if isinstance(results, dict) else type(results).__name__}"
             )
 
@@ -141,10 +187,8 @@ class _LCCAWorker(QObject):
             self.finished.emit(results, all_data, lcc_breakdown)
 
         except Exception as exc:
-            import traceback as _tb
-
-            tb_str = _tb.format_exc()
-            _dbg(f"Worker ERROR: {type(exc).__name__}: {exc}\n{tb_str}")
+            tb_str = traceback.format_exc()
+            _log.debug(f"Worker ERROR: {type(exc).__name__}: {exc}\n{tb_str}")
             self.errored.emit(exc, tb_str)
 
 
@@ -343,7 +387,7 @@ class OutputsPage(ScrollableForm):
 
     def _on_calc_timeout(self):
         """Called when the 30 s timeout fires - terminate the thread and show error."""
-        _dbg(
+        _log.debug(
             "=== _on_calc_timeout: calculation exceeded timeout, terminating thread ==="
         )
         self._stop_timers()
@@ -378,7 +422,7 @@ class OutputsPage(ScrollableForm):
             self._status_layout.addSpacing(SP2)
 
             for page, issues in all_errors.items():
-                self._status_layout.addWidget(self._create_card(page, issues, "❌", is_error=True))
+                self._status_layout.addWidget(_make_issue_card(page, issues, "❌", self.navigate_requested.emit))
 
         if all_warnings:
             if all_errors:
@@ -402,7 +446,7 @@ class OutputsPage(ScrollableForm):
             self._status_layout.addSpacing(SP2)
 
             for page, issues in all_warnings.items():
-                self._status_layout.addWidget(self._create_card(page, issues, "🟡", is_error=False))
+                self._status_layout.addWidget(_make_issue_card(page, issues, "🟡", self.navigate_requested.emit))
 
         if not all_errors and (all_warnings or self._pages):
             btn_container = QWidget()
@@ -449,10 +493,10 @@ class OutputsPage(ScrollableForm):
             for name, page in widget_map.items()
             if name != "Outputs" and hasattr(page, "validate")
         }
-        _dbg(f"Registered pages: {list(self._pages.keys())}")
+        _log.debug(f"Registered pages: {list(self._pages.keys())}")
 
     def run_validation(self):
-        _dbg("=== run_validation START ===")
+        _log.debug("=== run_validation START ===")
 
         all_errors = {}
         all_warnings = {}
@@ -469,14 +513,14 @@ class OutputsPage(ScrollableForm):
             self.analysis_period.setStyleSheet("")
 
         for name, page in self._pages.items():
-            _dbg(f"Validating page: '{name}' ({type(page).__name__})")
+            _log.debug(f"Validating page: '{name}' ({type(page).__name__})")
             result = page.validate()
-            _dbg(f"  result type={type(result).__name__}  value={result!r}")
+            _log.debug(f"  result type={type(result).__name__}  value={result!r}")
 
             if isinstance(result, dict):
                 errors = result.get("errors", [])
                 warnings = result.get("warnings", [])
-                _dbg(f"  dict-format => errors={errors}  warnings={warnings}")
+                _log.debug(f"  dict-format => errors={errors}  warnings={warnings}")
                 if errors:
                     all_errors[name] = errors
                 if warnings:
@@ -484,13 +528,13 @@ class OutputsPage(ScrollableForm):
             else:
                 # legacy tuple format (status, issues)
                 status, issues = result
-                _dbg(f"  tuple-format => status={status}  issues={issues}")
+                _log.debug(f"  tuple-format => status={status}  issues={issues}")
                 if status == ValidationStatus.ERROR and issues:
                     all_errors[name] = issues
                 elif status == ValidationStatus.WARNING and issues:
                     all_warnings[name] = issues
 
-        _dbg(
+        _log.debug(
             f"Validation done => all_errors={list(all_errors.keys())}  all_warnings={list(all_warnings.keys())}"
         )
 
@@ -501,23 +545,23 @@ class OutputsPage(ScrollableForm):
             self.run_calculation()
 
     def run_calculation(self):
-        _dbg("=== run_calculation START ===")
-        _dbg(f"self._pages at entry: {list(self._pages.keys())}")
+        _log.debug("=== run_calculation START ===")
+        _log.debug(f"self._pages at entry: {list(self._pages.keys())}")
 
         # Collect data from all pages (fast, main-thread safe)
         all_data = {}
         for name, page in self._pages.items():
             has_get = hasattr(page, "get_data")
-            _dbg(f"  page='{name}'  has_get_data={has_get}")
+            _log.debug(f"  page='{name}'  has_get_data={has_get}")
             if has_get:
                 result = page.get_data()
                 chunk_key = result["chunk"]
-                _dbg(
+                _log.debug(
                     f"    chunk_key='{chunk_key}'  data_keys={list(result['data'].keys()) if isinstance(result['data'], dict) else type(result['data']).__name__}"
                 )
                 all_data[chunk_key] = result["data"]
 
-        _dbg(f"all_data keys collected: {list(all_data.keys())}")
+        _log.debug(f"all_data keys collected: {list(all_data.keys())}")
         self._currency = all_data.get('general_info', {}).get('project_currency', "INR")
         print(f"Project Currency: {self._currency}")
 
@@ -542,12 +586,12 @@ class OutputsPage(ScrollableForm):
         # Bug fix: defer start by one event-loop cycle so Qt can paint the
         # progress bar before the thread begins consuming CPU.
         QTimer.singleShot(0, self._calc_thread.start)
-        _dbg("Calculation thread start deferred.")
+        _log.debug("Calculation thread start deferred.")
 
     # ── Thread result handlers (called on main thread via queued signal) ──────
 
     def _on_calc_finished(self, results, all_data, lcc_breakdown):
-        _dbg(f"_on_calc_finished: results type={type(results).__name__}")
+        _log.debug(f"_on_calc_finished: results type={type(results).__name__}")
         self._stop_timers()
         # Store on main thread - no cross-thread writes needed anymore.
         self._last_all_data = all_data
@@ -555,7 +599,7 @@ class OutputsPage(ScrollableForm):
         self._show_calculation_success(results)
 
     def _on_calc_errored(self, exc, tb):
-        _dbg(f"_on_calc_errored: {type(exc).__name__}: {exc}")
+        _log.debug(f"_on_calc_errored: {type(exc).__name__}: {exc}")
         self._stop_timers()
         self._show_calculation_error(exc, tb)
 
@@ -737,7 +781,6 @@ class OutputsPage(ScrollableForm):
             stretch_idx = self._status_layout.count() - 1
             self._status_layout.insertWidget(stretch_idx, widget)
         except Exception as e:
-            import traceback
             err = QLabel(f"Chart error: {e}\n{traceback.format_exc(limit=4)}")
             err.setStyleSheet("color: gray; font-style: italic;")
             stretch_idx = self._status_layout.count() - 1
@@ -783,6 +826,14 @@ class OutputsPage(ScrollableForm):
 
     # ── Report download ───────────────────────────────────────────────────────
 
+    def _build_export_dict(self) -> dict:
+        """Build the export dict shared by both export paths."""
+        return DataPreparer.build_export_dict(
+            getattr(self, "_last_all_data", {}),
+            getattr(self, "_last_lcc_breakdown", {}),
+            getattr(self, "_last_results", {}),
+        )
+
     def _download_report(self):
         path, _ = QFileDialog.getSaveFileName(
             self,
@@ -796,107 +847,21 @@ class OutputsPage(ScrollableForm):
         if not path.endswith(".3psLCCAFile"):
             path += ".3psLCCAFile"
         try:
-            import json
-
-            export = self._build_export_dict(
-                getattr(self, "_last_all_data", {}),
-                getattr(self, "_last_lcc_breakdown", {}),
-                getattr(self, "_last_results", {}),
-            )
+            export = self._build_export_dict()
             with open(path, "w", encoding="utf-8") as f:
                 json.dump(export, f, indent=2, ensure_ascii=False)
-            from PySide6.QtWidgets import QMessageBox
-
             QMessageBox.information(self, "Saved", f"Report saved to:\n{path}")
         except Exception as e:
-            import traceback
-            from PySide6.QtWidgets import QMessageBox
-
             QMessageBox.critical(
                 self,
                 "Export Failed",
                 f"{type(e).__name__}: {e}\n\n{traceback.format_exc(limit=4)}",
             )
 
-    def _build_export_dict(
-        self, all_data: dict, lcc_breakdown: dict, results: dict
-    ) -> dict:
-        """
-        Build the full export dict written to a .3psLCCAFile file.
-
-        Structure
-        ---------
-        {
-          "format":      "3psLCCAFile",
-          "version":     "1.0",
-          "exported_at": "<ISO timestamp>",
-          "inputs": {
-            "construction_work_data": { ... },  # includes grand_total, page/component/item totals
-            "carbon_emission_data":   { ... },  # includes total_kgCO2e per sub-section
-            "recycling_data":         { ... },  # includes total_recovered_value, cat_totals
-            "traffic_and_road_data":  { ... },
-            "financial_data":         { ... },
-            "bridge_data":            { ... },
-            "maintenance_data":       { ... },
-            "demolition_data":        { ... },
-          },
-          "computed": {
-            "initial_construction_cost":       <float>,
-            "initial_carbon_emissions_cost":   <float>,
-            "superstructure_construction_cost":<float>,
-            "total_scrap_value":               <float>,
-          },
-          "results": { ... }   # direct output of run_full_lcc_analysis
-        }
-
-        All values are sanitised to JSON-safe primitives.
-        """
-        import datetime
-
-        def _sanitize(obj):
-            """Recursively coerce non-JSON-serialisable values to primitives."""
-            if obj is None or isinstance(obj, (bool, str)):
-                return obj
-            if isinstance(obj, float):
-                return float(obj)
-            if isinstance(obj, int):
-                return int(obj)
-            if isinstance(obj, dict):
-                return {str(k): _sanitize(v) for k, v in obj.items()}
-            if isinstance(obj, (list, tuple)):
-                return [_sanitize(i) for i in obj]
-            # dataclass / namedtuple / custom objects
-            try:
-                from dataclasses import asdict, fields
-
-                fields(obj)
-                return _sanitize(asdict(obj))
-            except TypeError:
-                pass
-            try:
-                return _sanitize(obj._asdict())
-            except AttributeError:
-                pass
-            return str(obj)
-
-        return {
-            "format": "3psLCCAFile",
-            "version": "1.0",
-            "exported_at": datetime.datetime.now().isoformat(),
-            "inputs": _sanitize(all_data),
-            "computed": _sanitize(lcc_breakdown),
-            "results": _sanitize(results),
-        }
-
     def _generate_pdf_report(self):
         """Open the section selection dialog and generate a PDF report."""
-        from .report_section_dialog import ReportSectionDialog
-
         dlg = ReportSectionDialog(
-            build_export_dict=self._build_export_dict,
-            all_data=getattr(self, "_last_all_data", {}),
-            lcc_breakdown=getattr(self, "_last_lcc_breakdown", {}),
-            results=getattr(self, "_last_results", {}),
+            export_dict=self._build_export_dict(),
             parent=self,
         )
         dlg.exec()
@@ -914,7 +879,7 @@ class OutputsPage(ScrollableForm):
 
     def on_refresh(self):
         if not self.controller or not self.controller.engine:
-            _dbg("on_refresh: no controller/engine, skipping")
+            _log.debug("on_refresh: no controller/engine, skipping")
             return
 
         self.refresh_from_engine()
@@ -922,7 +887,7 @@ class OutputsPage(ScrollableForm):
         state = self.controller.engine.fetch_chunk(CHUNK) or {}
         status = state.get("status", "idle")
         data = state.get("data", {})
-        _dbg(
+        _log.debug(
             f"on_refresh: status='{status}'  data_keys={list(data.keys()) if isinstance(data, dict) else type(data).__name__}"
         )
         
@@ -935,55 +900,3 @@ class OutputsPage(ScrollableForm):
             self.show_success()
         else:
             self._show_idle()
-
-    # ── Card widget ───────────────────────────────────────────────────────────
-
-    def _create_card(self, page_name, issues, icon, is_error: bool = True):
-        card = QGroupBox()
-        card.setStyleSheet(
-            f"QGroupBox {{ border: 1px solid {get_token('surface_mid')}; "
-            f"border-radius: {RADIUS_MD}px; padding: {SP3}px; }}"
-        )
-        layout = QVBoxLayout(card)
-        layout.setSpacing(SP2)
-
-        h_row = QWidget()
-        h_lay = QHBoxLayout(h_row)
-        h_lay.setContentsMargins(0, 0, 0, 0)
-        
-        name_lbl = QLabel(page_name.upper())
-        name_lbl.setFont(_f(FS_XS, FW_BOLD))
-        name_lbl.setStyleSheet(f"color: {get_token('text_disabled')}; letter-spacing: 1px;")
-        h_lay.addWidget(name_lbl, 0, Qt.AlignVCenter)
-        
-        h_lay.addStretch()
-
-        go_btn = QPushButton("Fix Issues →")
-        go_btn.setFixedHeight(26)
-        go_btn.setFont(_f(FS_XS, FW_SEMIBOLD))
-        go_btn.setStyleSheet(btn_ghost())
-        go_btn.setCursor(Qt.PointingHandCursor)
-        go_btn.clicked.connect(
-            lambda checked=False, p=page_name: self.navigate_requested.emit(p)
-        )
-        h_lay.addWidget(go_btn, 0, Qt.AlignVCenter)
-
-        layout.addWidget(h_row)
-        
-        for msg in issues:
-            issue_row = QHBoxLayout()
-            issue_row.setSpacing(SP2)
-            
-            icon_lbl = QLabel(icon)
-            icon_lbl.setFont(_f(FS_SM))
-            issue_row.addWidget(icon_lbl, 0, Qt.AlignTop)
-            
-            txt_lbl = QLabel(msg)
-            txt_lbl.setFont(_f(FS_BASE))
-            txt_lbl.setStyleSheet(f"color: {get_token('text')};")
-            txt_lbl.setWordWrap(True)
-            issue_row.addWidget(txt_lbl, 1)
-            
-            layout.addLayout(issue_row)
-            
-        return card

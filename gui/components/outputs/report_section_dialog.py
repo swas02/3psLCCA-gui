@@ -8,6 +8,7 @@ the main 3psLCCA GUI application.
 import sys
 import os
 import json
+import shutil
 import tempfile
 import traceback
 
@@ -24,6 +25,7 @@ for p in [_report_dir, _project_root]:
 
 from PySide6.QtWidgets import (
     QDialog,
+    QDialogButtonBox,
     QVBoxLayout,
     QHBoxLayout,
     QPushButton,
@@ -150,7 +152,7 @@ class SectionTreeWidget(QTreeWidget):
         self.setHeaderLabel("Report Sections")
         self.itemChanged.connect(self.on_item_changed)
         
-        self.setIndentation(20)
+        self.setIndentation(28)
         self.setAnimated(True)
         self.setMouseTracking(True)
         self.viewport().setMouseTracking(True)
@@ -176,10 +178,25 @@ class SectionTreeWidget(QTreeWidget):
                 outline: none;
             }}
             QTreeWidget::item {{
-                padding: 8px 0;
+                padding: 6px 0;
                 border: none;
                 color: {get_token("text")};
             }}
+
+            /* ── Branch arrows ───────────────────────────────────────── */
+            QTreeWidget::branch {{
+                background: transparent;
+            }}
+            QTreeWidget::branch:has-children:!has-siblings:closed,
+            QTreeWidget::branch:closed:has-children:has-siblings {{
+                image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M8 5v14l11-7z' fill='{get_token("text_secondary").replace("#", "%23")}'/%3E%3C/svg%3E");
+            }}
+            QTreeWidget::branch:open:has-children:!has-siblings,
+            QTreeWidget::branch:open:has-children:has-siblings {{
+                image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5z' fill='{get_token("text_secondary").replace("#", "%23")}'/%3E%3C/svg%3E");
+            }}
+
+            /* ── Checkboxes ───────────────────────────────────────────── */
             QTreeWidget::indicator {{
                 width: 16px;
                 height: 16px;
@@ -190,12 +207,18 @@ class SectionTreeWidget(QTreeWidget):
             QTreeWidget::indicator:checked {{
                 background-color: {get_token("primary")};
                 border-color: {get_token("primary")};
-                /* Complete fill checkmark */
                 image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z' fill='white'/%3E%3C/svg%3E");
+            }}
+            QTreeWidget::indicator:indeterminate {{
+                background-color: {get_token("primary")};
+                border-color: {get_token("primary")};
+                image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='4' y='11' width='16' height='2' fill='white'/%3E%3C/svg%3E");
             }}
             QTreeWidget::indicator:unchecked:hover {{
                 border-color: {get_token("primary")};
             }}
+
+            /* ── Header ──────────────────────────────────────────────── */
             QHeaderView::section {{
                 background-color: {get_token("surface")};
                 color: {get_token("text")};
@@ -250,11 +273,20 @@ class SectionTreeWidget(QTreeWidget):
         if not isinstance(section_map, dict):
             return
 
+        from PySide6.QtGui import QFont as _QFont, QColor as _QColor
+        font_section = _QFont("Ubuntu", FS_BASE); font_section.setWeight(_QFont.Weight.DemiBold)
+        font_sub    = _QFont("Ubuntu", FS_BASE)
+        font_table  = _QFont("Ubuntu", FS_SM)
+        col_section = _QColor(get_token("text"))
+        col_sub     = _QColor(get_token("text"))
+        col_table   = _QColor(get_token("text_secondary"))
+
         for section_name, subsections in section_map.items():
             section_item = QTreeWidgetItem(self, [section_name])
             section_item.setFlags(section_item.flags() | Qt.ItemIsUserCheckable)
             section_item.setCheckState(0, Qt.Checked)
-            # Store section-level config key
+            section_item.setFont(0, font_section)
+            section_item.setForeground(0, col_section)
             if section_name == "Introduction":
                 section_item.setData(0, Qt.UserRole, KEY_SHOW_INTRODUCTION)
             elif section_name == "LCCA results":
@@ -265,6 +297,8 @@ class SectionTreeWidget(QTreeWidget):
                     sub_item = QTreeWidgetItem(section_item, [str(subsection)])
                     sub_item.setFlags(sub_item.flags() | Qt.ItemIsUserCheckable)
                     sub_item.setCheckState(0, Qt.Checked)
+                    sub_item.setFont(0, font_sub)
+                    sub_item.setForeground(0, col_sub)
 
                     if subsection in table_map:
                         for label, config_key in table_map[subsection]:
@@ -273,6 +307,8 @@ class SectionTreeWidget(QTreeWidget):
                                 table_item.flags() | Qt.ItemIsUserCheckable
                             )
                             table_item.setCheckState(0, Qt.Checked)
+                            table_item.setFont(0, font_table)
+                            table_item.setForeground(0, col_table)
                             table_item.setData(0, Qt.UserRole, config_key)
 
         self.expandAll()
@@ -343,8 +379,8 @@ class SectionTreeWidget(QTreeWidget):
 class _PdfGenWorker(QThread):
     """Runs PDF generation on a background thread to avoid freezing the UI."""
 
-    finished = Signal(str)  # emitted with PDF path on success
-    errored = Signal(str)  # emitted with error message on failure
+    finished = Signal(str)        # emitted with final PDF path on success
+    errored = Signal(str, str)    # (error_msg, tex_path_or_empty) — work dir kept alive when tex_path set
 
     def __init__(self, export_dict, config, output_dir):
         super().__init__()
@@ -353,56 +389,53 @@ class _PdfGenWorker(QThread):
         self._output_dir = output_dir
 
     def run(self):
+        work_dir = tempfile.mkdtemp(prefix="3psLCCA_")
         try:
+            stem = "LCCA_Report"
+            work_stem = os.path.join(work_dir, stem)
+
             # Write temp JSON
-            tmp_fd, tmp_json = tempfile.mkstemp(
-                suffix=".3psLCCAFile", prefix="lcca_report_"
-            )
+            tmp_json = os.path.join(work_dir, "input.3psLCCAFile")
+            with open(tmp_json, "w", encoding="utf-8") as f:
+                json.dump(self._export_dict, f, indent=2, ensure_ascii=False)
+
             try:
-                with os.fdopen(tmp_fd, "w", encoding="utf-8") as f:
-                    json.dump(self._export_dict, f, indent=2, ensure_ascii=False)
-
-                # Import here to avoid blocking UI startup
                 from lcca_generate import generate_report
-
-                pdf_path = os.path.join(self._output_dir, "LCCA_Report")
                 generate_report(
-                    pdf_path, input_json=tmp_json, config_override=self._config,
-                    output_dir=self._output_dir,
+                    work_stem, input_json=tmp_json, config_override=self._config,
+                    output_dir=work_dir,
                 )
             finally:
-                if os.path.exists(tmp_json):
-                    try:
-                        os.remove(tmp_json)
-                    except OSError:
-                        pass
+                try:
+                    os.remove(tmp_json)
+                except OSError:
+                    pass
 
-            final_pdf = pdf_path + ".pdf"
-            if os.path.exists(final_pdf):
-                # Clean up intermediate files
-                for ext in [".tex", ".aux", ".log", ".out", ".fls", ".fdb_latexmk"]:
-                    f = pdf_path + ext
-                    if os.path.exists(f):
-                        try:
-                            os.remove(f)
-                        except OSError:
-                            pass
+            work_pdf = work_stem + ".pdf"
+            if os.path.exists(work_pdf):
+                final_pdf = os.path.join(self._output_dir, stem + ".pdf")
+                shutil.copy2(work_pdf, final_pdf)
+                shutil.rmtree(work_dir, ignore_errors=True)
                 self.finished.emit(final_pdf)
             else:
-                # Check if .tex was generated instead
-                tex_path = pdf_path + ".tex"
+                tex_path = work_stem + ".tex"
                 if os.path.exists(tex_path):
+                    # Keep work_dir alive — dialog cleans it up after export/close
                     self.errored.emit(
-                        "PDF compilation failed but .tex file was saved.\n"
-                        "Check your LaTeX installation and try compiling manually:\n"
-                        f"  pdflatex {tex_path}"
+                        "PDF compilation failed — LaTeX could not produce a PDF.\n"
+                        "You can export the .tex file and compile it manually:\n"
+                        "  pdflatex LCCA_Report.tex",
+                        tex_path,
                     )
                 else:
-                    self.errored.emit("Report generation completed but no output file was found.")
+                    shutil.rmtree(work_dir, ignore_errors=True)
+                    self.errored.emit(
+                        "Report generation completed but no output file was found.", ""
+                    )
 
         except Exception as e:
-            tb = traceback.format_exc()
-            self.errored.emit(f"{type(e).__name__}: {e}\n\n{tb}")
+            shutil.rmtree(work_dir, ignore_errors=True)
+            self.errored.emit(f"{type(e).__name__}: {e}\n\n{traceback.format_exc()}", "")
 
 
 # ==============================================================================
@@ -416,15 +449,12 @@ class ReportSectionDialog(QDialog):
     in the PDF report, then generates it via generate_report().
     """
 
-    def __init__(self, build_export_dict, all_data, lcc_breakdown, results, parent=None):
+    def __init__(self, export_dict: dict, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Customize Report")
         self.setObjectName("report_section_dialog")
         self.resize(600, 700)
-        self._build_export_dict = build_export_dict
-        self._all_data = all_data
-        self._lcc_breakdown = lcc_breakdown
-        self._results = results
+        self._export_dict = export_dict
         self._worker = None
         self._init_ui()
 
@@ -539,7 +569,7 @@ class ReportSectionDialog(QDialog):
     def _generate_pdf(self, output_dir, filename):
         """Launch background PDF generation."""
         config = self.tree_sections.get_config()
-        export = self._build_export_dict(self._all_data, self._lcc_breakdown, self._results)
+        export = self._export_dict
 
         self._set_ui_enabled(False)
         QApplication.processEvents()
@@ -564,7 +594,64 @@ class ReportSectionDialog(QDialog):
             os.startfile(pdf_path)
         self.accept()
 
-    def _on_pdf_error(self, error_msg):
-        """Handle PDF generation error."""
+    def _on_pdf_error(self, error_msg: str, tex_path: str):
+        """Handle PDF generation error — offer .tex export when available."""
         self._set_ui_enabled(True)
-        QMessageBox.critical(self, "Error", error_msg)
+
+        if not tex_path:
+            QMessageBox.critical(self, "PDF Generation Failed", error_msg)
+            return
+
+        dlg = QDialog(self)
+        dlg.setWindowTitle("PDF Compilation Failed")
+        dlg.setMinimumWidth(460)
+        lay = QVBoxLayout(dlg)
+        lay.setSpacing(12)
+        lay.setContentsMargins(20, 20, 20, 20)
+
+        lbl = QLabel(error_msg)
+        lbl.setWordWrap(True)
+        lbl.setFont(_f(FS_BASE))
+        lay.addWidget(lbl)
+
+        note = QLabel(
+            "The .tex source file is ready. Export it, then run:\n"
+            "  <b>pdflatex LCCA_Report.tex</b>"
+        )
+        note.setTextFormat(Qt.RichText)
+        note.setWordWrap(True)
+        note.setFont(_f(FS_SM))
+        note.setStyleSheet(f"color: {get_token('text_secondary')};")
+        lay.addWidget(note)
+
+        btns = QDialogButtonBox()
+        export_btn = btns.addButton("Export .tex File…", QDialogButtonBox.AcceptRole)
+        btns.addButton("Close", QDialogButtonBox.RejectRole)
+        lay.addWidget(btns)
+
+        work_dir = os.path.dirname(tex_path)
+
+        def _cleanup():
+            shutil.rmtree(work_dir, ignore_errors=True)
+
+        def _export():
+            dest, _ = QFileDialog.getSaveFileName(
+                dlg, "Save .tex File", "LCCA_Report.tex", "LaTeX Files (*.tex)"
+            )
+            if dest:
+                if not dest.lower().endswith(".tex"):
+                    dest += ".tex"
+                try:
+                    shutil.copy2(tex_path, dest)
+                    QMessageBox.information(
+                        dlg, "Saved",
+                        f"Saved to:\n{dest}\n\nCompile with:\n  pdflatex \"{dest}\""
+                    )
+                    dlg.accept()
+                except Exception as e:
+                    QMessageBox.critical(dlg, "Export Failed", str(e))
+
+        export_btn.clicked.connect(_export)
+        btns.rejected.connect(dlg.reject)
+        dlg.finished.connect(lambda _: _cleanup())
+        dlg.exec()

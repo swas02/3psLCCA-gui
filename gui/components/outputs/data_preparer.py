@@ -3,6 +3,8 @@ gui/components/outputs/data_preparer.py
 Helper class to map raw UI data dictionaries to Core LCCA objects.
 """
 
+import datetime
+
 from three_ps_lcca_core.inputs.input import (
     InputMetaData,
     GeneralParameters,
@@ -357,3 +359,54 @@ class DataPreparer:
                 daily_road_user_cost_with_vehicular_emissions=daily_road_user_cost_with_vehicular_emissions,
                 maintenance_and_stage_parameters=maintenance_and_stage_parameters,
             )
+
+    @staticmethod
+    def build_export_dict(all_data: dict, lcc_breakdown: dict, results: dict) -> dict:
+        """
+        Build the full export dict written to a .3psLCCAFile file.
+
+        Structure
+        ---------
+        {
+          "format":      "3psLCCAFile",
+          "version":     "1.0",
+          "exported_at": "<ISO timestamp>",
+          "inputs":  { ... },   # raw UI data from all pages
+          "computed": { ... },  # initial_construction_cost, etc.
+          "results": { ... }    # direct output of run_full_lcc_analysis
+        }
+
+        All values are sanitised to JSON-safe primitives.
+        """
+        def _sanitize(obj):
+            """Recursively coerce non-JSON-serialisable values to primitives."""
+            if obj is None or isinstance(obj, (bool, str)):
+                return obj
+            if isinstance(obj, float):
+                return float(obj)
+            if isinstance(obj, int):
+                return int(obj)
+            if isinstance(obj, dict):
+                return {str(k): _sanitize(v) for k, v in obj.items()}
+            if isinstance(obj, (list, tuple)):
+                return [_sanitize(i) for i in obj]
+            try:
+                from dataclasses import asdict, fields
+                fields(obj)
+                return _sanitize(asdict(obj))
+            except TypeError:
+                pass
+            try:
+                return _sanitize(obj._asdict())
+            except AttributeError:
+                pass
+            return str(obj)
+
+        return {
+            "format": "3psLCCAFile",
+            "version": "1.0",
+            "exported_at": datetime.datetime.now().isoformat(),
+            "inputs": _sanitize(all_data),
+            "computed": _sanitize(lcc_breakdown),
+            "results": _sanitize(results),
+        }

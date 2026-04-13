@@ -33,10 +33,10 @@ MAINTENANCE_FIELDS = [
     FieldDef(
         "routine_inspection_cost",
         "Routine Inspection Cost",
-        "Annual cost of routine inspection expressed as a percentage of the initial construction cost. For example, if the initial cost is 100 and the rate is 0.5%, then the inspection cost will be 0.5 per year.",
+        "Cost incurred for routine inspection expressed as percentage of initial construction cost",
         "float",
         options=(0.0, 100.0, 2),
-        unit="% of initial cost per year",
+        unit="% of initial construction cost",
         required=True,
         default=0.0,
         warn=(0.01, 100.0, "Routine Inspection Cost is 0 - cost will not be included"),
@@ -61,10 +61,10 @@ MAINTENANCE_FIELDS = [
     FieldDef(
         "periodic_maintenance_cost",
         "Periodic Maintenance Cost",
-        "Annual cost of periodic maintenance expressed as a percentage of the initial construction cost. For example, if the initial cost is 100 and the rate is 0.01%, then the maintenance cost will be 0.01 per year.",
+        "Cost incurred for periodic maintenance  expressed as percentage of initial construction cost",
         "float",
         options=(0.0, 100.0, 1),
-        unit="% of initial cost per year",
+        unit="% of initial construction cost",
         required=True,
         default=0.0,
         warn=(
