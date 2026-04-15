@@ -11,6 +11,7 @@ from gui.theme import (
     FS_XS, FS_SM, FS_BASE, FS_MD, FS_LG, FS_XL,
     FW_NORMAL, FW_MEDIUM, FW_SEMIBOLD, FW_BOLD,
 )
+from gui.components.utils.display_format import fmt_currency, DECIMAL_PLACES
 from .plots_helper.Pie import COLORS
 from .helper_functions.lcc_colors import COLORS as LCC_PALETTE
 from .lcc_data import (
@@ -172,7 +173,7 @@ class LCCDetailsTable(QWidget):
             return it
 
         def _val(v, bold_font=None, bg: QColor = None):
-            text = f"{v:.4f}"
+            text = fmt_currency(v, currency, decimals=DECIMAL_PLACES)
             return _item(text, Qt.AlignRight | Qt.AlignVCenter, bold_font,
                          green=(v < 0), bg=bg)
 
@@ -508,7 +509,7 @@ class LCCBreakdownTable(QWidget):
                 if x_bar <= pos.x() < x_val:
                     QToolTip.showText(
                         event.globalPos(),
-                        f"{value:,.2f} {self._currency}",
+                        f"{fmt_currency(value, self._currency, decimals=2)} {self._currency}",
                         self,
                     )
                     return True
@@ -517,7 +518,7 @@ class LCCBreakdownTable(QWidget):
                 if x_val <= pos.x() < W:
                     QToolTip.showText(
                         event.globalPos(),
-                        f"{value:,.4f} {self._currency}",
+                        f"{fmt_currency(value, self._currency, decimals=4)} {self._currency}",
                         self,
                     )
                     return True
@@ -707,10 +708,11 @@ class LCCBreakdownTable(QWidget):
             # Value — semibold dark text
             p.setFont(QFont(FONT_FAMILY, FS_BASE, FW_SEMIBOLD))
             p.setPen(color_success if value < 0 else QColor("#1a1a1a"))
+            val_text = fmt_currency(value, self._currency, decimals=2)
             p.drawText(
                 QRect(x_val + self._PAD_X, ry, val_w - self._PAD_X * 2, rh),
                 Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter,
-                f"{value:,.2f}",
+                val_text,
             )
             p.setFont(row_font)
 
@@ -851,12 +853,12 @@ class LCCChartWidget(QWidget):
             if bar.contains(event)[0]:
                 x = bar.get_x() + bar.get_width() / 2
                 self._annot.xy = (x, val)
-                inr = val * 1_000_000
+                inr_val = val * 1_000_000
                 sign = "−" if val < 0 else ""
                 self._annot.set_text(
                     f"{label}\n"
-                    f"{self._currency} {sign}{abs(inr):,.0f}\n"
-                    f"({sign}{abs(val):.4f} M {self._currency})"
+                    f"{self._currency} {sign}{fmt_currency(abs(inr_val), self._currency, decimals=0)}\n"
+                    f"({sign}{fmt_currency(abs(val), self._currency, decimals=4)} Million {self._currency})"
                 )
                 self._set_annot_visible(True)
                 return
