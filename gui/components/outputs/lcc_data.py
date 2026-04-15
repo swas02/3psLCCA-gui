@@ -6,7 +6,7 @@ No Qt or matplotlib imports - safe to use from any context.
 """
 
 from .plots_helper.Pie import COLORS
-
+from .helper_functions.breakdown_stages import BREAKDOWN_STAGES
 
 # ---------------------------------------------------------------------------
 # Utility helpers
@@ -215,101 +215,3 @@ def stage_totals(results: dict, result_key: str, cat_keys: dict) -> dict:
 
 # Derived from COLORS["pillars"] - lowercased keys for category row colouring
 CATEGORY_COLORS = {k.lower(): v for k, v in COLORS["pillars"].items()}
-
-
-# ---------------------------------------------------------------------------
-# Breakdown table data  (_BREAKDOWN_STAGES)
-# ---------------------------------------------------------------------------
-
-BREAKDOWN_STAGES = [
-    {
-        "label": "Initial Stage\nCosts",
-        "stage_color": COLORS["stages"]["Initial"],
-        "result_key": "initial_stage",
-        "optional": False,
-        "rows": [
-            ("economic",     "initial_construction_cost",
-             "Initial construction costs"),
-            ("environmental","initial_material_carbon_emission_cost",
-             "Initial carbon emissions (material)"),
-            ("environmental","initial_vehicular_emission_cost",
-             "Carbon emissions due to rerouting during initial construction (vehicles)"),
-            ("economic",     "time_cost_of_loan",
-             "Time costs"),
-            ("social",       "initial_road_user_cost",
-             "Road user costs during initial construction"),
-        ],
-    },
-    {
-        "label": "Use Stage\nCosts",
-        "stage_color": COLORS["stages"]["Use"],
-        "result_key": "use_stage",
-        "optional": False,
-        "rows": [
-            ("economic",     "routine_inspection_costs",
-             "Routine inspection costs"),
-            ("economic",     "periodic_maintenance",
-             "Periodic maintenance costs"),
-            ("environmental","periodic_carbon_costs",
-             "Periodic maintenance carbon emissions (material)"),
-            ("economic",     "major_inspection_costs",
-             "Major inspection costs"),
-            ("economic",     "major_repair_cost",
-             "Major repair costs"),
-            ("environmental","major_repair_material_carbon_emission_costs",
-             "Major repair related carbon emissions (materials)"),
-            ("environmental","major_repair_vehicular_emission_costs",
-             "Carbon emissions due to rerouting during major repairs (vehicles)"),
-            ("social",       "major_repair_road_user_costs",
-             "Road user costs during major repairs"),
-            ("economic",     "replacement_costs_for_bearing_and_expansion_joint",
-             "Replacement cost of bearing and expansion joint"),
-            ("social",       "road_user_costs_for_replacement_of_bearing_and_expansion_joint",
-             "Road user costs during replacement"),
-            ("environmental","vehicular_emission_costs_for_replacement_of_bearing_and_expansion_joint",
-             "Carbon emissions due to rerouting during replacement (vehicles)"),
-        ],
-    },
-    {
-        "label": "Reconstruction\nStage",
-        "stage_color": COLORS["stages"]["Reconstruction"],
-        "result_key": "reconstruction",
-        "optional": True,
-        "rows": [
-            ("economic",     "cost_of_reconstruction_after_demolition",
-             "Cost of reconstruction after demolition"),
-            ("environmental","carbon_cost_of_reconstruction_after_demolition",
-             "Carbon cost of reconstruction after demolition"),
-            ("economic",     "time_cost_of_loan",
-             "Time costs"),
-            ("economic",     "total_demolition_and_disposal_costs",
-             "Demolition and disposal costs"),
-            ("environmental","carbon_costs_demolition_and_disposal",
-             "Carbon emissions from demolition and disposal (materials)"),
-            ("environmental","demolition_vehicular_emission_cost",
-             "Carbon emissions due to rerouting during demolition (vehicles)"),
-            ("environmental","reconstruction_vehicular_emission_cost",
-             "Carbon emissions due to rerouting during reconstruction (vehicles)"),
-            ("social",       "ruc_demolition",
-             "Road user costs during demolition"),
-            ("social",       "ruc_reconstruction",
-             "Road user costs during reconstruction"),
-        ],
-    },
-    {
-        "label": "End-of-Life\nStage",
-        "stage_color": COLORS["stages"]["End-of-Life"],
-        "result_key": "end_of_life",
-        "optional": False,
-        "rows": [
-            ("economic",     "total_demolition_and_disposal_costs",
-             "Demolition and disposal costs of existing bridge"),
-            ("environmental","carbon_costs_demolition_and_disposal",
-             "Demolition and disposal related carbon emissions (materials) of existing bridge"),
-            ("environmental","demolition_vehicular_emission_cost",
-             "Carbon emissions due to rerouting during demolition (vehicles)"),
-            ("social",       "ruc_demolition",
-             "Road user costs during demolition and disposal of existing bridge"),
-        ],
-    },
-]

@@ -296,7 +296,8 @@ class LCCBreakdownTable(QWidget):
 
     _STAGE_W   = 64    # fixed — stage column never resizes
     _PAD_X     = 6
-    _PAD_TOP   = 24
+    _LEGEND_H  = 28    # height reserved for legend at top
+    _PAD_TOP   = 32    # legend (28) + 4px gap before header
     _MIN_ROW_H = 32
     _DRAG_HIT  = 5     # px tolerance for divider hit-test
 
@@ -318,9 +319,14 @@ class LCCBreakdownTable(QWidget):
         "reconstruction":  LCC_PALETTE.get("recon_color", "#B0BEC5"),
     }
 
-    def __init__(self, results: dict, currency: str = "INR", parent=None):
+    def __init__(self, results: dict, currency: str = "INR",
+                 stage_labels: dict | None = None,
+                 row_labels: dict | None = None,
+                 parent=None):
         super().__init__(parent)
         self._currency = currency
+        self._stage_labels = stage_labels or {}  # result_key → custom stage name
+        self._row_labels   = row_labels   or {}  # cost key   → custom row label
         self._rows = []          # list of (pillar, label, value)
         self._stage_blocks = []  # list of [label, color_hex, start, end, sy, sh]
         self._row_layouts = []   # list of (y, h) per row
@@ -339,7 +345,6 @@ class LCCBreakdownTable(QWidget):
         self._drag_start_bar  = 0.0
 
         self._build(results)
-        self.setMinimumWidth(600)
         self.setMouseTracking(True)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.MinimumExpanding)
         theme_manager().theme_changed.connect(self.update)
@@ -348,33 +353,61 @@ class LCCBreakdownTable(QWidget):
 
     def _build(self, results: dict):
         row_idx = 0
+        _pillar_order = {"economic": 0, "environmental": 1, "social": 2}
+        _use_block_idx = None  # index in _stage_blocks for use_stage
+
         for stage_def in BREAKDOWN_STAGES:
-            stage_data = results.get(stage_def["result_key"], {})
+            result_key = stage_def["result_key"]
+            stage_data = results.get(result_key, {})
+
             if stage_def.get("optional") and not isinstance(stage_data.get("economic"), dict):
                 continue
+
             stage_rows = [
-                (cat, label, float(stage_data.get(cat, {}).get(key, 0.0)))
+                (cat, self._row_labels.get(key, label),
+                 float(stage_data.get(cat, {}).get(key, 0.0)))
                 for cat, key, label in stage_def["rows"]
                 if stage_data.get(cat, {}).get(key) is not None
             ]
             if not stage_rows:
                 continue
-            start = row_idx
-            for cat, label, value in stage_rows:
-                self._rows.append((cat, label, value))
+            if stage_def.get("optional") and all(v == 0.0 for _, _, v in stage_rows):
+                continue
+
+            stage_rows.sort(key=lambda r: _pillar_order.get(r[0], 9))
+            stage_color = self._STAGE_COLORS.get(result_key, stage_def["stage_color"])
+
+            if result_key == "reconstruction":
+                # Fold into use_stage block as a sub-section
+                use_color = self._STAGE_COLORS.get("use_stage", stage_color)
+                self._rows.append(("_subheader", "Reconstruction", 0.0, use_color))
                 row_idx += 1
-            stage_color = self._STAGE_COLORS.get(
-                stage_def["result_key"], stage_def["stage_color"]
-            )
-            self._stage_blocks.append([
-                stage_def["label"].replace("\n", " "),
-                stage_color,
-                start,
-                row_idx - 1,
-                0, 0,  # sy, sh — filled by _calculate_layout
-            ])
+                for cat, label, value in stage_rows:
+                    self._rows.append((cat, label, value, use_color))
+                    row_idx += 1
+                if _use_block_idx is not None:
+                    self._stage_blocks[_use_block_idx][3] = row_idx - 1
+            else:
+                start = row_idx
+                for cat, label, value in stage_rows:
+                    self._rows.append((cat, label, value, stage_color))
+                    row_idx += 1
+                block_idx = len(self._stage_blocks)
+                self._stage_blocks.append([
+                    self._stage_labels.get(result_key,
+                                           stage_def["label"].replace("\n", " ")),
+                    stage_color,
+                    start,
+                    row_idx - 1,
+                    0, 0,  # sy, sh — filled by _calculate_layout
+                ])
+                if result_key == "use_stage":
+                    _use_block_idx = block_idx
+
         if self._rows:
-            self._max_val = max(abs(r[2]) for r in self._rows) or 1.0
+            self._max_val = max(
+                abs(r[2]) for r in self._rows if r[0] != "_subheader"
+            ) or 1.0
 
     # ── layout ────────────────────────────────────────────────────────────────
 
@@ -400,14 +433,17 @@ class LCCBreakdownTable(QWidget):
         curr_y = self._PAD_TOP + self._MIN_ROW_H  # header height
         self._row_layouts = []
 
-        for _, label, _ in self._rows:
-            text_rect = fm.boundingRect(0, 0, item_w, 2000,
-                                        Qt.TextWordWrap | Qt.AlignLeft, label)
-            h = max(self._MIN_ROW_H, text_rect.height() + 10)
+        for cat, label, *_ in self._rows:
+            if cat == "_subheader":
+                h = 22
+            else:
+                text_rect = fm.boundingRect(0, 0, item_w, 2000,
+                                            Qt.TextWordWrap | Qt.AlignLeft, label)
+                h = max(self._MIN_ROW_H, text_rect.height() + 10)
             self._row_layouts.append((curr_y, h))
             curr_y += h
 
-        self._total_content_h = curr_y + 32  # legend padding
+        self._total_content_h = curr_y + 8
         self.setFixedHeight(self._total_content_h)
 
         for block in self._stage_blocks:
@@ -432,7 +468,9 @@ class LCCBreakdownTable(QWidget):
             for idx, (y, h) in enumerate(self._row_layouts):
                 if not (y <= pos.y() < y + h):
                     continue
-                cat, label, value = self._rows[idx]
+                cat, label, value, _stage_color = self._rows[idx]
+                if cat == "_subheader":
+                    continue
 
                 # Cost Item column → show full label
                 if self._STAGE_W <= pos.x() < x_bar:
@@ -444,6 +482,15 @@ class LCCBreakdownTable(QWidget):
                     if tip:
                         QToolTip.showText(event.globalPos(), tip, self)
                         return True
+
+                # Relative Cost bar column → show value
+                if x_bar <= pos.x() < x_val:
+                    QToolTip.showText(
+                        event.globalPos(),
+                        f"{value:,.2f} {self._currency}",
+                        self,
+                    )
+                    return True
 
                 # Value column → show formatted value with full precision
                 if x_val <= pos.x() < W:
@@ -544,12 +591,25 @@ class LCCBreakdownTable(QWidget):
         W = self.width()
         x_bar, x_val, val_w = self._col_x(W)
         item_w = x_bar - self._STAGE_W
-        bar_w_max = x_val - x_bar - self._PAD_X * 2
+        _bar_pad  = 3
+        bar_w_max = x_val - x_bar - _bar_pad * 2
+
+        # ── legend (top) ──────────────────────────────────────────────────────
+        legend_y = (self._LEGEND_H - 16) // 2   # vertically center in legend band
+        lx = self._STAGE_W + self._PAD_X
+        p.setFont(QFont(FONT_FAMILY, FS_BASE, FW_NORMAL))
+        for pillar, color in pillar_colors.items():
+            p.fillRect(lx, legend_y, 16, 16, QColor(color))
+            p.setPen(color_text)
+            p.drawText(lx + 20, legend_y - 1, 120, 18,
+                       Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+                       pillar.capitalize())
+            lx += 130
 
         # ── header ────────────────────────────────────────────────────────────
         hdr_y = self._PAD_TOP
         p.fillRect(0, hdr_y, W, self._MIN_ROW_H, color_header_bg)
-        p.setFont(QFont(FONT_FAMILY, FS_MD, FW_BOLD))
+        p.setFont(QFont(FONT_FAMILY, FS_BASE, FW_SEMIBOLD))
         p.setPen(color_text)
         p.drawText(QRect(0, hdr_y, self._STAGE_W, self._MIN_ROW_H),
                    Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter, "Stage")
@@ -567,55 +627,89 @@ class LCCBreakdownTable(QWidget):
         # ── data rows ─────────────────────────────────────────────────────────
         row_font = QFont(FONT_FAMILY, FS_BASE, FW_NORMAL)
 
-        for idx, (cat, label, value) in enumerate(self._rows):
+        for idx, (cat, label, value, stage_color_hex) in enumerate(self._rows):
             ry, rh = self._row_layouts[idx]
+
+            # ── sub-header (Reconstruction label band) ────────────────────────
+            if cat == "_subheader":
+                sc = QColor(stage_color_hex)
+                band = QColor(
+                    min(255, sc.red()   * 40 // 100 + 153),
+                    min(255, sc.green() * 40 // 100 + 153),
+                    min(255, sc.blue()  * 40 // 100 + 153),
+                )
+                p.fillRect(self._STAGE_W, ry, W - self._STAGE_W, rh, band)
+                p.setFont(QFont(FONT_FAMILY, FS_BASE, FW_SEMIBOLD))
+                p.setPen(QColor("#1a1a1a"))
+                p.drawText(
+                    QRect(self._STAGE_W + self._PAD_X, ry,
+                          W - self._STAGE_W - self._PAD_X * 2, rh),
+                    Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+                    label,
+                )
+                continue
+
             pillar_color = pillar_colors.get(cat, QColor("#888888"))
 
-            # Cost Item — pillar tint background
-            tint = QColor(pillar_color)
-            tint.setAlpha(30)
-            p.fillRect(self._STAGE_W, ry, item_w, rh, tint)
+            # Cost Item + Relative Cost — same light shade across both columns
+            tint = QColor(
+                min(255, pillar_color.red()   * 25 // 100 + 191),
+                min(255, pillar_color.green() * 25 // 100 + 191),
+                min(255, pillar_color.blue()  * 25 // 100 + 191),
+            )
+            p.fillRect(self._STAGE_W, ry, x_val - self._STAGE_W, rh, tint)
 
-            # Cost Item label (word-wrap)
+            # Cost Item label (word-wrap) — dark text, bg is always light
             p.setFont(row_font)
-            p.setPen(color_text)
+            p.setPen(QColor("#1a1a1a"))
             p.drawText(
                 QRect(self._STAGE_W + self._PAD_X, ry,
                       item_w - self._PAD_X * 2, rh),
                 Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter | Qt.TextWordWrap,
                 label,
             )
+            p.setPen(color_text)
 
-            # Relative Cost bar
+            # Relative Cost bar — same color as Cost Item column bg (full opacity)
             filled = int((abs(value) / self._max_val) * bar_w_max)
+            if value != 0:
+                filled = max(filled, 1)
             bar_color = QColor(pillar_color)
-            bar_color.setAlpha(200)
-            bar_h = 14
-            p.fillRect(x_bar + self._PAD_X, ry + (rh - bar_h) // 2,
+            bar_h = rh - _bar_pad * 2
+            p.fillRect(x_bar + _bar_pad, ry + _bar_pad,
                        filled, bar_h, bar_color)
 
-            # Value
-            p.setPen(color_success if value < 0 else color_text)
+            # Value — same tint background, semibold dark text
+            p.fillRect(x_val, ry, val_w, rh, tint)
+            p.setFont(QFont(FONT_FAMILY, FS_BASE, FW_SEMIBOLD))
+            p.setPen(color_success if value < 0 else QColor("#1a1a1a"))
             p.drawText(
                 QRect(x_val + self._PAD_X, ry, val_w - self._PAD_X * 2, rh),
                 Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter,
                 f"{value:,.2f}",
             )
+            p.setFont(row_font)
 
         # ── stage blocks ──────────────────────────────────────────────────────
-        p.setFont(QFont(FONT_FAMILY, FS_BASE, FW_BOLD))
+        p.setFont(QFont(FONT_FAMILY, FS_MD, FW_NORMAL))
         for stage_label, stage_color_hex, _, _, sy, sh in self._stage_blocks:
-            p.fillRect(0, sy, self._STAGE_W, sh, QColor(stage_color_hex))
+            sc = QColor(stage_color_hex)
+            stage_tint = QColor(
+                min(255, sc.red()   * 25 // 100 + 191),
+                min(255, sc.green() * 25 // 100 + 191),
+                min(255, sc.blue()  * 25 // 100 + 191),
+            )
+            p.fillRect(0, sy, self._STAGE_W, sh, stage_tint)
             p.save()
             p.translate(self._STAGE_W / 2, sy + sh / 2)
             p.rotate(-90)
-            p.setPen(color_text)
+            p.setPen(QColor("#1a1a1a"))
             p.drawText(QRect(-sh // 2, -self._STAGE_W // 2, sh, self._STAGE_W),
                        Qt.AlignmentFlag.AlignCenter, stage_label)
             p.restore()
 
         # ── grid lines ────────────────────────────────────────────────────────
-        total_h = self._total_content_h - 32
+        total_h = self._total_content_h - 8
         grid_col = QColor(color_grid)
         grid_col.setAlpha(120)
         p.setPen(QPen(grid_col, 1))
@@ -625,7 +719,15 @@ class LCCBreakdownTable(QWidget):
         grid_row.setAlpha(60)
         p.setPen(QPen(grid_row, 1))
         for _, (ry, rh) in enumerate(self._row_layouts):
-            p.drawLine(0, ry + rh, W, ry + rh)
+            p.drawLine(self._STAGE_W, ry + rh, W, ry + rh)
+
+        # ── strong stage dividers ─────────────────────────────────────────────
+        stage_border = QColor(get_token("text_secondary"))
+        stage_border.setAlpha(180)
+        p.setPen(QPen(stage_border, 2))
+        for _, _, _, _, sy, sh in self._stage_blocks:
+            bottom_y = sy + sh
+            p.drawLine(0, bottom_y, W, bottom_y)
 
         # ── divider drag handles (visible hint in header) ─────────────────────
         handle_color = QColor(get_token("text_secondary"))
@@ -634,31 +736,30 @@ class LCCBreakdownTable(QWidget):
         for x in (x_bar, x_val):
             p.drawLine(x, hdr_y + 6, x, hdr_y + self._MIN_ROW_H - 6)
 
-        # ── legend ────────────────────────────────────────────────────────────
-        legend_y = self._total_content_h - 24
-        lx = self._STAGE_W + self._PAD_X
-        p.setFont(QFont(FONT_FAMILY, FS_SM, FW_NORMAL))
-        for pillar, color in pillar_colors.items():
-            c = QColor(color)
-            c.setAlpha(210)
-            p.fillRect(lx, legend_y + 3, 12, 10, c)
-            p.setPen(color_text)
-            p.drawText(lx + 16, legend_y, 110, 16,
-                       Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
-                       pillar.capitalize())
-            lx += 110
+        # ── outer border ──────────────────────────────────────────────────────
+        border_color = QColor(get_token("surface_mid"))
+        border_color.setAlpha(200)
+        p.setPen(QPen(border_color, 1))
+        p.setBrush(Qt.BrushStyle.NoBrush)
+        p.drawRect(0, self._PAD_TOP, W - 1, total_h - self._PAD_TOP)
 
         p.end()
 
     @classmethod
-    def in_scroll(cls, results: dict, currency: str = "INR", parent=None) -> QScrollArea:
-        chart = cls(results, currency)
+    def in_scroll(cls, results: dict, currency: str = "INR",
+                  stage_labels: dict | None = None,
+                  row_labels: dict | None = None,
+                  parent=None) -> QScrollArea:
+        chart = cls(results, currency, stage_labels=stage_labels, row_labels=row_labels)
         scroll = QScrollArea(parent)
         scroll.setFrameShape(QFrame.NoFrame)
         scroll.setWidgetResizable(True)
         scroll.setWidget(chart)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        # Don't let the inner scroll area force the outer page wider
+        scroll.setMinimumWidth(0)
+        scroll.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         return scroll
 
 
