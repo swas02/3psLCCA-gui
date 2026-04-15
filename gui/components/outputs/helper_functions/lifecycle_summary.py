@@ -1,65 +1,65 @@
 # lifecycle_summary.py
 
-sample_input = {
-    "initial_stage": {
-        "economic": {
-            "initial_construction_cost": 13510517.107590165,
-            "time_cost_of_loan": 226864.09976495153,
-        },
-        "environmental": {
-            "initial_material_carbon_emission_cost": 362252.33909257106,
-            "initial_vehicular_emission_cost": 7687.78,
-        },
-        "social": {"initial_road_user_cost": 133646.6},
-    },
-    "use_stage": {
-        "economic": {
-            "routine_inspection_costs": 691806.0284941545,
-            "periodic_maintenance": 769450.9703114751,
-            "major_inspection_costs": 641209.1419262293,
-            "major_repair_cost": 557984.3565434739,
-            "replacement_costs_for_bearing_and_expansion_joint": 1391899.311934074,
-        },
-        "environmental": {
-            "periodic_carbon_costs": 18911.74561466677,
-            "major_repair_material_carbon_emission_costs": 822.8561882487752,
-            "major_repair_vehicular_emission_costs": 1831.76,
-            "vehicular_emission_costs_for_replacement_of_bearing_and_expansion_joint": 115.02,
-        },
-        "social": {
-            "major_repair_road_user_costs": 31843.87,
-            "road_user_costs_for_replacement_of_bearing_and_expansion_joint": 1999.56,
-        },
-    },
-    "reconstruction": {
-        "economic": {
-            "total_demolition_and_disposal_costs": 447198.11626123457,
-            "cost_of_reconstruction_after_demolition": 4471981.162612345,
-            "total_scrap_value": 0.0,
-            "time_cost_of_loan": 75092.01702219897,
-        },
-        "environmental": {
-            "carbon_costs_demolition_and_disposal": 11990.552423964102,
-            "carbon_cost_of_reconstruction_after_demolition": 119905.52423964103,
-            "demolition_vehicular_emission_cost": 489.36,
-            "reconstruction_vehicular_emission_cost": 2544.66,
-        },
-        "social": {"ruc_demolition": 8507.12, "ruc_reconstruction": 44237.03},
-    },
-    "end_of_life": {
-        "economic": {
-            "total_demolition_and_disposal_costs": 312092.94518533285,
-            "total_scrap_value": 0.0,
-        },
-        "environmental": {
-            "carbon_costs_demolition_and_disposal": 8368.029033038392,
-            "demolition_vehicular_emission_cost": 341.51,
-        },
-        "social": {"ruc_demolition": 5936.99},
-    },
-    "warnings": [],
-    "notes": [],
-}
+# sample_input = {
+#     "initial_stage": {
+#         "economic": {
+#             "initial_construction_cost": 13510517.107590165,
+#             "time_cost_of_loan": 226864.09976495153,
+#         },
+#         "environmental": {
+#             "initial_material_carbon_emission_cost": 362252.33909257106,
+#             "initial_vehicular_emission_cost": 7687.78,
+#         },
+#         "social": {"initial_road_user_cost": 133646.6},
+#     },
+#     "use_stage": {
+#         "economic": {
+#             "routine_inspection_costs": 691806.0284941545,
+#             "periodic_maintenance": 769450.9703114751,
+#             "major_inspection_costs": 641209.1419262293,
+#             "major_repair_cost": 557984.3565434739,
+#             "replacement_costs_for_bearing_and_expansion_joint": 1391899.311934074,
+#         },
+#         "environmental": {
+#             "periodic_carbon_costs": 18911.74561466677,
+#             "major_repair_material_carbon_emission_costs": 822.8561882487752,
+#             "major_repair_vehicular_emission_costs": 1831.76,
+#             "vehicular_emission_costs_for_replacement_of_bearing_and_expansion_joint": 115.02,
+#         },
+#         "social": {
+#             "major_repair_road_user_costs": 31843.87,
+#             "road_user_costs_for_replacement_of_bearing_and_expansion_joint": 1999.56,
+#         },
+#     },
+#     "reconstruction": {
+#         "economic": {
+#             "total_demolition_and_disposal_costs": 447198.11626123457,
+#             "cost_of_reconstruction_after_demolition": 4471981.162612345,
+#             "total_scrap_value": 0.0,
+#             "time_cost_of_loan": 75092.01702219897,
+#         },
+#         "environmental": {
+#             "carbon_costs_demolition_and_disposal": 11990.552423964102,
+#             "carbon_cost_of_reconstruction_after_demolition": 119905.52423964103,
+#             "demolition_vehicular_emission_cost": 489.36,
+#             "reconstruction_vehicular_emission_cost": 2544.66,
+#         },
+#         "social": {"ruc_demolition": 8507.12, "ruc_reconstruction": 44237.03},
+#     },
+#     "end_of_life": {
+#         "economic": {
+#             "total_demolition_and_disposal_costs": 312092.94518533285,
+#             "total_scrap_value": 0.0,
+#         },
+#         "environmental": {
+#             "carbon_costs_demolition_and_disposal": 8368.029033038392,
+#             "demolition_vehicular_emission_cost": 341.51,
+#         },
+#         "social": {"ruc_demolition": 5936.99},
+#     },
+#     "warnings": [],
+#     "notes": [],
+# }
 
 
 def _sum_dict(d):
@@ -182,4 +182,4 @@ def compute_all_summaries(data):
 
 
 
-print(compute_all_summaries(sample_input))
+# print(compute_all_summaries(sample_input))

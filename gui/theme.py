@@ -61,9 +61,11 @@ FS_XS   =  7   # badge pill, tertiary hint
 FS_SM   =  8   # caption, overline label, sort buttons
 FS_BASE =  9   # body text, standard buttons
 FS_MD   = 10   # sidebar row name, banner label
-FS_LG   = 11   # grid card title
-FS_XL   = 15   # logo / brand mark
-FS_DISP = 18   # greeting display heading
+FS_LG    = 11   # grid card title
+FS_XL    = 15   # logo / brand mark
+FS_DISP  = 18   # greeting display heading
+FS_DISP_LG = 22 # prominent card values
+FS_DISP_XL = 32 # extra large dashboard highlights
 
 # Font weights (match QFont.Weight int values)
 # Toned down for subtler hierarchy:

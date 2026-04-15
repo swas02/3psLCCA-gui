@@ -77,6 +77,8 @@ class LCCDetailsTable(QWidget):
         table.setAlternatingRowColors(False)
         table.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         table.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        table.setShowGrid(False)
+        table.setFrameShape(QFrame.NoFrame)
 
         # change - map result_key → stage name for color lookups
         _result_key_to_stage = {
@@ -108,16 +110,17 @@ class LCCDetailsTable(QWidget):
                     painter.fillRect(rect, QColor(_header_colors[logical_index]))
                 else:
                     painter.fillRect(rect, self.palette().button().color())
-                # Draw border
-                painter.setPen(QColor(get_token("surface_mid")))
-                painter.drawRect(rect.adjusted(0, 0, -1, -1))
-        # Draw text bold
+                # Draw text bold
                 bold_font = QFont(FONT_FAMILY, FS_SM, FW_BOLD)
                 painter.setFont(bold_font)
                 # Use dark text for colored headers as backgrounds are light
                 painter.setPen(QColor("#000000"))
-                painter.drawText(rect.adjusted(4, 0, -4, 0),
-                                 Qt.AlignCenter | Qt.TextWordWrap,
+                align = Qt.AlignLeft | Qt.AlignVCenter | Qt.TextWordWrap
+                if logical_index == 3:  # 4th column (Social)
+                    align = Qt.AlignRight | Qt.AlignVCenter | Qt.TextWordWrap
+
+                painter.drawText(rect.adjusted(6, 0, -6, 0),
+                                 align,
                                  self.model().headerData(logical_index, Qt.Horizontal) or "")
                 painter.restore()
 
@@ -133,9 +136,23 @@ class LCCDetailsTable(QWidget):
         for col in range(1, 5):
             table.horizontalHeader().setSectionResizeMode(col, QHeaderView.Stretch)
 
-        table.setStyleSheet(f"QTableWidget {{ gridline-color: {get_token('surface_mid')}; font-family: {FONT_FAMILY}; font-size: {FS_BASE}px; }}")
+        table.setStyleSheet(f"""
+            QTableWidget {{ 
+                border: none; 
+                gridline-color: transparent; 
+                font-family: {FONT_FAMILY}; 
+                font-size: {FS_BASE}pt; 
+            }}
+            QHeaderView::section {{ 
+                border: none; 
+            }}
+            QTableWidget::item {{ 
+                border: none; 
+            }}
+        """)
 
         bold = QFont(FONT_FAMILY, FS_BASE, FW_BOLD)
+        bold.setPointSizeF(FS_BASE) # Ensure pt is used
 
         from PySide6.QtGui import QBrush
 
@@ -348,6 +365,10 @@ class LCCBreakdownTable(QWidget):
         self.setMouseTracking(True)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.MinimumExpanding)
         theme_manager().theme_changed.connect(self.update)
+
+    def minimumSizeHint(self) -> QSize:
+        """Allow the widget to shrink horizontally below its painted width."""
+        return QSize(100, 400)
 
     # ── data ──────────────────────────────────────────────────────────────────
 
@@ -578,12 +599,13 @@ class LCCBreakdownTable(QWidget):
             self._calculate_layout()
 
         p = QPainter(self)
-        p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        p.setRenderHint(QPainter.RenderHint.TextAntialiasing)
+        # Fill whole background to avoid gaps between rows
+        p.fillRect(self.rect(), QColor(get_token("window")))
+        p.setRenderHint(QPainter.RenderHint.Antialiasing, False)
+        p.setRenderHint(QPainter.RenderHint.TextAntialiasing, True)
 
         color_text      = QColor(get_token("text"))
         color_header_bg = QColor(get_token("surface_mid"))
-        color_grid      = QColor(get_token("surface_mid"))
         color_success   = QColor(get_token("success"))
 
         pillar_colors = {k: QColor(v) for k, v in self._PILLAR_COLORS.items()}
@@ -597,6 +619,8 @@ class LCCBreakdownTable(QWidget):
         # ── legend (top) ──────────────────────────────────────────────────────
         legend_y = (self._LEGEND_H - 16) // 2   # vertically center in legend band
         lx = self._STAGE_W + self._PAD_X
+        p.save()
+        p.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         p.setFont(QFont(FONT_FAMILY, FS_BASE, FW_NORMAL))
         for pillar, color in pillar_colors.items():
             p.fillRect(lx, legend_y, 16, 16, QColor(color))
@@ -605,23 +629,24 @@ class LCCBreakdownTable(QWidget):
                        Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
                        pillar.capitalize())
             lx += 130
+        p.restore()
 
         # ── header ────────────────────────────────────────────────────────────
         hdr_y = self._PAD_TOP
         p.fillRect(0, hdr_y, W, self._MIN_ROW_H, color_header_bg)
         p.setFont(QFont(FONT_FAMILY, FS_BASE, FW_SEMIBOLD))
         p.setPen(color_text)
-        p.drawText(QRect(0, hdr_y, self._STAGE_W, self._MIN_ROW_H),
-                   Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter, "Stage")
+        p.drawText(QRect(self._PAD_X, hdr_y, self._STAGE_W - self._PAD_X * 2, self._MIN_ROW_H),
+                   Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, "Stage")
         p.drawText(QRect(self._STAGE_W + self._PAD_X, hdr_y,
                          item_w - self._PAD_X * 2, self._MIN_ROW_H),
                    Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, "Cost Item")
         p.drawText(QRect(x_bar + self._PAD_X, hdr_y,
                          x_val - x_bar - self._PAD_X * 2, self._MIN_ROW_H),
-                   Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter, "Relative Cost")
+                   Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, "Relative Cost")
         p.drawText(QRect(x_val + self._PAD_X, hdr_y,
-                         val_w - self._PAD_X, self._MIN_ROW_H),
-                   Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+                         val_w - self._PAD_X * 2, self._MIN_ROW_H),
+                   Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter,
                    f"Value ({self._currency})")
 
         # ── data rows ─────────────────────────────────────────────────────────
@@ -651,13 +676,14 @@ class LCCBreakdownTable(QWidget):
 
             pillar_color = pillar_colors.get(cat, QColor("#888888"))
 
-            # Cost Item + Relative Cost — same light shade across both columns
+            # Row background — same light shade across Cost Item, Bar, and Value columns
+            # Merged into one fill to avoid vertical gaps at x_bar/x_val
             tint = QColor(
                 min(255, pillar_color.red()   * 25 // 100 + 191),
                 min(255, pillar_color.green() * 25 // 100 + 191),
                 min(255, pillar_color.blue()  * 25 // 100 + 191),
             )
-            p.fillRect(self._STAGE_W, ry, x_val - self._STAGE_W, rh, tint)
+            p.fillRect(self._STAGE_W, ry, W - self._STAGE_W, rh, tint)
 
             # Cost Item label (word-wrap) — dark text, bg is always light
             p.setFont(row_font)
@@ -668,9 +694,8 @@ class LCCBreakdownTable(QWidget):
                 Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter | Qt.TextWordWrap,
                 label,
             )
-            p.setPen(color_text)
 
-            # Relative Cost bar — same color as Cost Item column bg (full opacity)
+            # Relative Cost bar — same color as Pillar (full opacity)
             filled = int((abs(value) / self._max_val) * bar_w_max)
             if value != 0:
                 filled = max(filled, 1)
@@ -679,8 +704,7 @@ class LCCBreakdownTable(QWidget):
             p.fillRect(x_bar + _bar_pad, ry + _bar_pad,
                        filled, bar_h, bar_color)
 
-            # Value — same tint background, semibold dark text
-            p.fillRect(x_val, ry, val_w, rh, tint)
+            # Value — semibold dark text
             p.setFont(QFont(FONT_FAMILY, FS_BASE, FW_SEMIBOLD))
             p.setPen(color_success if value < 0 else QColor("#1a1a1a"))
             p.drawText(
@@ -691,7 +715,7 @@ class LCCBreakdownTable(QWidget):
             p.setFont(row_font)
 
         # ── stage blocks ──────────────────────────────────────────────────────
-        p.setFont(QFont(FONT_FAMILY, FS_MD, FW_NORMAL))
+        p.setFont(QFont(FONT_FAMILY, FS_MD, FW_BOLD))
         for stage_label, stage_color_hex, _, _, sy, sh in self._stage_blocks:
             sc = QColor(stage_color_hex)
             stage_tint = QColor(
@@ -708,37 +732,10 @@ class LCCBreakdownTable(QWidget):
                        Qt.AlignmentFlag.AlignCenter, stage_label)
             p.restore()
 
-        # ── grid lines ────────────────────────────────────────────────────────
-        total_h = self._total_content_h - 8
-        grid_col = QColor(color_grid)
-        grid_col.setAlpha(120)
-        p.setPen(QPen(grid_col, 1))
-        for x in (self._STAGE_W, x_bar, x_val):
-            p.drawLine(x, self._PAD_TOP, x, total_h)
-        grid_row = QColor(color_grid)
-        grid_row.setAlpha(60)
-        p.setPen(QPen(grid_row, 1))
-        for _, (ry, rh) in enumerate(self._row_layouts):
-            p.drawLine(self._STAGE_W, ry + rh, W, ry + rh)
-
-        # ── strong stage dividers ─────────────────────────────────────────────
-        stage_border = QColor(get_token("text_secondary"))
-        stage_border.setAlpha(180)
-        p.setPen(QPen(stage_border, 2))
-        for _, _, _, _, sy, sh in self._stage_blocks:
-            bottom_y = sy + sh
-            p.drawLine(0, bottom_y, W, bottom_y)
-
-        # ── divider drag handles (visible hint in header) ─────────────────────
-        handle_color = QColor(get_token("text_secondary"))
-        handle_color.setAlpha(100)
-        p.setPen(QPen(handle_color, 2))
-        for x in (x_bar, x_val):
-            p.drawLine(x, hdr_y + 6, x, hdr_y + self._MIN_ROW_H - 6)
-
         # ── outer border ──────────────────────────────────────────────────────
+        total_h = self._total_content_h - 8
         border_color = QColor(get_token("surface_mid"))
-        border_color.setAlpha(200)
+        # Using full opacity for outer border to avoid blending issues
         p.setPen(QPen(border_color, 1))
         p.setBrush(Qt.BrushStyle.NoBrush)
         p.drawRect(0, self._PAD_TOP, W - 1, total_h - self._PAD_TOP)
