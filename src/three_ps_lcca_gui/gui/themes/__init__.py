@@ -568,6 +568,18 @@ def reapply(app=None) -> None:
             sorted_tokens = sorted(tokens.items(), key=lambda x: len(x[0]), reverse=True)
             for token, value in sorted_tokens:
                 qss = qss.replace(f"${token}", value)
+
+            # Resolve arrow SVG URLs to absolute paths so styles work from any CWD.
+            _arrow = os.path.join(os.path.dirname(_QSS_PATH), "arrow_down.svg").replace("\\", "/")
+            _arrow_disabled = os.path.join(os.path.dirname(_QSS_PATH), "arrow_down_disabled.svg").replace("\\", "/")
+            qss = qss.replace(
+                "url(gui/assets/themes/arrow_down.svg)",
+                f'url("{_arrow}")',
+            )
+            qss = qss.replace(
+                "url(gui/assets/themes/arrow_down_disabled.svg)",
+                f'url("{_arrow_disabled}")',
+            )
                 
             # Clear first - forces Qt to fully re-evaluate all style rules
             # on every existing widget, including window backgrounds.

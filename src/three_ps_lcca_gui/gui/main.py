@@ -23,6 +23,9 @@ import ctypes
 from three_ps_lcca_gui.gui.components.utils.unit_resolver import load_custom_units
 from three_ps_lcca_gui.gui.version import VERSION
 
+_GUI_DIR = os.path.abspath(os.path.dirname(__file__))
+_ASSETS_DIR = os.path.join(_GUI_DIR, "assets")
+
 # ── Global UI Behavior Overrides ──────────────────────────────────────────────
 
 
@@ -110,14 +113,15 @@ def main():
     # Configure High DPI and Scaling
     os.environ["QT_ENABLE_HIGHDPI_SCALING"] = "1"
     os.environ["QT_SCALE_FACTOR"] = "1"
-    QCoreApplication.setAttribute(Qt.ApplicationAttribute.AA_DontUseNativeMenuBar)
+    QCoreApplication.setAttribute(
+        Qt.ApplicationAttribute.AA_DontUseNativeMenuBar)
 
     app = QApplication(sys.argv)
     app.setApplicationName("OS Bridge LCCA")
     app.setOrganizationName("OSBridge")
 
     # Set Window Icon
-    _ICON_PATH = os.path.join("gui", "assets", "logo", "logo-3psLCCA.ico")
+    _ICON_PATH = os.path.join(_ASSETS_DIR, "logo", "logo-3psLCCA.ico")
     if os.path.exists(_ICON_PATH):
         app.setWindowIcon(QIcon(_ICON_PATH))
 
@@ -135,7 +139,7 @@ def main():
     app.processEvents()
 
     # Load Bundled Fonts
-    _font_dir = os.path.join("gui", "assets", "themes", "Ubuntu_font")
+    _font_dir = os.path.join(_ASSETS_DIR, "themes", "Ubuntu_font")
     if os.path.exists(_font_dir):
         for _ttf in [
             "Ubuntu-Light.ttf",
@@ -208,5 +212,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-

@@ -57,6 +57,9 @@ from three_ps_lcca_gui.gui.components.rollback_dialog import RollbackDialog
 from three_ps_lcca_gui.gui.components.blob_manager import BlobManagerDialog
 import shutil
 
+_GUI_DIR = os.path.abspath(os.path.dirname(__file__))
+_ASSETS_DIR = os.path.join(_GUI_DIR, "assets")
+
 
 # ── Sidebar tree definition ───────────────────────────────────────────────────
 
@@ -89,11 +92,11 @@ SIDEBAR_TREE = {
 
 # ── Sidebar tree ──────────────────────────────────────────────────────────────
 
-_V_PAD    = 1   # vertical padding per side
-_H_PAD    = 10  # left text indent
+_V_PAD = 1   # vertical padding per side
+_H_PAD = 10  # left text indent
 _ACCENT_W = 3   # width of the left accent bar in px
 _ICON_SIZE = 16
-_ICON_GAP  = 6
+_ICON_GAP = 6
 
 # Material icon name for each sidebar item (top-level and section-level only)
 _SIDEBAR_ICONS: dict[str, str] = {
@@ -153,7 +156,8 @@ class _SidebarDelegate(QStyledItemDelegate):
             painter.setFont(_f(FS_BASE, FW_MEDIUM if is_sel else FW_NORMAL))
 
         # Text colour - PRIMARY on selected, normal otherwise
-        text_col = QColor(get_token("primary")) if is_sel else option.palette.windowText().color()
+        text_col = QColor(get_token("primary")
+                          ) if is_sel else option.palette.windowText().color()
         painter.setPen(text_col)
 
         extra = 28 if depth >= 2 else 0
@@ -163,7 +167,8 @@ class _SidebarDelegate(QStyledItemDelegate):
         icon: QIcon = index.data(Qt.DecorationRole)
         if icon and not icon.isNull():
             iy = option.rect.top() + (option.rect.height() - _ICON_SIZE) // 2
-            icon.paint(painter, QRect(x, iy, _ICON_SIZE, _ICON_SIZE), Qt.AlignCenter)
+            icon.paint(painter, QRect(
+                x, iy, _ICON_SIZE, _ICON_SIZE), Qt.AlignCenter)
             x += _ICON_SIZE + _ICON_GAP
 
         # Text
@@ -227,15 +232,20 @@ class _SidebarTree(QTreeWidget):
         painter.setBrush(self.palette().window())
         painter.drawRect(full)
         if is_hovered and not is_sel:
-            tint = QColor(get_token("primary")); tint.setAlpha(11)
-            painter.setBrush(tint); painter.drawRect(full)
+            tint = QColor(get_token("primary"))
+            tint.setAlpha(11)
+            painter.setBrush(tint)
+            painter.drawRect(full)
         if is_sel:
-            tint = QColor(get_token("primary")); tint.setAlpha(22)
-            painter.setBrush(tint); painter.drawRect(full)
+            tint = QColor(get_token("primary"))
+            tint.setAlpha(22)
+            painter.setBrush(tint)
+            painter.drawRect(full)
         painter.restore()
 
         # Strip selection/hover so Qt doesn't repaint with its own highlight
-        option.state &= ~(QStyle.State_Selected | QStyle.State_MouseOver | QStyle.State_HasFocus)
+        option.state &= ~(QStyle.State_Selected |
+                          QStyle.State_MouseOver | QStyle.State_HasFocus)
         super().drawRow(painter, option, index)
 
         if is_sel:
@@ -318,7 +328,7 @@ class ProjectWindow(QMainWindow):
         self.project_id = None
 
         self.setWindowTitle("3psLCCA - Home")
-        _icon_path = os.path.join("gui", "assets", "logo", "logo-3psLCCA.ico")
+        _icon_path = os.path.join(_ASSETS_DIR, "logo", "logo-3psLCCA.ico")
         if os.path.exists(_icon_path):
             self.setWindowIcon(QIcon(_icon_path))
         self.resize(1100, 750)
@@ -328,10 +338,11 @@ class ProjectWindow(QMainWindow):
 
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
-        
+
         # Add version to the right of the status bar
         self.version_lbl = QLabel(VERSION)
-        self.version_lbl.setStyleSheet(f"color: {get_token('text_disabled')}; margin-right: 10px;")
+        self.version_lbl.setStyleSheet(
+            f"color: {get_token('text_disabled')}; margin-right: 10px;")
         self.status_bar.addPermanentWidget(self.version_lbl)
 
         self._project_ui_ready = False
@@ -345,7 +356,8 @@ class ProjectWindow(QMainWindow):
             lambda: self.status_bar.showMessage("All changes saved.", 3000)
         )
         self.controller.dirty_changed.connect(
-            lambda d: self.status_bar.showMessage("Unsaved changes...") if d else None
+            lambda d: self.status_bar.showMessage(
+                "Unsaved changes...") if d else None
         )
 
         self.show_home()
@@ -378,7 +390,8 @@ class ProjectWindow(QMainWindow):
         self.menuFile = QMenu("&File", self.menubar)
 
         action_new = QAction("New Project", self)
-        action_new.triggered.connect(lambda: self.manager.open_project(is_new=True))
+        action_new.triggered.connect(
+            lambda: self.manager.open_project(is_new=True))
         self.menuFile.addAction(action_new)
 
         action_open = QAction("Open Project", self)
@@ -456,7 +469,8 @@ class ProjectWindow(QMainWindow):
         self.menubar.addMenu(self.menuHelp)
         self.menubar.addAction(self.log_action)
 
-        top_bar_layout.addWidget(self.menubar, alignment=Qt.AlignmentFlag.AlignCenter)
+        top_bar_layout.addWidget(
+            self.menubar, alignment=Qt.AlignmentFlag.AlignCenter)
         top_bar_layout.addStretch()
         self.save_status_bar = SaveStatusBar(controller=self.controller)
         top_bar_layout.addWidget(self.save_status_bar)
@@ -467,7 +481,8 @@ class ProjectWindow(QMainWindow):
 
         self._frozen = False
         self._lock_tooltip = "Click to lock this project and prevent accidental edits."
-        self.btn_lock = make_icon_btn("lock-open", tooltip=self._lock_tooltip, size=30)
+        self.btn_lock = make_icon_btn(
+            "lock-open", tooltip=self._lock_tooltip, size=30)
         self.btn_lock.setFixedSize(30, 30)
         _r = "border-radius:15px; min-width:30px; min-height:30px; padding:0px; border:none;"
         self.btn_lock.setStyleSheet(
@@ -510,7 +525,8 @@ class ProjectWindow(QMainWindow):
         self.sidebar.resizeColumnToContents(0)
         self.sidebar.header().setStretchLastSection(False)
 
-        min_width = int((self.sidebar.header().sectionSize(0) + _H_PAD + _ACCENT_W) * 0.9)
+        min_width = int(
+            (self.sidebar.header().sectionSize(0) + _H_PAD + _ACCENT_W) * 0.9)
         self.sidebar.header().setStretchLastSection(True)
         self.sidebar.setMinimumWidth(min_width)
 
@@ -526,7 +542,8 @@ class ProjectWindow(QMainWindow):
 
         self.outputs_page = OutputsPage(controller=self.controller)
         self.outputs_page.navigate_requested.connect(self._navigate_to_page)
-        self.outputs_page.calculation_completed.connect(self._on_calculation_done)
+        self.outputs_page.calculation_completed.connect(
+            self._on_calculation_done)
         self.outputs_page.validate_requested.connect(self._run_calculate)
 
         # Page widgets are built lazily on first sidebar click via _get_or_create_widget
@@ -603,12 +620,12 @@ class ProjectWindow(QMainWindow):
         # Direct page item - show it
         widget = self._get_or_create_widget(header)
         if widget:
-            # If we are navigating AWAY from Construction Work Data or TO it directly, 
+            # If we are navigating AWAY from Construction Work Data or TO it directly,
             # ensure Trash view is reset.
             for w in self.widget_map.values():
                 if isinstance(w, StructureTabView):
                     w.reset_view()
-            
+
             self.content_stack.setCurrentWidget(widget)
             return
 
@@ -620,7 +637,7 @@ class ProjectWindow(QMainWindow):
                 # If this is Structure, reset the trash view before showing the tab
                 if isinstance(w, StructureTabView):
                     w.reset_view()
-                
+
                 self.content_stack.setCurrentWidget(w)
                 w.select_tab(header)
 
@@ -644,7 +661,8 @@ class ProjectWindow(QMainWindow):
         display = self.controller.active_display_name or self.project_id
         self.setWindowTitle(f"3psLCCA - {display}")
         self.main_stack.setCurrentWidget(self.project_widget)
-        self.content_stack.setCurrentWidget(self._get_or_create_widget("General Information"))
+        self.content_stack.setCurrentWidget(
+            self._get_or_create_widget("General Information"))
         items = self.sidebar.findItems("General Information", Qt.MatchExactly)
         if items:
             self.sidebar.setCurrentItem(items[0])
@@ -670,7 +688,8 @@ class ProjectWindow(QMainWindow):
             index += 1
             if name not in self.widget_map:
                 self._get_or_create_widget(name)
-                QTimer.singleShot(0, lambda i=index: self._do_preload(order, i, on_complete))
+                QTimer.singleShot(
+                    0, lambda i=index: self._do_preload(order, i, on_complete))
                 return
         on_complete()
 
@@ -683,7 +702,8 @@ class ProjectWindow(QMainWindow):
         if obj is self.btn_lock:
             if event.type() == QEvent.Type.Enter:
                 pos = self.btn_lock.mapToGlobal(
-                    QPoint(self.btn_lock.width() // 2, self.btn_lock.height() + 4)
+                    QPoint(self.btn_lock.width() // 2,
+                           self.btn_lock.height() + 4)
                 )
                 QToolTip.showText(pos, self._lock_tooltip, None, QRect(), 3000)
             elif event.type() == QEvent.Type.Leave:
@@ -736,7 +756,8 @@ class ProjectWindow(QMainWindow):
 
     def _sync_sidebar_from_tab(self, tab_name: str):
         """Highlight the sidebar item matching the active tab (no content switch)."""
-        items = self.sidebar.findItems(tab_name, Qt.MatchExactly | Qt.MatchRecursive)
+        items = self.sidebar.findItems(
+            tab_name, Qt.MatchExactly | Qt.MatchRecursive)
         if items:
             self.sidebar.setCurrentItem(items[0])
 
@@ -745,7 +766,8 @@ class ProjectWindow(QMainWindow):
         widget = self._get_or_create_widget(page_name)
         if widget:
             self.content_stack.setCurrentWidget(widget)
-        items = self.sidebar.findItems(page_name, Qt.MatchExactly | Qt.MatchRecursive)
+        items = self.sidebar.findItems(
+            page_name, Qt.MatchExactly | Qt.MatchRecursive)
         if items:
             self.sidebar.setCurrentItem(items[0])
 
@@ -816,12 +838,14 @@ class ProjectWindow(QMainWindow):
             label="export", notes="Exported from 3psLCCA", include_blobs=True
         )
         if not zip_name:
-            QMessageBox.warning(self, "Export Failed", "Could not create export archive.")
+            QMessageBox.warning(self, "Export Failed",
+                                "Could not create export archive.")
             return
         src = self.controller.engine.checkpoint_manual / zip_name
         try:
             shutil.copy2(str(src), dest)
-            QMessageBox.information(self, "Export Complete", f"Project exported to:\n{dest}")
+            QMessageBox.information(
+                self, "Export Complete", f"Project exported to:\n{dest}")
         except Exception as e:
             QMessageBox.warning(self, "Export Failed", str(e))
 
@@ -838,7 +862,8 @@ class ProjectWindow(QMainWindow):
             info["wal_exists"] = report.get("wal_exists", False)
 
         dlg = QDialog(self)
-        dlg.setWindowTitle(f"Project Info - {info.get('display_name', self.project_id)}")
+        dlg.setWindowTitle(
+            f"Project Info - {info.get('display_name', self.project_id)}")
         dlg.setMinimumWidth(360)
         layout = QVBoxLayout(dlg)
         layout.setContentsMargins(20, 20, 20, 20)
@@ -890,5 +915,3 @@ class ProjectWindow(QMainWindow):
         self.manager.remove_window(self)
         self.manager.refresh_all_home_screens()
         event.accept()
-
-

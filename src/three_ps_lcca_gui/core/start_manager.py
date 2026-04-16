@@ -9,7 +9,9 @@ import os
 import sqlite3
 from datetime import datetime
 
-_DB_PATH = os.path.join("data", "user.db")
+_PKG_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+_DB_PATH = os.path.join(_PKG_ROOT, "data", "user.db")
+
 _RECENT_LIMIT = 15
 
 
@@ -18,6 +20,7 @@ def _now() -> str:
 
 
 def _conn() -> sqlite3.Connection:
+    os.makedirs(os.path.dirname(_DB_PATH), exist_ok=True)
     c = sqlite3.connect(_DB_PATH)
     c.row_factory = sqlite3.Row
     return c
