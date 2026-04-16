@@ -1081,9 +1081,11 @@ class OutputsPage(ScrollableForm):
 
     def _on_calc_finished(self, results, all_data, lcc_breakdown):
         self._stop_timers()
+        self._has_results = True
         self._last_all_data    = all_data
         self._last_lcc_breakdown = lcc_breakdown
         self._show_calculation_success(results)
+        self.calculation_completed.emit()
 
     def _on_calc_errored(self, exc, tb):
         self._stop_timers()
