@@ -46,10 +46,14 @@ from three_ps_lcca_gui.gui.themes import get_token
 from three_ps_lcca_gui.gui.styles import font as _f
 from three_ps_lcca_gui.gui.components.utils.display_format import fmt_currency
 from ..helper_functions.lifecycle_summary import compute_all_summaries
+from ..helper_functions.ratio_helper import format_ratio_string
 from ..helper_functions.lcc_colors import COLORS as LCC_COLORS
+from .AggregateChart import StageBarPlotter, _build_pillar_total_data
 
 # ── Register Ubuntu fonts ────────────────────────────────────────────────────
-_UBUNTU_FONT_DIR = os.path.join("gui", "assets", "themes", "Ubuntu_font")
+_UBUNTU_FONT_DIR = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "..", "..", "assets", "themes", "Ubuntu_font")
+)
 for _ttf in ["Ubuntu-Light.ttf", "Ubuntu-Regular.ttf", "Ubuntu-Medium.ttf", "Ubuntu-Bold.ttf"]:
     _path = os.path.join(_UBUNTU_FONT_DIR, _ttf)
     if os.path.exists(_path):
@@ -117,6 +121,19 @@ class WheelForwarder(QObject):
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _M(x): return float(x) / 1_000_000
+
+
+def _pillar_totals_ok(results: dict) -> bool:
+    """Return False if any pillar total is negative."""
+    pt = compute_all_summaries(results).get("pillar_totals", {})
+    return all(v >= 0 for v in pt.values())
+
+
+def _nested_data_ok(results: dict) -> bool:
+    """Return False if any per-stage pillar value is negative."""
+    pw = compute_all_summaries(results).get("pillar_wise", {})
+    return all(v >= 0 for stage in pw.values() for v in stage.values())
+
 
 
 def _build_pillar_data(results: dict):
@@ -395,26 +412,24 @@ class LCCPieWidget(QWidget):
         # Eco : Env : Social ratio box
         summary = compute_all_summaries(self._results)
         pt      = summary.get("pillar_totals", {})
-        total_p = sum(pt.values())
-        
+
         c_eco = get_token("eco")
         c_env = get_token("env")
         c_soc = get_token("soc")
 
-        if total_p > 0:
-            r_eco = pt.get("eco",    0) / total_p
-            r_env = pt.get("env",    0) / total_p
-            r_soc = pt.get("social", 0) / total_p
-            _min  = min(v for v in (r_eco, r_env, r_soc) if v > 0) or 1.0
-            n_eco, n_env, n_soc = r_eco / _min, r_env / _min, r_soc / _min
-            
-            ratio = (
-                f"<b style='color:{c_eco}'>{n_eco:.1f}</b> <span style='color:{get_token('text')}'>:</span> "
-                f"<b style='color:{c_env}'>{n_env:.1f}</b> <span style='color:{get_token('text')}'>:</span> "
-                f"<b style='color:{c_soc}'>{n_soc:.1f}</b>"
-            )
-        else:
-            ratio = f"<span style='color:{get_token('text')}'>0.0 : 0.0 : 0.0</span>"
+        _pillar_ok = _pillar_totals_ok(self._results)
+        _nested_ok = _nested_data_ok(self._results)
+
+        v_eco = pt.get("eco",    0)
+        v_env = pt.get("env",    0)
+        v_soc = pt.get("social", 0)
+
+        ratio = format_ratio_string(
+            [v_eco, v_env, v_soc],
+            [c_eco, c_env, c_soc],
+            get_token("text"),
+            get_token("text_secondary")
+        )
 
         ratio_box = QFrame()
         ratio_box.setStyleSheet(
@@ -456,68 +471,107 @@ class LCCPieWidget(QWidget):
         rb_v.addWidget(rb_note)
         left_v.addWidget(ratio_box)
 
-        # Percentage mode toggle
+        # Percentage mode toggle — hidden when falling back to bar chart
         self._mode_cb = QCheckBox("Show Percentage Mode")
         self._mode_cb.setFont(_f(FS_BASE))
         self._mode_cb.setStyleSheet(
             f"color: {get_token('text_secondary')}; background: transparent; border: none;"
         )
+        self._mode_cb.setVisible(_pillar_ok)
         left_v.addWidget(self._mode_cb, 0, Qt.AlignCenter)
 
-        # Stage-wise view toggle
+        # Stage-wise toggle — disabled when nested pie has negatives
         self._stage_cb = QCheckBox("See stage wise")
         self._stage_cb.setFont(_f(FS_BASE))
         self._stage_cb.setStyleSheet(
             f"color: {get_token('text_secondary')}; background: transparent; border: none;"
         )
+        self._stage_cb.setVisible(_pillar_ok)
+        self._stage_cb.setEnabled(_nested_ok)
         left_v.addWidget(self._stage_cb, 0, Qt.AlignCenter)
+
+        if _pillar_ok and not _nested_ok:
+            _stage_note = QLabel("* Stage breakdown unavailable — negative values in stage data.")
+            _stage_note.setAlignment(Qt.AlignCenter)
+            _stage_note.setWordWrap(True)
+            _stage_note.setFont(_f(FS_XS, FW_NORMAL, italic=True))
+            _stage_note.setStyleSheet(
+                f"color: {get_token('text_secondary')}; border: none; background: transparent;"
+            )
+            left_v.addWidget(_stage_note)
 
         self._content_h.addWidget(self._left_panel, 1)
 
-        # Chart stack
-        self._chart_stack = QStackedWidget()
-        self._chart_stack.setMaximumHeight(500)
-        self._chart_stack.setStyleSheet("background: transparent; border: none;")
-
-        scroller      = WheelForwarder(self)
         self._plotters = []
 
-        # ── Chart 0: simple pillar donut ─────────────────────────
-        p0   = SimplePillarPlotter(self._results, currency=self._currency)
-        fig0 = p0.setup_plot()
-        c0   = FigureCanvasQTAgg(fig0)
-        c0.setMinimumHeight(400)
-        c0.setMaximumHeight(500)
-        c0.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        c0.setStyleSheet("background: transparent; border: none;")
-        c0.installEventFilter(scroller)
-        self._chart_stack.addWidget(c0)
-        self._plotters.append(p0)
-
-        # ── Chart 1: nested stage+pillar donut ───────────────────
-        data1 = _build_nested_pie_data(self._results)
-        if data1:
-            p1   = SustainabilityCircularPlotter(data1, currency=self._currency)
-            fig1 = p1.setup_plot()
-            c1   = FigureCanvasQTAgg(fig1)
-            c1.setMinimumHeight(400)
-            c1.setMaximumHeight(500)
-            c1.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-            c1.setStyleSheet("background: transparent; border: none;")
-            c1.installEventFilter(scroller)
-            self._chart_stack.addWidget(c1)
-            self._plotters.append(p1)
+        if not _pillar_ok:
+            # Pie can't handle negatives — show pillar totals as a plain bar chart
+            # (same 3 pillars the pie would have shown: Economic, Environmental, Social)
+            pillar_bar_data = _build_pillar_total_data(self._results)
+            if pillar_bar_data:
+                p_bar   = StageBarPlotter(pillar_bar_data, currency=self._currency)
+                fig_bar = p_bar.setup_plot()
+                c_bar   = FigureCanvasQTAgg(fig_bar)
+                c_bar.setMinimumHeight(400)
+                c_bar.setMaximumHeight(500)
+                c_bar.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+                c_bar.setStyleSheet("background: transparent; border: none;")
+                c_bar.installEventFilter(WheelForwarder(self))
+                self._content_h.addWidget(c_bar, 2)
+            else:
+                _no_data = QLabel("No data available.")
+                _no_data.setAlignment(Qt.AlignCenter)
+                self._content_h.addWidget(_no_data, 2)
         else:
-            no_data = QLabel("No data available.")
-            no_data.setAlignment(Qt.AlignCenter)
-            self._chart_stack.addWidget(no_data)
-            self._plotters.append(None)
+            # Chart 0 is fine — build pie stack
+            self._chart_stack = QStackedWidget()
+            self._chart_stack.setMaximumHeight(500)
+            self._chart_stack.setStyleSheet("background: transparent; border: none;")
+            scroller = WheelForwarder(self)
 
-        self._mode_cb.toggled.connect(self._on_mode_change)
-        self._stage_cb.toggled.connect(self._on_stage_toggle)
+            # Chart 0: simple pillar donut
+            p0   = SimplePillarPlotter(self._results, currency=self._currency)
+            fig0 = p0.setup_plot()
+            c0   = FigureCanvasQTAgg(fig0)
+            c0.setMinimumHeight(400)
+            c0.setMaximumHeight(500)
+            c0.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+            c0.setStyleSheet("background: transparent; border: none;")
+            c0.installEventFilter(scroller)
+            self._chart_stack.addWidget(c0)
+            self._plotters.append(p0)
 
-        self._content_h.addWidget(self._chart_stack, 2)
+            # Chart 1: nested stage+pillar donut — only if no negatives
+            if _nested_ok:
+                data1 = _build_nested_pie_data(self._results)
+                if data1:
+                    p1   = SustainabilityCircularPlotter(data1, currency=self._currency)
+                    fig1 = p1.setup_plot()
+                    c1   = FigureCanvasQTAgg(fig1)
+                    c1.setMinimumHeight(400)
+                    c1.setMaximumHeight(500)
+                    c1.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+                    c1.setStyleSheet("background: transparent; border: none;")
+                    c1.installEventFilter(scroller)
+                    self._chart_stack.addWidget(c1)
+                    self._plotters.append(p1)
+
+            self._mode_cb.toggled.connect(self._on_mode_change)
+            self._stage_cb.toggled.connect(self._on_stage_toggle)
+            self._content_h.addWidget(self._chart_stack, 2)
+
         card_v.addWidget(content_row)
+
+        if not _pillar_ok:
+            _note = QLabel("* Negative cost values detected — pie chart unavailable, showing bar chart instead.")
+            _note.setAlignment(Qt.AlignCenter)
+            _note.setWordWrap(True)
+            _note.setFont(_f(FS_XS, FW_NORMAL, italic=True))
+            _note.setStyleSheet(
+                f"color: {get_token('text_secondary')}; border: none; background: transparent;"
+            )
+            card_v.addWidget(_note)
+
         self._main_v.addWidget(self.card)
 
     # ── slots ─────────────────────────────────────────────────────────────────

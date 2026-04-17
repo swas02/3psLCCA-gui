@@ -5,6 +5,9 @@ Creates an interactive matplotlib chart from LCC analysis results.
 Use LCCChartWidget(results) to get a QWidget ready to embed in Qt.
 """
 
+import matplotlib
+matplotlib.use("QtAgg")
+
 from three_ps_lcca_gui.gui.themes import get_token, theme_manager
 from three_ps_lcca_gui.gui.theme import (
     FONT_FAMILY,
@@ -23,8 +26,7 @@ from .lcc_data import (
 )
 from .plots_helper.bar_chart import create_bar_chart
 
-import matplotlib
-matplotlib.use("QtAgg")
+matplotlib.rcParams["font.family"] = FONT_FAMILY
 
 from PySide6.QtCore import QEvent, QObject, QRect, QSize, Qt
 from PySide6.QtGui import QColor, QFont, QPainter, QPen, QFontMetrics

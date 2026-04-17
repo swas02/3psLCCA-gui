@@ -6,13 +6,27 @@ Exposes create_bar_chart(values, labels, stage_info, text_color, bg_color, curre
 which returns (fig, bars) ready for embedding in a matplotlib canvas.
 """
 
+import os
 import numpy as np
 import matplotlib
 matplotlib.use("QtAgg")
 import matplotlib.pyplot as plt
+from matplotlib import font_manager as _fm
 
+from three_ps_lcca_gui.gui.theme import FONT_FAMILY
 from three_ps_lcca_gui.gui.themes import get_token
 from ..lcc_data import sci_label
+
+# ── Register Ubuntu fonts ────────────────────────────────────────────────────
+_UBUNTU_FONT_DIR = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "..", "..", "assets", "themes", "Ubuntu_font")
+)
+for _ttf in ["Ubuntu-Light.ttf", "Ubuntu-Regular.ttf", "Ubuntu-Medium.ttf", "Ubuntu-Bold.ttf"]:
+    _path = os.path.join(_UBUNTU_FONT_DIR, _ttf)
+    if os.path.exists(_path):
+        _fm.fontManager.addfont(_path)
+
+matplotlib.rcParams["font.family"] = FONT_FAMILY
 
 
 def create_bar_chart(
