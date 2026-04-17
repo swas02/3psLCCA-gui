@@ -894,8 +894,8 @@ class ProjectWindow(QMainWindow):
             form.addRow(f"{label}:", lbl)
 
         # Storage Path (last row, multi-line)
-        base_dir = info.get("base_dir", "-")
-        path_lbl = QLabel(base_dir)
+        project_path = info.get("project_path", "-")
+        path_lbl = QLabel(project_path)
         path_lbl.setWordWrap(True)
         path_lbl.setTextInteractionFlags(Qt.TextSelectableByMouse)
         form.addRow("Storage Location:", path_lbl)
@@ -911,7 +911,7 @@ class ProjectWindow(QMainWindow):
                 text += "=" * 40 + "\n"
                 for label, value in rows:
                     text += f"{label}: {value}\n"
-                text += f"Storage Location: {base_dir}\n"
+                text += f"Storage Location: {project_path}\n"
                 QApplication.clipboard().setText(text)
                 copy_btn.setText("Copied!")
             except Exception:

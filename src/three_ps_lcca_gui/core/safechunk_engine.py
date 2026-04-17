@@ -1886,7 +1886,7 @@ class SafeChunkEngine:
                 "created_at": None,
                 "last_modified": None,
                 "status": "ok",
-                "base_dir": str(root),
+                "project_path": str(item),
             }
 
             # Lock status
@@ -1951,7 +1951,7 @@ class SafeChunkEngine:
             "clean_close": True,
             "readable": False,
             "size_kb": 0,
-            "base_dir": str(root),
+            "project_path": str(item),
         }
 
         vf = item / "version.json"
