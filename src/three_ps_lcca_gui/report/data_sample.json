@@ -1,0 +1,2566 @@
+{
+  "all_data": {
+    "general_info": {
+      "project_name": "Mumbai-Steel-2L-35m-F",
+      "project_code": "",
+      "project_description": "",
+      "remarks": "",
+      "agency_logo": "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",
+      "agency_name": "",
+      "contact_person": "",
+      "agency_address": "",
+      "agency_country": "INDIA",
+      "agency_email": "",
+      "agency_phone": "82087835",
+      "project_country": "INDIA",
+      "project_currency": "INR",
+      "unit_system": "Metric SI",
+      "sor_database": "INDIA/Bihar/Darbhanga-2025"
+    },
+    "construction_work_data": {
+      "Foundation": {
+        "components": {
+          "Excavation": {
+            "items": [
+              {
+                "id": "9d8abc26-91c6-49d1-8efa-bd6e2f03e761",
+                "values": {
+                  "material_name": "Soft Rock (0 to 1.5m)",
+                  "quantity": 39.984,
+                  "unit": "cum",
+                  "unit_to_si": 1.0,
+                  "rate": 557.0,
+                  "rate_source": "Maha PWD SOR",
+                  "carbon_emission": 0.0,
+                  "carbon_unit": "kgCO\u2082e/cum",
+                  "conversion_factor": 1.0,
+                  "scrap_rate": 0.0,
+                  "post_demolition_recovery_percentage": 0.0,
+                  "is_recyclable": false,
+                  "grade": "",
+                  "type": "Excavation soil",
+                  "transport_kg_factor": 1.6
+                },
+                "meta": {
+                  "created_on": "2026-03-16T14:53:56.652174",
+                  "modified_on": "2026-03-16T14:53:56.652174",
+                  "source": "db",
+                  "source_db_key": "MumbaiSOR"
+                },
+                "state": {
+                  "in_trash": false,
+                  "included_in_carbon_emission": false,
+                  "included_in_recyclability": false
+                },
+                "total": 22271.088
+              }
+            ],
+            "total": 22271.088
+          },
+          "Pile": {
+            "items": [
+              {
+                "id": "b5da7951-3a15-4768-bc44-ea46d8b69505",
+                "values": {
+                  "material_name": "Concreting of bored pile (M35) (1000mm) (5 to 10m)",
+                  "quantity": 40.0,
+                  "unit": "rm",
+                  "unit_to_si": 1.0,
+                  "rate": 16598.4,
+                  "rate_source": "",
+                  "carbon_emission": 0.084,
+                  "carbon_unit": "kgCO\u2082e/kg",
+                  "conversion_factor": 2400.0,
+                  "scrap_rate": 0.0,
+                  "post_demolition_recovery_percentage": 0.0,
+                  "is_recyclable": false,
+                  "grade": "M35",
+                  "type": "Concrete",
+                  "transport_kg_factor": 2.4
+                },
+                "meta": {
+                  "created_on": "2026-03-16T15:01:55.736084",
+                  "modified_on": "2026-03-16T15:14:28.908213",
+                  "source": "db_modified",
+                  "source_db_key": "MumbaiSOR"
+                },
+                "state": {
+                  "in_trash": false,
+                  "included_in_carbon_emission": true,
+                  "included_in_recyclability": false
+                },
+                "total": 663936.0
+              },
+              {
+                "id": "f35ba3fa-a7c7-4c17-bd1b-f575537f4ce4",
+                "values": {
+                  "material_name": "Steel Rebar (Fe500)",
+                  "quantity": 5.21,
+                  "unit": "mt",
+                  "unit_to_si": 1000.0,
+                  "rate": 88341.0,
+                  "rate_source": "",
+                  "carbon_emission": 2.6,
+                  "carbon_unit": "kgCO\u2082e/kg",
+                  "conversion_factor": 1000.0,
+                  "scrap_rate": 32500.0,
+                  "post_demolition_recovery_percentage": 75.0,
+                  "is_recyclable": false,
+                  "grade": "Fe500",
+                  "type": "Steel",
+                  "transport_kg_factor": 1000.0
+                },
+                "meta": {
+                  "created_on": "2026-03-16T15:03:06.403075",
+                  "modified_on": "2026-03-16T15:24:23.140192",
+                  "source": "db",
+                  "source_db_key": "MumbaiSOR"
+                },
+                "state": {
+                  "in_trash": false,
+                  "included_in_carbon_emission": true,
+                  "included_in_recyclability": true
+                },
+                "total": 460256.61
+              }
+            ],
+            "total": 1124192.6099999999
+          },
+          "Pile Cap": {
+            "items": [
+              {
+                "id": "efd13377-1462-408e-a43f-707916c0bd8c",
+                "values": {
+                  "material_name": "Plain Cement Concrete (M15)",
+                  "quantity": 3.136,
+                  "unit": "cum",
+                  "unit_to_si": 1.0,
+                  "rate": 5216.0,
+                  "rate_source": "Maha PWD SOR",
+                  "carbon_emission": 0.11,
+                  "carbon_unit": "kgCO\u2082e/kg",
+                  "conversion_factor": 2400.0,
+                  "scrap_rate": 0.0,
+                  "post_demolition_recovery_percentage": 0.0,
+                  "is_recyclable": false,
+                  "grade": "M15",
+                  "type": "Concrete",
+                  "transport_kg_factor": 2.4
+                },
+                "meta": {
+                  "created_on": "2026-03-16T15:04:24.801461",
+                  "modified_on": "2026-03-16T15:05:01.307073",
+                  "source": "db",
+                  "source_db_key": "MumbaiSOR"
+                },
+                "state": {
+                  "in_trash": false,
+                  "included_in_carbon_emission": true,
+                  "included_in_recyclability": false
+                },
+                "total": 16357.376
+              },
+              {
+                "id": "3595fc98-6a87-4046-b620-4424fbe3288a",
+                "values": {
+                  "material_name": "Concreting of pile cap (M35)",
+                  "quantity": 29.375,
+                  "unit": "cum",
+                  "unit_to_si": 1.0,
+                  "rate": 6529.0,
+                  "rate_source": "",
+                  "carbon_emission": 0.084,
+                  "carbon_unit": "kgCO\u2082e/kg",
+                  "conversion_factor": 2400.0,
+                  "scrap_rate": 0.0,
+                  "post_demolition_recovery_percentage": 0.0,
+                  "is_recyclable": false,
+                  "grade": "M35",
+                  "type": "Concrete",
+                  "transport_kg_factor": 2.4
+                },
+                "meta": {
+                  "created_on": "2026-03-16T15:06:40.048448",
+                  "modified_on": "2026-03-16T15:14:54.202144",
+                  "source": "db_modified",
+                  "source_db_key": "MumbaiSOR"
+                },
+                "state": {
+                  "in_trash": false,
+                  "included_in_carbon_emission": true,
+                  "included_in_recyclability": false
+                },
+                "total": 191789.375
+              },
+              {
+                "id": "9b581af2-a880-4e55-93d8-9dce3a09ece9",
+                "values": {
+                  "material_name": "Steel Rebar (Fe500)",
+                  "quantity": 1.677,
+                  "unit": "mt",
+                  "unit_to_si": 1000.0,
+                  "rate": 88341.0,
+                  "rate_source": "",
+                  "carbon_emission": 0.11,
+                  "carbon_unit": "kgCO\u2082e/kg",
+                  "conversion_factor": 1000.0,
+                  "scrap_rate": 32500.0,
+                  "post_demolition_recovery_percentage": 75.0,
+                  "is_recyclable": true,
+                  "grade": "",
+                  "type": "",
+                  "transport_kg_factor": 1000.0
+                },
+                "meta": {
+                  "created_on": "2026-03-16T15:10:50.492470",
+                  "modified_on": "2026-03-16T15:24:47.300906",
+                  "source": "db",
+                  "source_db_key": "MumbaiSOR"
+                },
+                "state": {
+                  "in_trash": false,
+                  "included_in_carbon_emission": true,
+                  "included_in_recyclability": true
+                },
+                "total": 148147.85700000002
+              }
+            ],
+            "total": 356294.608
+          }
+        },
+        "total": 1502758.3059999999
+      },
+      "Sub Structure": {
+        "components": {
+          "Pier": {
+            "items": [
+              {
+                "id": "9f194491-8051-45f7-acfd-673ceb420124",
+                "values": {
+                  "material_name": "Concreting in Pier(M35) (5 to 7.5m)",
+                  "quantity": 9.57,
+                  "unit": "cum",
+                  "unit_to_si": 1.0,
+                  "rate": 9296.7,
+                  "rate_source": "",
+                  "carbon_emission": 0.084,
+                  "carbon_unit": "kgCO\u2082e/kg",
+                  "conversion_factor": 2400.0,
+                  "scrap_rate": 0.0,
+                  "post_demolition_recovery_percentage": 0.0,
+                  "is_recyclable": false,
+                  "grade": "",
+                  "type": "",
+                  "transport_kg_factor": 2.4
+                },
+                "meta": {
+                  "created_on": "2026-03-16T15:13:07.222166",
+                  "modified_on": "2026-03-16T15:15:12.502014",
+                  "source": "db_modified",
+                  "source_db_key": "MumbaiSOR"
+                },
+                "state": {
+                  "in_trash": false,
+                  "included_in_carbon_emission": true,
+                  "included_in_recyclability": false
+                },
+                "total": 88969.41900000001
+              },
+              {
+                "id": "37e540da-c48a-4998-ac81-ea23b8bc8bb9",
+                "values": {
+                  "material_name": "Steel Rebar (Fe500)",
+                  "quantity": 2.175,
+                  "unit": "mt",
+                  "unit_to_si": 1000.0,
+                  "rate": 88341.0,
+                  "rate_source": "",
+                  "carbon_emission": 2.6,
+                  "carbon_unit": "kgCO\u2082e/kg",
+                  "conversion_factor": 1000.0,
+                  "scrap_rate": 0.0,
+                  "post_demolition_recovery_percentage": 0.0,
+                  "is_recyclable": false,
+                  "grade": "",
+                  "type": "",
+                  "transport_kg_factor": 1000.0
+                },
+                "meta": {
+                  "created_on": "2026-03-16T15:17:00.297495",
+                  "modified_on": "2026-03-16T15:17:00.297495",
+                  "source": "db_modified",
+                  "source_db_key": "MumbaiSOR"
+                },
+                "state": {
+                  "in_trash": false,
+                  "included_in_carbon_emission": true,
+                  "included_in_recyclability": false
+                },
+                "total": 192141.675
+              }
+            ],
+            "total": 281111.094
+          },
+          "Pier Cap": {
+            "items": [
+              {
+                "id": "a239fd3b-47db-4755-99e7-0533c7124b98",
+                "values": {
+                  "material_name": "Concreting of pier cap M35",
+                  "quantity": 19.54,
+                  "unit": "cum",
+                  "unit_to_si": 1.0,
+                  "rate": 9574.0,
+                  "rate_source": "",
+                  "carbon_emission": 0.11,
+                  "carbon_unit": "kgCO\u2082e/kg",
+                  "conversion_factor": 2400.0,
+                  "scrap_rate": 0.0,
+                  "post_demolition_recovery_percentage": 0.0,
+                  "is_recyclable": false,
+                  "grade": "",
+                  "type": "",
+                  "transport_kg_factor": 2.4
+                },
+                "meta": {
+                  "created_on": "2026-03-16T15:20:05.252463",
+                  "modified_on": "2026-03-16T15:20:05.252463",
+                  "source": "db_modified",
+                  "source_db_key": "MumbaiSOR"
+                },
+                "state": {
+                  "in_trash": false,
+                  "included_in_carbon_emission": true,
+                  "included_in_recyclability": false
+                },
+                "total": 187075.96
+              },
+              {
+                "id": "dc1b551b-f53c-41c5-ae84-e600de11c3fb",
+                "values": {
+                  "material_name": "Steel Rebar (Fe500)",
+                  "quantity": 2.102,
+                  "unit": "mt",
+                  "unit_to_si": 1000.0,
+                  "rate": 88341.0,
+                  "rate_source": "",
+                  "carbon_emission": 2.6,
+                  "carbon_unit": "kgCO\u2082e/kg",
+                  "conversion_factor": 1000.0,
+                  "scrap_rate": 32500.0,
+                  "post_demolition_recovery_percentage": 75.0,
+                  "is_recyclable": true,
+                  "grade": "",
+                  "type": "",
+                  "transport_kg_factor": 1000.0
+                },
+                "meta": {
+                  "created_on": "2026-03-16T15:21:00.949668",
+                  "modified_on": "2026-03-16T15:22:11.835909",
+                  "source": "db_modified",
+                  "source_db_key": "MumbaiSOR"
+                },
+                "state": {
+                  "in_trash": false,
+                  "included_in_carbon_emission": true,
+                  "included_in_recyclability": true
+                },
+                "total": 185692.78199999998
+              }
+            ],
+            "total": 372768.74199999997
+          },
+          "Pedestal": {
+            "items": [
+              {
+                "id": "8c6ef1df-09c1-4086-baef-85e1b7236a28",
+                "values": {
+                  "material_name": "Concreting of pedestal M35",
+                  "quantity": 0.216,
+                  "unit": "cum",
+                  "unit_to_si": 1.0,
+                  "rate": 7853.0,
+                  "rate_source": "",
+                  "carbon_emission": 0.084,
+                  "carbon_unit": "kgCO\u2082e/kg",
+                  "conversion_factor": 2400.0,
+                  "scrap_rate": 0.0,
+                  "post_demolition_recovery_percentage": 0.0,
+                  "is_recyclable": false,
+                  "grade": "",
+                  "type": "",
+                  "transport_kg_factor": 2.4
+                },
+                "meta": {
+                  "created_on": "2026-03-16T15:23:16.070028",
+                  "modified_on": "2026-03-16T15:23:16.070028",
+                  "source": "db_modified",
+                  "source_db_key": "MumbaiSOR"
+                },
+                "state": {
+                  "in_trash": false,
+                  "included_in_carbon_emission": true,
+                  "included_in_recyclability": false
+                },
+                "total": 1696.248
+              },
+              {
+                "id": "3d8bc9ae-d321-465a-81fc-8736434a6626",
+                "values": {
+                  "material_name": "Steel Rebar (Fe500)",
+                  "quantity": 0.0324,
+                  "unit": "mt",
+                  "unit_to_si": 1000.0,
+                  "rate": 88341.0,
+                  "rate_source": "",
+                  "carbon_emission": 2.6,
+                  "carbon_unit": "kgCO\u2082e/kg",
+                  "conversion_factor": 1000.0,
+                  "scrap_rate": 32500.0,
+                  "post_demolition_recovery_percentage": 75.0,
+                  "is_recyclable": true,
+                  "grade": "",
+                  "type": ""
+                },
+                "meta": {
+                  "created_on": "2026-03-16T15:24:10.618740",
+                  "modified_on": "2026-03-16T15:24:10.618740",
+                  "source": "db_modified",
+                  "source_db_key": "MumbaiSOR"
+                },
+                "state": {
+                  "in_trash": false,
+                  "included_in_carbon_emission": true,
+                  "included_in_recyclability": true
+                },
+                "total": 2862.2484
+              },
+              {
+                "id": "3913fb95-bac5-48e3-a3f9-7ad3e3924b93",
+                "values": {
+                  "material_name": "Water",
+                  "quantity": 10.0,
+                  "unit": "m3",
+                  "unit_to_si": 1.0,
+                  "rate": 0.0,
+                  "rate_source": "",
+                  "carbon_emission": 0.0,
+                  "carbon_unit": "kgCO\u2082e/m3",
+                  "conversion_factor": 1.0,
+                  "scrap_rate": 0.0,
+                  "post_demolition_recovery_percentage": 0.0,
+                  "is_recyclable": false,
+                  "grade": "",
+                  "type": ""
+                },
+                "meta": {
+                  "created_on": "2026-03-17T17:15:35.100573",
+                  "modified_on": "2026-03-17T17:15:35.100573",
+                  "source": "manual",
+                  "source_db_key": ""
+                },
+                "state": {
+                  "in_trash": false,
+                  "included_in_carbon_emission": false,
+                  "included_in_recyclability": false
+                },
+                "total": 0.0
+              }
+            ],
+            "total": 4558.4964
+          },
+          "Bearings": {
+            "items": [
+              {
+                "id": "9e89deac-d43f-4a9e-8eb2-4495216e634e",
+                "values": {
+                  "material_name": "POT- PTFE bearing",
+                  "quantity": 1560.766565,
+                  "unit": "mt",
+                  "unit_to_si": 1000.0,
+                  "rate": 214.0,
+                  "rate_source": "Maha PWD SOR",
+                  "carbon_emission": 2.5,
+                  "carbon_unit": "kgCO\u2082e/kg",
+                  "conversion_factor": 1000.0,
+                  "scrap_rate": 0.0,
+                  "post_demolition_recovery_percentage": 0.0,
+                  "is_recyclable": false,
+                  "grade": "",
+                  "type": ""
+                },
+                "meta": {
+                  "created_on": "2026-03-16T15:25:55.490116",
+                  "modified_on": "2026-03-16T15:25:55.490116",
+                  "source": "db",
+                  "source_db_key": "MumbaiSOR"
+                },
+                "state": {
+                  "in_trash": false,
+                  "included_in_carbon_emission": true,
+                  "included_in_recyclability": false
+                },
+                "total": 334004.04491
+              }
+            ],
+            "total": 334004.04491
+          }
+        },
+        "total": 992442.3773099999
+      },
+      "Super Structure": {
+        "components": {
+          "Girder": {
+            "items": [
+              {
+                "id": "fa3a42fa-ebd7-4386-92cc-0bb23e9b0bf5",
+                "values": {
+                  "material_name": "Structural Steel main Girder (Fe 410 B)",
+                  "quantity": 62.1923315,
+                  "unit": "mt",
+                  "unit_to_si": 1000.0,
+                  "rate": 107164.0,
+                  "rate_source": "Maha PWD SOR",
+                  "carbon_emission": 2.5,
+                  "carbon_unit": "kgCO\u2082e/kg",
+                  "conversion_factor": 1000.0,
+                  "scrap_rate": 26000.0,
+                  "post_demolition_recovery_percentage": 95.0,
+                  "is_recyclable": true,
+                  "grade": "",
+                  "type": ""
+                },
+                "meta": {
+                  "created_on": "2026-03-16T15:32:41.272832",
+                  "modified_on": "2026-03-16T15:32:41.272832",
+                  "source": "db",
+                  "source_db_key": "MumbaiSOR"
+                },
+                "state": {
+                  "in_trash": false,
+                  "included_in_carbon_emission": true,
+                  "included_in_recyclability": true
+                },
+                "total": 6664779.012866
+              },
+              {
+                "id": "45e7d628-0cc6-4b69-8fe5-cfffb08f3ce2",
+                "values": {
+                  "material_name": "Coating",
+                  "quantity": 1226.81864,
+                  "unit": "m3",
+                  "unit_to_si": 1.0,
+                  "rate": 177.0,
+                  "rate_source": "",
+                  "carbon_emission": 0.0,
+                  "carbon_unit": "kgCO\u2082e/m3",
+                  "conversion_factor": 1.0,
+                  "scrap_rate": 0.0,
+                  "post_demolition_recovery_percentage": 0.0,
+                  "is_recyclable": false,
+                  "grade": "",
+                  "type": ""
+                },
+                "meta": {
+                  "created_on": "2026-03-16T18:14:09.734119",
+                  "modified_on": "2026-03-16T18:14:09.734119",
+                  "source": "manual",
+                  "source_db_key": ""
+                },
+                "state": {
+                  "in_trash": false,
+                  "included_in_carbon_emission": false,
+                  "included_in_recyclability": false
+                },
+                "total": 217146.89927999998
+              }
+            ],
+            "total": 6881925.912145999
+          },
+          "Deck Slab": {
+            "items": [
+              {
+                "id": "e992bc88-68a6-48be-a195-7980bfdc70af",
+                "values": {
+                  "material_name": "Concreting in RCC Deck Slab  (M35) (10 to 12.5m)",
+                  "quantity": 84.525,
+                  "unit": "cum",
+                  "unit_to_si": 1.0,
+                  "rate": 12872.2,
+                  "rate_source": "",
+                  "carbon_emission": 0.084,
+                  "carbon_unit": "kgCO\u2082e/kg",
+                  "conversion_factor": 2400.0,
+                  "scrap_rate": 0.0,
+                  "post_demolition_recovery_percentage": 0.0,
+                  "is_recyclable": false,
+                  "grade": "",
+                  "type": ""
+                },
+                "meta": {
+                  "created_on": "2026-03-16T15:27:36.742331",
+                  "modified_on": "2026-03-16T15:27:36.742331",
+                  "source": "db_modified",
+                  "source_db_key": "MumbaiSOR"
+                },
+                "state": {
+                  "in_trash": false,
+                  "included_in_carbon_emission": true,
+                  "included_in_recyclability": false
+                },
+                "total": 1088022.705
+              },
+              {
+                "id": "26f50773-57bb-41f5-ad14-7903a8d96340",
+                "values": {
+                  "material_name": "Steel Rebar (Fe500)",
+                  "quantity": 10.143,
+                  "unit": "mt",
+                  "unit_to_si": 1000.0,
+                  "rate": 88341.0,
+                  "rate_source": "Maha PWD SOR",
+                  "carbon_emission": 2.6,
+                  "carbon_unit": "kgCO\u2082e/kg",
+                  "conversion_factor": 1000.0,
+                  "scrap_rate": 32500.0,
+                  "post_demolition_recovery_percentage": 75.0,
+                  "is_recyclable": true,
+                  "grade": "",
+                  "type": ""
+                },
+                "meta": {
+                  "created_on": "2026-03-16T15:28:38.839203",
+                  "modified_on": "2026-03-16T15:28:38.839203",
+                  "source": "db",
+                  "source_db_key": "MumbaiSOR"
+                },
+                "state": {
+                  "in_trash": false,
+                  "included_in_carbon_emission": true,
+                  "included_in_recyclability": true
+                },
+                "total": 896042.763
+              },
+              {
+                "id": "71d6ad4a-f2fc-435b-b10c-ea26021a808d",
+                "values": {
+                  "material_name": "Steel Decking Sheet (310 MPA)",
+                  "quantity": 3.105375,
+                  "unit": "mt",
+                  "unit_to_si": 1000.0,
+                  "rate": 66368.0,
+                  "rate_source": "",
+                  "carbon_emission": 3.11,
+                  "carbon_unit": "kgCO\u2082e/kg",
+                  "conversion_factor": 1000.0,
+                  "scrap_rate": 26000.0,
+                  "post_demolition_recovery_percentage": 95.0,
+                  "is_recyclable": true,
+                  "grade": "",
+                  "type": ""
+                },
+                "meta": {
+                  "created_on": "2026-03-16T15:30:03.024666",
+                  "modified_on": "2026-03-16T15:31:25.173466",
+                  "source": "db_modified",
+                  "source_db_key": "MumbaiSOR"
+                },
+                "state": {
+                  "in_trash": false,
+                  "included_in_carbon_emission": true,
+                  "included_in_recyclability": true
+                },
+                "total": 206097.528
+              }
+            ],
+            "total": 2190162.9960000003
+          },
+          "Diaphragm": { "items": [], "total": 0.0 },
+          "Cross Bracings": {
+            "items": [
+              {
+                "id": "ae51d44c-1727-4b9c-a297-a212d3e0bf21",
+                "values": {
+                  "material_name": "Steel Cross Bracing",
+                  "quantity": 4.804031435,
+                  "unit": "mt",
+                  "unit_to_si": 1000.0,
+                  "rate": 97759.0,
+                  "rate_source": "Maha PWD SOR",
+                  "carbon_emission": 2.5,
+                  "carbon_unit": "kgCO\u2082e/kg",
+                  "conversion_factor": 1000.0,
+                  "scrap_rate": 0.0,
+                  "post_demolition_recovery_percentage": 0.0,
+                  "is_recyclable": false,
+                  "grade": "",
+                  "type": ""
+                },
+                "meta": {
+                  "created_on": "2026-03-16T15:34:29.768866",
+                  "modified_on": "2026-03-16T15:34:29.768866",
+                  "source": "db",
+                  "source_db_key": "MumbaiSOR"
+                },
+                "state": {
+                  "in_trash": false,
+                  "included_in_carbon_emission": true,
+                  "included_in_recyclability": false
+                },
+                "total": 469637.309054165
+              }
+            ],
+            "total": 469637.309054165
+          }
+        },
+        "total": 9541726.217200164
+      },
+      "Miscellaneous": {
+        "components": {
+          "Railing  & Crash Barrier & Median": {
+            "items": [
+              {
+                "id": "b745aefb-e28c-49e6-a1bd-6d27cd9b37f2",
+                "values": {
+                  "material_name": "Mild Steel railing",
+                  "quantity": 35.0,
+                  "unit": "rm",
+                  "unit_to_si": 1.0,
+                  "rate": 3870.0,
+                  "rate_source": "",
+                  "carbon_emission": 2.5,
+                  "carbon_unit": "kgCO\u2082e/kg",
+                  "conversion_factor": 10.99,
+                  "scrap_rate": 26000.0,
+                  "post_demolition_recovery_percentage": 95.0,
+                  "is_recyclable": true,
+                  "grade": "",
+                  "type": ""
+                },
+                "meta": {
+                  "created_on": "2026-03-16T15:36:56.188550",
+                  "modified_on": "2026-03-16T17:53:38.024613",
+                  "source": "db_modified",
+                  "source_db_key": "MumbaiSOR"
+                },
+                "state": {
+                  "in_trash": false,
+                  "included_in_carbon_emission": true,
+                  "included_in_recyclability": true
+                },
+                "total": 135450.0
+              },
+              {
+                "id": "07a418b9-b6b8-4733-b1d6-7e0d7a065f46",
+                "values": {
+                  "material_name": "Crash Barrier (Without Footpath) M30",
+                  "quantity": 70.0,
+                  "unit": "rm",
+                  "unit_to_si": 1.0,
+                  "rate": 4234.0,
+                  "rate_source": "Maha PWD SOR",
+                  "carbon_emission": 0.11,
+                  "carbon_unit": "kgCO\u2082e/kg",
+                  "conversion_factor": 715.2,
+                  "scrap_rate": 0.0,
+                  "post_demolition_recovery_percentage": 0.0,
+                  "is_recyclable": false,
+                  "grade": "",
+                  "type": ""
+                },
+                "meta": {
+                  "created_on": "2026-03-16T15:43:44.873471",
+                  "modified_on": "2026-03-16T15:43:44.873471",
+                  "source": "db",
+                  "source_db_key": "MumbaiSOR"
+                },
+                "state": {
+                  "in_trash": false,
+                  "included_in_carbon_emission": true,
+                  "included_in_recyclability": false
+                },
+                "total": 296380.0
+              },
+              {
+                "id": "e1c7eb76-db72-46a0-9781-3c16013fb3c7",
+                "values": {
+                  "material_name": "Median M30",
+                  "quantity": 35.0,
+                  "unit": "rm",
+                  "unit_to_si": 1.0,
+                  "rate": 4234.0,
+                  "rate_source": "Maha PWD SOR",
+                  "carbon_emission": 0.11,
+                  "carbon_unit": "kgCO\u2082e/kg",
+                  "conversion_factor": 609.6,
+                  "scrap_rate": 0.0,
+                  "post_demolition_recovery_percentage": 0.0,
+                  "is_recyclable": false,
+                  "grade": "",
+                  "type": ""
+                },
+                "meta": {
+                  "created_on": "2026-03-16T15:56:01.487685",
+                  "modified_on": "2026-03-16T15:56:01.487685",
+                  "source": "db",
+                  "source_db_key": "MumbaiSOR"
+                },
+                "state": {
+                  "in_trash": false,
+                  "included_in_carbon_emission": true,
+                  "included_in_recyclability": false
+                },
+                "total": 148190.0
+              }
+            ],
+            "total": 580020.0
+          },
+          "Drainage": { "items": [], "total": 0.0 },
+          "Asphalt, Utilities and Other Materials": {
+            "items": [
+              {
+                "id": "bb2a8be4-dd7b-4829-8294-788e1cb0dc80",
+                "values": {
+                  "material_name": "Strip Seal Expansion Joint (Catering to maximum horizontal movement upto 70mm)",
+                  "quantity": 10.5,
+                  "unit": "rm",
+                  "unit_to_si": 1.0,
+                  "rate": 13295.0,
+                  "rate_source": "Maha PWD SOR",
+                  "carbon_emission": 2.547,
+                  "carbon_unit": "kgCO\u2082e/kg",
+                  "conversion_factor": 0.0,
+                  "scrap_rate": 0.0,
+                  "post_demolition_recovery_percentage": 0.0,
+                  "is_recyclable": false,
+                  "grade": "",
+                  "type": ""
+                },
+                "meta": {
+                  "created_on": "2026-03-16T15:44:36.257509",
+                  "modified_on": "2026-03-16T15:44:36.257509",
+                  "source": "db",
+                  "source_db_key": "MumbaiSOR"
+                },
+                "state": {
+                  "in_trash": false,
+                  "included_in_carbon_emission": false,
+                  "included_in_recyclability": false
+                },
+                "total": 139597.5
+              },
+              {
+                "id": "73355273-23fc-4ebc-8bbc-8ef41345d138",
+                "values": {
+                  "material_name": "Coating on Structural Steel (Aluminum Paint, Etch and Zinc primer)",
+                  "quantity": 1226.81864,
+                  "unit": "m2",
+                  "unit_to_si": 1.0,
+                  "rate": 177.0,
+                  "rate_source": "Maha PWD SOR",
+                  "carbon_emission": 3.76,
+                  "carbon_unit": "kgCO\u2082e/kg",
+                  "conversion_factor": 0.266,
+                  "scrap_rate": 0.0,
+                  "post_demolition_recovery_percentage": 0.0,
+                  "is_recyclable": false,
+                  "grade": "",
+                  "type": ""
+                },
+                "meta": {
+                  "created_on": "2026-03-16T15:45:34.884029",
+                  "modified_on": "2026-03-16T15:45:34.884029",
+                  "source": "db",
+                  "source_db_key": "MumbaiSOR"
+                },
+                "state": {
+                  "in_trash": false,
+                  "included_in_carbon_emission": true,
+                  "included_in_recyclability": false
+                },
+                "total": 217146.89927999998
+              },
+              {
+                "id": "1f6a80a2-4057-4761-ae3f-abc7706c3c74",
+                "values": {
+                  "material_name": "Asphalt wearing course (12mm)",
+                  "quantity": 367.5,
+                  "unit": "m2",
+                  "unit_to_si": 1.0,
+                  "rate": 496.0,
+                  "rate_source": "Maha PWD SOR",
+                  "carbon_emission": 0.162,
+                  "carbon_unit": "kgCO\u2082e/m2-mm",
+                  "conversion_factor": 12.0,
+                  "scrap_rate": 0.0,
+                  "post_demolition_recovery_percentage": 0.0,
+                  "is_recyclable": false,
+                  "grade": "",
+                  "type": ""
+                },
+                "meta": {
+                  "created_on": "2026-03-16T15:46:26.054436",
+                  "modified_on": "2026-03-16T15:46:26.054436",
+                  "source": "db",
+                  "source_db_key": "MumbaiSOR"
+                },
+                "state": {
+                  "in_trash": false,
+                  "included_in_carbon_emission": true,
+                  "included_in_recyclability": false
+                },
+                "total": 182280.0
+              },
+              {
+                "id": "5f311227-4a0a-485a-b37a-d706d37a9162",
+                "values": {
+                  "material_name": "Yellow and white thermoplastic roadmarking strip (2.5 mm)",
+                  "quantity": 3.5,
+                  "unit": "m2",
+                  "unit_to_si": 1.0,
+                  "rate": 666.0,
+                  "rate_source": "",
+                  "carbon_emission": 2.152,
+                  "carbon_unit": "kgCO\u2082e/kg",
+                  "conversion_factor": 0.25,
+                  "scrap_rate": 0.0,
+                  "post_demolition_recovery_percentage": 0.0,
+                  "is_recyclable": false,
+                  "grade": "",
+                  "type": ""
+                },
+                "meta": {
+                  "created_on": "2026-03-16T15:50:10.308123",
+                  "modified_on": "2026-03-16T15:50:28.467856",
+                  "source": "db_modified",
+                  "source_db_key": "MumbaiSOR"
+                },
+                "state": {
+                  "in_trash": false,
+                  "included_in_carbon_emission": true,
+                  "included_in_recyclability": false
+                },
+                "total": 2331.0
+              },
+              {
+                "id": "777952ff-bb5f-4ee8-bcba-aed01d34cdd8",
+                "values": {
+                  "material_name": "Anti corrosive paint for reinforcement (CPCC)",
+                  "quantity": 21.3394,
+                  "unit": "mt",
+                  "unit_to_si": 1000.0,
+                  "rate": 11287.0,
+                  "rate_source": "Maha PWD SOR",
+                  "carbon_emission": 3.76,
+                  "carbon_unit": "kgCO\u2082e/kg",
+                  "conversion_factor": 1000.0,
+                  "scrap_rate": 0.0,
+                  "post_demolition_recovery_percentage": 0.0,
+                  "is_recyclable": false,
+                  "grade": "",
+                  "type": ""
+                },
+                "meta": {
+                  "created_on": "2026-03-16T15:51:48.382987",
+                  "modified_on": "2026-03-16T15:51:48.382987",
+                  "source": "db",
+                  "source_db_key": "MumbaiSOR"
+                },
+                "state": {
+                  "in_trash": false,
+                  "included_in_carbon_emission": true,
+                  "included_in_recyclability": false
+                },
+                "total": 240857.8078
+              }
+            ],
+            "total": 782213.2070800001
+          },
+          "Waterproofing": {
+            "items": [
+              {
+                "id": "193e39b7-c77a-45b0-bb6d-390663b9b0fb",
+                "values": {
+                  "material_name": "Damp Proof course (M20) 50 mm",
+                  "quantity": 48.5,
+                  "unit": "m2",
+                  "unit_to_si": 1.0,
+                  "rate": 432.0,
+                  "rate_source": "",
+                  "carbon_emission": 0.084,
+                  "carbon_unit": "kgCO\u2082e/kg",
+                  "conversion_factor": 120.0,
+                  "scrap_rate": 0.0,
+                  "post_demolition_recovery_percentage": 0.0,
+                  "is_recyclable": false,
+                  "grade": "",
+                  "type": ""
+                },
+                "meta": {
+                  "created_on": "2026-03-16T15:53:04.090378",
+                  "modified_on": "2026-03-16T15:53:04.090378",
+                  "source": "db_modified",
+                  "source_db_key": "MumbaiSOR"
+                },
+                "state": {
+                  "in_trash": false,
+                  "included_in_carbon_emission": true,
+                  "included_in_recyclability": false
+                },
+                "total": 20952.0
+              },
+              {
+                "id": "f3c75635-4aa4-4672-bcd3-e8cc8ab0e3e3",
+                "values": {
+                  "material_name": "Bitumen VG30/VG40 2kg/m2",
+                  "quantity": 367.5,
+                  "unit": "m2",
+                  "unit_to_si": 1.0,
+                  "rate": 246.0,
+                  "rate_source": "",
+                  "carbon_emission": 0.191,
+                  "carbon_unit": "kgCO\u2082e/kg",
+                  "conversion_factor": 2.0,
+                  "scrap_rate": 0.0,
+                  "post_demolition_recovery_percentage": 0.0,
+                  "is_recyclable": false,
+                  "grade": "",
+                  "type": ""
+                },
+                "meta": {
+                  "created_on": "2026-03-16T15:55:21.016844",
+                  "modified_on": "2026-03-16T15:55:21.016844",
+                  "source": "db_modified",
+                  "source_db_key": "MumbaiSOR"
+                },
+                "state": {
+                  "in_trash": false,
+                  "included_in_carbon_emission": false,
+                  "included_in_recyclability": false
+                },
+                "total": 90405.0
+              }
+            ],
+            "total": 111357.0
+          }
+        },
+        "total": 1473590.20708
+      },
+      "grand_total": 13510517.107590165
+    },
+    "carbon_emission_data": {
+      "material_emissions_data": {
+        "included_items": [
+          {
+            "category": "Foundation",
+            "component": "Pile",
+            "material": "Concreting of bored pile (M35) (1000mm) (5 to 10m)",
+            "quantity": 40.0,
+            "unit": "rm",
+            "conversion_factor": 2400.0,
+            "carbon_emission": 0.084,
+            "carbon_unit": "kgCO\u2082e/kg",
+            "total_kgCO2e": 8064.000000000001
+          },
+          {
+            "category": "Foundation",
+            "component": "Pile",
+            "material": "Steel Rebar (Fe500)",
+            "quantity": 5.21,
+            "unit": "mt",
+            "conversion_factor": 1000.0,
+            "carbon_emission": 2.6,
+            "carbon_unit": "kgCO\u2082e/kg",
+            "total_kgCO2e": 13546.0
+          },
+          {
+            "category": "Foundation",
+            "component": "Pile Cap",
+            "material": "Plain Cement Concrete (M15)",
+            "quantity": 3.136,
+            "unit": "cum",
+            "conversion_factor": 2400.0,
+            "carbon_emission": 0.11,
+            "carbon_unit": "kgCO\u2082e/kg",
+            "total_kgCO2e": 827.9040000000001
+          },
+          {
+            "category": "Foundation",
+            "component": "Pile Cap",
+            "material": "Concreting of pile cap (M35)",
+            "quantity": 29.375,
+            "unit": "cum",
+            "conversion_factor": 2400.0,
+            "carbon_emission": 0.084,
+            "carbon_unit": "kgCO\u2082e/kg",
+            "total_kgCO2e": 5922.0
+          },
+          {
+            "category": "Foundation",
+            "component": "Pile Cap",
+            "material": "Steel Rebar (Fe500)",
+            "quantity": 1.677,
+            "unit": "mt",
+            "conversion_factor": 1000.0,
+            "carbon_emission": 0.11,
+            "carbon_unit": "kgCO\u2082e/kg",
+            "total_kgCO2e": 184.47
+          },
+          {
+            "category": "Sub Structure",
+            "component": "Pier",
+            "material": "Concreting in Pier(M35) (5 to 7.5m)",
+            "quantity": 9.57,
+            "unit": "cum",
+            "conversion_factor": 2400.0,
+            "carbon_emission": 0.084,
+            "carbon_unit": "kgCO\u2082e/kg",
+            "total_kgCO2e": 1929.3120000000001
+          },
+          {
+            "category": "Sub Structure",
+            "component": "Pier",
+            "material": "Steel Rebar (Fe500)",
+            "quantity": 2.175,
+            "unit": "mt",
+            "conversion_factor": 1000.0,
+            "carbon_emission": 2.6,
+            "carbon_unit": "kgCO\u2082e/kg",
+            "total_kgCO2e": 5655.0
+          },
+          {
+            "category": "Sub Structure",
+            "component": "Pier Cap",
+            "material": "Concreting of pier cap M35",
+            "quantity": 19.54,
+            "unit": "cum",
+            "conversion_factor": 2400.0,
+            "carbon_emission": 0.11,
+            "carbon_unit": "kgCO\u2082e/kg",
+            "total_kgCO2e": 5158.56
+          },
+          {
+            "category": "Sub Structure",
+            "component": "Pier Cap",
+            "material": "Steel Rebar (Fe500)",
+            "quantity": 2.102,
+            "unit": "mt",
+            "conversion_factor": 1000.0,
+            "carbon_emission": 2.6,
+            "carbon_unit": "kgCO\u2082e/kg",
+            "total_kgCO2e": 5465.2
+          },
+          {
+            "category": "Sub Structure",
+            "component": "Pedestal",
+            "material": "Concreting of pedestal M35",
+            "quantity": 0.216,
+            "unit": "cum",
+            "conversion_factor": 2400.0,
+            "carbon_emission": 0.084,
+            "carbon_unit": "kgCO\u2082e/kg",
+            "total_kgCO2e": 43.5456
+          },
+          {
+            "category": "Sub Structure",
+            "component": "Pedestal",
+            "material": "Steel Rebar (Fe500)",
+            "quantity": 0.0324,
+            "unit": "mt",
+            "conversion_factor": 1000.0,
+            "carbon_emission": 2.6,
+            "carbon_unit": "kgCO\u2082e/kg",
+            "total_kgCO2e": 84.24
+          },
+          {
+            "category": "Sub Structure",
+            "component": "Bearings",
+            "material": "POT- PTFE bearing",
+            "quantity": 1560.766565,
+            "unit": "mt",
+            "conversion_factor": 1000.0,
+            "carbon_emission": 2.5,
+            "carbon_unit": "kgCO\u2082e/kg",
+            "total_kgCO2e": 3901916.4124999996
+          },
+          {
+            "category": "Super Structure",
+            "component": "Girder",
+            "material": "Structural Steel main Girder (Fe 410 B)",
+            "quantity": 62.1923315,
+            "unit": "mt",
+            "conversion_factor": 1000.0,
+            "carbon_emission": 2.5,
+            "carbon_unit": "kgCO\u2082e/kg",
+            "total_kgCO2e": 155480.82875
+          },
+          {
+            "category": "Super Structure",
+            "component": "Deck Slab",
+            "material": "Concreting in RCC Deck Slab  (M35) (10 to 12.5m)",
+            "quantity": 84.525,
+            "unit": "cum",
+            "conversion_factor": 2400.0,
+            "carbon_emission": 0.084,
+            "carbon_unit": "kgCO\u2082e/kg",
+            "total_kgCO2e": 17040.24
+          },
+          {
+            "category": "Super Structure",
+            "component": "Deck Slab",
+            "material": "Steel Rebar (Fe500)",
+            "quantity": 10.143,
+            "unit": "mt",
+            "conversion_factor": 1000.0,
+            "carbon_emission": 2.6,
+            "carbon_unit": "kgCO\u2082e/kg",
+            "total_kgCO2e": 26371.8
+          },
+          {
+            "category": "Super Structure",
+            "component": "Deck Slab",
+            "material": "Steel Decking Sheet (310 MPA)",
+            "quantity": 3.105375,
+            "unit": "mt",
+            "conversion_factor": 1000.0,
+            "carbon_emission": 3.11,
+            "carbon_unit": "kgCO\u2082e/kg",
+            "total_kgCO2e": 9657.71625
+          },
+          {
+            "category": "Super Structure",
+            "component": "Cross Bracings",
+            "material": "Steel Cross Bracing",
+            "quantity": 4.804031435,
+            "unit": "mt",
+            "conversion_factor": 1000.0,
+            "carbon_emission": 2.5,
+            "carbon_unit": "kgCO\u2082e/kg",
+            "total_kgCO2e": 12010.0785875
+          },
+          {
+            "category": "Misc",
+            "component": "Railing  & Crash Barrier & Median",
+            "material": "Mild Steel railing",
+            "quantity": 35.0,
+            "unit": "rm",
+            "conversion_factor": 10.99,
+            "carbon_emission": 2.5,
+            "carbon_unit": "kgCO\u2082e/kg",
+            "total_kgCO2e": 961.6250000000001
+          },
+          {
+            "category": "Misc",
+            "component": "Railing  & Crash Barrier & Median",
+            "material": "Crash Barrier (Without Footpath) M30",
+            "quantity": 70.0,
+            "unit": "rm",
+            "conversion_factor": 715.2,
+            "carbon_emission": 0.11,
+            "carbon_unit": "kgCO\u2082e/kg",
+            "total_kgCO2e": 5507.04
+          },
+          {
+            "category": "Misc",
+            "component": "Railing  & Crash Barrier & Median",
+            "material": "Median M30",
+            "quantity": 35.0,
+            "unit": "rm",
+            "conversion_factor": 609.6,
+            "carbon_emission": 0.11,
+            "carbon_unit": "kgCO\u2082e/kg",
+            "total_kgCO2e": 2346.96
+          },
+          {
+            "category": "Misc",
+            "component": "Asphalt, Utilities and Other Materials",
+            "material": "Coating on Structural Steel (Aluminum Paint, Etch and Zinc primer)",
+            "quantity": 1226.81864,
+            "unit": "m2",
+            "conversion_factor": 0.266,
+            "carbon_emission": 3.76,
+            "carbon_unit": "kgCO\u2082e/kg",
+            "total_kgCO2e": 1227.0149309824
+          },
+          {
+            "category": "Misc",
+            "component": "Asphalt, Utilities and Other Materials",
+            "material": "Asphalt wearing course (12mm)",
+            "quantity": 367.5,
+            "unit": "m2",
+            "conversion_factor": 12.0,
+            "carbon_emission": 0.162,
+            "carbon_unit": "kgCO\u2082e/m2-mm",
+            "total_kgCO2e": 714.4200000000001
+          },
+          {
+            "category": "Misc",
+            "component": "Asphalt, Utilities and Other Materials",
+            "material": "Yellow and white thermoplastic roadmarking strip (2.5 mm)",
+            "quantity": 3.5,
+            "unit": "m2",
+            "conversion_factor": 0.25,
+            "carbon_emission": 2.152,
+            "carbon_unit": "kgCO\u2082e/kg",
+            "total_kgCO2e": 1.883
+          },
+          {
+            "category": "Misc",
+            "component": "Asphalt, Utilities and Other Materials",
+            "material": "Anti corrosive paint for reinforcement (CPCC)",
+            "quantity": 21.3394,
+            "unit": "mt",
+            "conversion_factor": 1000.0,
+            "carbon_emission": 3.76,
+            "carbon_unit": "kgCO\u2082e/kg",
+            "total_kgCO2e": 80236.144
+          },
+          {
+            "category": "Misc",
+            "component": "Waterproofing",
+            "material": "Damp Proof course (M20) 50 mm",
+            "quantity": 48.5,
+            "unit": "m2",
+            "conversion_factor": 120.0,
+            "carbon_emission": 0.084,
+            "carbon_unit": "kgCO\u2082e/kg",
+            "total_kgCO2e": 488.88000000000005
+          }
+        ],
+        "cat_totals": {
+          "Foundation": 28544.374,
+          "Sub Structure": 3920252.2701,
+          "Super Structure": 220560.66358749996,
+          "Misc": 91483.96693098241
+        },
+        "total_kgCO2e": 4260841.274618482,
+        "included_count": 25,
+        "total_count": 30
+      },
+      "transport_emissions_data": {
+        "entries": [
+          {
+            "vehicle_name": "HDV Large (>12T)",
+            "origin": "",
+            "destination": "Site",
+            "distance_km": 10.0,
+            "emission_kgCO2e": 950.9500000000003,
+            "materials": [
+              {
+                "uuid": "9d8abc26-91c6-49d1-8efa-bd6e2f03e761",
+                "name": "Soft Rock (0 to 1.5m)",
+                "category": "Foundation",
+                "unit": "cum",
+                "qty": 39.984,
+                "kg_factor": 1.6,
+                "qty_kg": 63.9744,
+                "trips": 1,
+                "emission": 86.45,
+                "status": "ok",
+                "warning": ""
+              },
+              {
+                "uuid": "b5da7951-3a15-4768-bc44-ea46d8b69505",
+                "name": "Concreting of bored pile (M35) (1000mm) (5 to 10m)",
+                "category": "Foundation",
+                "unit": "rm",
+                "qty": 40.0,
+                "kg_factor": 2.4,
+                "qty_kg": 96.0,
+                "trips": 1,
+                "emission": 86.45,
+                "status": "ok",
+                "warning": ""
+              },
+              {
+                "uuid": "f35ba3fa-a7c7-4c17-bd1b-f575537f4ce4",
+                "name": "Steel Rebar (Fe500)",
+                "category": "Foundation",
+                "unit": "mt",
+                "qty": 5.21,
+                "kg_factor": 1000.0,
+                "qty_kg": 5210.0,
+                "trips": 1,
+                "emission": 86.45,
+                "status": "ok",
+                "warning": ""
+              },
+              {
+                "uuid": "efd13377-1462-408e-a43f-707916c0bd8c",
+                "name": "Plain Cement Concrete (M15)",
+                "category": "Foundation",
+                "unit": "cum",
+                "qty": 3.136,
+                "kg_factor": 2.4,
+                "qty_kg": 7.5264,
+                "trips": 1,
+                "emission": 86.45,
+                "status": "ok",
+                "warning": ""
+              },
+              {
+                "uuid": "3595fc98-6a87-4046-b620-4424fbe3288a",
+                "name": "Concreting of pile cap (M35)",
+                "category": "Foundation",
+                "unit": "cum",
+                "qty": 29.375,
+                "kg_factor": 2.4,
+                "qty_kg": 70.5,
+                "trips": 1,
+                "emission": 86.45,
+                "status": "ok",
+                "warning": ""
+              },
+              {
+                "uuid": "9b581af2-a880-4e55-93d8-9dce3a09ece9",
+                "name": "Steel Rebar (Fe500)",
+                "category": "Foundation",
+                "unit": "mt",
+                "qty": 1.677,
+                "kg_factor": 1000.0,
+                "qty_kg": 1677.0,
+                "trips": 1,
+                "emission": 86.45,
+                "status": "ok",
+                "warning": ""
+              },
+              {
+                "uuid": "9f194491-8051-45f7-acfd-673ceb420124",
+                "name": "Concreting in Pier(M35) (5 to 7.5m)",
+                "category": "Sub Structure",
+                "unit": "cum",
+                "qty": 9.57,
+                "kg_factor": 2.4,
+                "qty_kg": 22.968,
+                "trips": 1,
+                "emission": 86.45,
+                "status": "ok",
+                "warning": ""
+              },
+              {
+                "uuid": "37e540da-c48a-4998-ac81-ea23b8bc8bb9",
+                "name": "Steel Rebar (Fe500)",
+                "category": "Sub Structure",
+                "unit": "mt",
+                "qty": 2.175,
+                "kg_factor": 1000.0,
+                "qty_kg": 2175.0,
+                "trips": 1,
+                "emission": 86.45,
+                "status": "ok",
+                "warning": ""
+              },
+              {
+                "uuid": "a239fd3b-47db-4755-99e7-0533c7124b98",
+                "name": "Concreting of pier cap M35",
+                "category": "Sub Structure",
+                "unit": "cum",
+                "qty": 19.54,
+                "kg_factor": 2.4,
+                "qty_kg": 46.895999999999994,
+                "trips": 1,
+                "emission": 86.45,
+                "status": "ok",
+                "warning": ""
+              },
+              {
+                "uuid": "dc1b551b-f53c-41c5-ae84-e600de11c3fb",
+                "name": "Steel Rebar (Fe500)",
+                "category": "Sub Structure",
+                "unit": "mt",
+                "qty": 2.102,
+                "kg_factor": 1000.0,
+                "qty_kg": 2102.0,
+                "trips": 1,
+                "emission": 86.45,
+                "status": "ok",
+                "warning": ""
+              },
+              {
+                "uuid": "8c6ef1df-09c1-4086-baef-85e1b7236a28",
+                "name": "Concreting of pedestal M35",
+                "category": "Sub Structure",
+                "unit": "cum",
+                "qty": 0.216,
+                "kg_factor": 2.4,
+                "qty_kg": 0.5184,
+                "trips": 1,
+                "emission": 86.45,
+                "status": "ok",
+                "warning": ""
+              }
+            ]
+          }
+        ],
+        "cat_totals": {
+          "Foundation": 518.7,
+          "Sub Structure": 432.25,
+          "Super Structure": 0.0,
+          "Misc": 0.0
+        },
+        "total_kgCO2e": 950.9500000000003,
+        "active_vehicle_count": 1
+      },
+      "machinery_emissions_data": {
+        "mode": "lumpsum",
+        "default_days": 0,
+        "detailed": {
+          "rows": [
+            {
+              "name": "Backhoe loader (JCB)",
+              "source": "Diesel",
+              "rate": 5.0,
+              "hrs": 0.0,
+              "days": 0,
+              "ef": 2.69
+            },
+            {
+              "name": "Bar bending machine",
+              "source": "Electricity (Grid)",
+              "rate": 3.0,
+              "hrs": 0.0,
+              "days": 0,
+              "ef": 0.71
+            },
+            {
+              "name": "Bar cutting machine",
+              "source": "Electricity (Grid)",
+              "rate": 4.0,
+              "hrs": 0.0,
+              "days": 0,
+              "ef": 0.71
+            },
+            {
+              "name": "Bitumen boiler",
+              "source": "Diesel",
+              "rate": 1.0,
+              "hrs": 0.0,
+              "days": 0,
+              "ef": 2.69
+            },
+            {
+              "name": "Bitumen sprayer",
+              "source": "Diesel",
+              "rate": 5.0,
+              "hrs": 0.0,
+              "days": 0,
+              "ef": 2.69
+            },
+            {
+              "name": "Concrete pump",
+              "source": "Diesel",
+              "rate": 12.0,
+              "hrs": 0.0,
+              "days": 0,
+              "ef": 2.69
+            },
+            {
+              "name": "Crane (crawler)",
+              "source": "Diesel",
+              "rate": 12.0,
+              "hrs": 0.0,
+              "days": 0,
+              "ef": 2.69
+            },
+            {
+              "name": "Crane (mobile)",
+              "source": "Diesel",
+              "rate": 8.0,
+              "hrs": 0.0,
+              "days": 0,
+              "ef": 2.69
+            },
+            {
+              "name": "Dewatering pump",
+              "source": "Diesel",
+              "rate": 2.0,
+              "hrs": 0.0,
+              "days": 0,
+              "ef": 2.69
+            },
+            {
+              "name": "DG set",
+              "source": "Diesel",
+              "rate": 4.0,
+              "hrs": 0.0,
+              "days": 0,
+              "ef": 2.69
+            },
+            {
+              "name": "Grouting mixer",
+              "source": "Electricity (Grid)",
+              "rate": 1.0,
+              "hrs": 0.0,
+              "days": 0,
+              "ef": 0.71
+            },
+            {
+              "name": "Grouting pump",
+              "source": "Electricity (Grid)",
+              "rate": 5.0,
+              "hrs": 0.0,
+              "days": 0,
+              "ef": 0.71
+            },
+            {
+              "name": "Hydraulic excavator",
+              "source": "Diesel",
+              "rate": 14.0,
+              "hrs": 0.0,
+              "days": 0,
+              "ef": 2.69
+            },
+            {
+              "name": "Hydraulic stressing jack",
+              "source": "Electricity (Grid)",
+              "rate": 3.0,
+              "hrs": 0.0,
+              "days": 0,
+              "ef": 0.71
+            },
+            {
+              "name": "Needle Vibrator",
+              "source": "Electricity (Grid)",
+              "rate": 1.0,
+              "hrs": 0.0,
+              "days": 0,
+              "ef": 0.71
+            },
+            {
+              "name": "Paver finisher",
+              "source": "Diesel",
+              "rate": 7.0,
+              "hrs": 0.0,
+              "days": 0,
+              "ef": 2.69
+            },
+            {
+              "name": "Road roller",
+              "source": "Diesel",
+              "rate": 4.0,
+              "hrs": 0.0,
+              "days": 0,
+              "ef": 2.69
+            },
+            {
+              "name": "Rotary piling rig/Hydraulic piling rig",
+              "source": "Diesel",
+              "rate": 15.0,
+              "hrs": 0.0,
+              "days": 0,
+              "ef": 2.69
+            },
+            {
+              "name": "Site office (If Grid electricity is used)",
+              "source": "Electricity (Grid)",
+              "rate": 4.0,
+              "hrs": 0.0,
+              "days": 0,
+              "ef": 0.71
+            },
+            {
+              "name": "Welding machine",
+              "source": "Electricity (Grid)",
+              "rate": 4.0,
+              "hrs": 0.0,
+              "days": 0,
+              "ef": 0.71
+            }
+          ]
+        },
+        "lumpsum": {
+          "elec_consumption_per_day": 0.0,
+          "elec_days": 0,
+          "elec_ef": 0.0,
+          "fuel_consumption_per_day": 0.0,
+          "fuel_days": 0
+        },
+        "remarks": "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n<html><head><meta name=\"qrichtext\" content=\"1\" /><meta charset=\"utf-8\" /><style type=\"text/css\">\np, li { white-space: pre-wrap; }\nhr { height: 1px; border-width: 0; }\nli.unchecked::marker { content: \"\\2610\"; }\nli.checked::marker { content: \"\\2612\"; }\n</style></head><body style=\" font-family:'Ubuntu','Arial','sans-serif'; font-size:9pt; font-weight:400; font-style:normal;\">\n<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-family:'Segoe UI'; font-size:13px;\"><br /></p></body></html>",
+        "total_kgCO2e": 0.0
+      },
+      "diversion_emissions": {
+        "mode": "Calculate by Vehicle",
+        "emission_factors": {
+          "small_cars": 0.103,
+          "big_cars": 0.269,
+          "two_wheelers": 0.035,
+          "o_buses": 0.455,
+          "d_buses": 0.606,
+          "lcv": 0.307,
+          "hcv": 0.593,
+          "mcv": 0.738
+        },
+        "total_calculated_emissions": 579.7723749999999,
+        "total_direct_emissions": 0.0,
+        "remarks": "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n<html><head><meta name=\"qrichtext\" content=\"1\" /><meta charset=\"utf-8\" /><style type=\"text/css\">\np, li { white-space: pre-wrap; }\nhr { height: 1px; border-width: 0; }\nli.unchecked::marker { content: \"\\2610\"; }\nli.checked::marker { content: \"\\2612\"; }\n</style></head><body style=\" font-family:'Ubuntu','Arial','sans-serif'; font-size:9pt; font-weight:400; font-style:normal;\">\n<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-family:'Segoe UI'; font-size:13px;\"><br /></p></body></html>"
+      },
+      "social_cost_data": {
+        "source": "K. Ricke et al. (Country-Level)",
+        "niti": {
+          "base_value_inr": 6.3936,
+          "inr_to_local_rate": 1.0,
+          "cost_local": 6.394,
+          "currency": "INR"
+        },
+        "ricke": {
+          "ssp": "SSP1 (Sustainability)",
+          "rcp": "RCP 2.6 (Low Warming)",
+          "base_value_usd": 0.085,
+          "usd_to_local_rate": 1.0,
+          "cost_local": 0.085,
+          "currency": "INR"
+        },
+        "custom": {
+          "entered_value": 0.0,
+          "currency": "INR",
+          "unit": "INR/kgCO\u2082e"
+        },
+        "result": {
+          "selected_mode": "K. Ricke et al. (Country-Level)",
+          "base_price": 0.085,
+          "base_price_unit": "USD/kgCO\u2082e",
+          "conversion_rate": 1.0,
+          "cost_of_carbon_local": 0.085,
+          "currency": "INR",
+          "unit": "INR/kgCO\u2082e"
+        }
+      }
+    },
+    "bridge_data": {
+      "bridge_name": "Mumbai Project",
+      "user_agency": "",
+      "project_country": "",
+      "location_from": "",
+      "location_via": "",
+      "location_to": "hfdjhdfhdf",
+      "bridge_type": "Girder",
+      "span": 0.0,
+      "carriageway_width": 0.0,
+      "num_lanes": 0,
+      "vehicle_path_direction": "One Way",
+      "footpath": "Yes",
+      "wind_speed": 0.0,
+      "design_life": 75,
+      "year_of_construction": 2026,
+      "duration_construction_months": 5.2,
+      "working_days_per_month": 22,
+      "days_per_month": 30
+    },
+    "traffic_and_road_data": {
+      "mode": "INDIA",
+      "alternate_road_carriageway": "2L",
+      "carriage_width_in_m": 7.0,
+      "hourly_capacity": 2400,
+      "severity_minor": 25.7,
+      "severity_major": 61.42,
+      "severity_fatal": 12.88,
+      "road_roughness_mm_per_km": 2000.0,
+      "road_rise_m_per_km": 0.0,
+      "road_fall_m_per_km": 0.0,
+      "additional_reroute_distance_km": 0.175,
+      "additional_travel_time_min": 0.525,
+      "crash_rate_accidents_per_million_km": 3385.23,
+      "work_zone_multiplier": 1.0,
+      "num_peak_hours": 2,
+      "road_user_cost_per_day": 1.0,
+      "remarks": "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n<html><head><meta name=\"qrichtext\" content=\"1\" /><meta charset=\"utf-8\" /><style type=\"text/css\">\np, li { white-space: pre-wrap; }\nhr { height: 1px; border-width: 0; }\nli.unchecked::marker { content: \"\\2610\"; }\nli.checked::marker { content: \"\\2612\"; }\n</style></head><body style=\" font-family:'Ubuntu','Arial','sans-serif'; font-size:9pt; font-weight:400; font-style:normal;\">\n<p style=\"-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px; font-family:'Segoe UI'; font-size:13px;\"><br /></p></body></html>",
+      "force_free_flow_off_peak": true,
+      "vehicle_data": {
+        "small_cars": {
+          "vehicles_per_day": 7271,
+          "accident_percentage": 12.18,
+          "pwr": 0.0
+        },
+        "big_cars": {
+          "vehicles_per_day": 7269,
+          "accident_percentage": 11.74,
+          "pwr": 0.0
+        },
+        "two_wheelers": {
+          "vehicles_per_day": 3409,
+          "accident_percentage": 74.61,
+          "pwr": 0.0
+        },
+        "o_buses": {
+          "vehicles_per_day": 2,
+          "accident_percentage": 0.88,
+          "pwr": 0.0
+        },
+        "d_buses": {
+          "vehicles_per_day": 480,
+          "accident_percentage": 0.0,
+          "pwr": 0.0
+        },
+        "lcv": {
+          "vehicles_per_day": 564,
+          "accident_percentage": 0.0,
+          "pwr": 0.0
+        },
+        "hcv": {
+          "vehicles_per_day": 40,
+          "accident_percentage": 0.59,
+          "pwr": 7.22
+        },
+        "mcv": { "vehicles_per_day": 1, "accident_percentage": 0.0, "pwr": 8.0 }
+      },
+      "peak_hour_distribution": { "peak_hour_1": 0.1, "peak_hour_2": 0.1 },
+      "wpi": {
+        "selected_profile_id": "wpi_2025",
+        "selected_profile_name": "2025",
+        "selected_profile_year": 2025,
+        "profile_type": "db",
+        "data_snapshot": {
+          "base": {
+            "small_cars": {
+              "petrol": 85.4,
+              "diesel": 94.4,
+              "engine_oil": 131.2,
+              "other_oil": 92.5,
+              "grease": 92.5,
+              "property_damage": 113.2,
+              "tyre_cost": 99.2,
+              "spare_parts": 113.2,
+              "fixed_depreciation": 113.8,
+              "commodity_holding_cost": 101.7,
+              "passenger_cost": 121.2,
+              "crew_cost": 121.2,
+              "fatal": 132.5,
+              "major": 132.5,
+              "minor": 132.5,
+              "vot_cost": 121.2
+            },
+            "big_cars": {
+              "petrol": 85.4,
+              "diesel": 94.4,
+              "engine_oil": 131.2,
+              "other_oil": 92.5,
+              "grease": 92.5,
+              "property_damage": 113.2,
+              "tyre_cost": 99.2,
+              "spare_parts": 113.2,
+              "fixed_depreciation": 113.8,
+              "commodity_holding_cost": 101.7,
+              "passenger_cost": 121.2,
+              "crew_cost": 121.2,
+              "fatal": 132.5,
+              "major": 132.5,
+              "minor": 132.5,
+              "vot_cost": 121.2
+            },
+            "two_wheelers": {
+              "petrol": 85.4,
+              "diesel": 94.4,
+              "engine_oil": 131.2,
+              "other_oil": 92.5,
+              "grease": 92.5,
+              "property_damage": 113.2,
+              "tyre_cost": 104.0,
+              "spare_parts": 113.2,
+              "fixed_depreciation": 113.8,
+              "commodity_holding_cost": 101.7,
+              "passenger_cost": 121.2,
+              "crew_cost": 121.2,
+              "fatal": 132.5,
+              "major": 132.5,
+              "minor": 132.5,
+              "vot_cost": 121.2
+            },
+            "o_buses": {
+              "petrol": 85.4,
+              "diesel": 94.4,
+              "engine_oil": 131.2,
+              "other_oil": 92.5,
+              "grease": 92.5,
+              "property_damage": 113.2,
+              "tyre_cost": 97.5,
+              "spare_parts": 113.2,
+              "fixed_depreciation": 113.8,
+              "commodity_holding_cost": 101.7,
+              "passenger_cost": 121.2,
+              "crew_cost": 121.2,
+              "fatal": 132.5,
+              "major": 132.5,
+              "minor": 132.5,
+              "vot_cost": 121.2
+            },
+            "d_buses": {
+              "petrol": 85.4,
+              "diesel": 94.4,
+              "engine_oil": 131.2,
+              "other_oil": 92.5,
+              "grease": 92.5,
+              "property_damage": 113.2,
+              "tyre_cost": 97.5,
+              "spare_parts": 113.2,
+              "fixed_depreciation": 113.8,
+              "commodity_holding_cost": 101.7,
+              "passenger_cost": 121.2,
+              "crew_cost": 121.2,
+              "fatal": 132.5,
+              "major": 132.5,
+              "minor": 132.5,
+              "vot_cost": 121.2
+            },
+            "lcv": {
+              "petrol": 85.4,
+              "diesel": 94.4,
+              "engine_oil": 131.2,
+              "other_oil": 92.5,
+              "grease": 92.5,
+              "property_damage": 113.2,
+              "tyre_cost": 97.5,
+              "spare_parts": 114.1,
+              "fixed_depreciation": 113.8,
+              "commodity_holding_cost": 101.7,
+              "passenger_cost": 121.2,
+              "crew_cost": 121.2,
+              "fatal": 132.5,
+              "major": 132.5,
+              "minor": 132.5,
+              "vot_cost": 121.2
+            },
+            "hcv": {
+              "petrol": 85.4,
+              "diesel": 94.4,
+              "engine_oil": 131.2,
+              "other_oil": 92.5,
+              "grease": 92.5,
+              "property_damage": 113.2,
+              "tyre_cost": 97.5,
+              "spare_parts": 114.1,
+              "fixed_depreciation": 113.8,
+              "commodity_holding_cost": 101.7,
+              "passenger_cost": 121.2,
+              "crew_cost": 121.2,
+              "fatal": 132.5,
+              "major": 132.5,
+              "minor": 132.5,
+              "vot_cost": 121.2
+            },
+            "mcv": {
+              "petrol": 85.4,
+              "diesel": 94.4,
+              "engine_oil": 131.2,
+              "other_oil": 92.5,
+              "grease": 92.5,
+              "property_damage": 113.2,
+              "tyre_cost": 97.5,
+              "spare_parts": 114.1,
+              "fixed_depreciation": 113.8,
+              "commodity_holding_cost": 101.7,
+              "passenger_cost": 121.2,
+              "crew_cost": 121.2,
+              "fatal": 132.5,
+              "major": 132.5,
+              "minor": 132.5,
+              "vot_cost": 121.2
+            }
+          },
+          "selected": {
+            "small_cars": {
+              "petrol": 146.97,
+              "diesel": 161.45,
+              "engine_oil": 190.2,
+              "other_oil": 150.73,
+              "grease": 150.73,
+              "property_damage": 130.02,
+              "tyre_cost": 111.76,
+              "spare_parts": 129.19,
+              "fixed_depreciation": 130.46,
+              "commodity_holding_cost": 146.58,
+              "passenger_cost": 154.93,
+              "crew_cost": 154.93,
+              "fatal": 146.48,
+              "major": 146.48,
+              "minor": 146.48,
+              "vot_cost": 154.93
+            },
+            "big_cars": {
+              "petrol": 146.97,
+              "diesel": 161.45,
+              "engine_oil": 190.2,
+              "other_oil": 150.73,
+              "grease": 150.73,
+              "property_damage": 130.02,
+              "tyre_cost": 111.76,
+              "spare_parts": 129.19,
+              "fixed_depreciation": 130.46,
+              "commodity_holding_cost": 146.58,
+              "passenger_cost": 154.93,
+              "crew_cost": 154.93,
+              "fatal": 146.48,
+              "major": 146.48,
+              "minor": 146.48,
+              "vot_cost": 154.93
+            },
+            "two_wheelers": {
+              "petrol": 146.97,
+              "diesel": 161.45,
+              "engine_oil": 190.2,
+              "other_oil": 150.73,
+              "grease": 150.73,
+              "property_damage": 130.02,
+              "tyre_cost": 118.58,
+              "spare_parts": 129.19,
+              "fixed_depreciation": 130.46,
+              "commodity_holding_cost": 146.58,
+              "passenger_cost": 154.93,
+              "crew_cost": 154.93,
+              "fatal": 146.48,
+              "major": 146.48,
+              "minor": 146.48,
+              "vot_cost": 154.93
+            },
+            "o_buses": {
+              "petrol": 146.97,
+              "diesel": 161.45,
+              "engine_oil": 190.2,
+              "other_oil": 150.73,
+              "grease": 150.73,
+              "property_damage": 130.02,
+              "tyre_cost": 116.28,
+              "spare_parts": 145.14,
+              "fixed_depreciation": 130.46,
+              "commodity_holding_cost": 146.58,
+              "passenger_cost": 154.93,
+              "crew_cost": 154.93,
+              "fatal": 146.48,
+              "major": 146.48,
+              "minor": 146.48,
+              "vot_cost": 154.93
+            },
+            "d_buses": {
+              "petrol": 146.97,
+              "diesel": 161.45,
+              "engine_oil": 190.2,
+              "other_oil": 150.73,
+              "grease": 150.73,
+              "property_damage": 130.02,
+              "tyre_cost": 116.28,
+              "spare_parts": 145.14,
+              "fixed_depreciation": 130.46,
+              "commodity_holding_cost": 146.58,
+              "passenger_cost": 154.93,
+              "crew_cost": 154.93,
+              "fatal": 146.48,
+              "major": 146.48,
+              "minor": 146.48,
+              "vot_cost": 154.93
+            },
+            "lcv": {
+              "petrol": 146.97,
+              "diesel": 161.45,
+              "engine_oil": 190.2,
+              "other_oil": 150.73,
+              "grease": 150.73,
+              "property_damage": 130.02,
+              "tyre_cost": 116.28,
+              "spare_parts": 115.23,
+              "fixed_depreciation": 130.46,
+              "commodity_holding_cost": 146.58,
+              "passenger_cost": 154.93,
+              "crew_cost": 154.93,
+              "fatal": 146.48,
+              "major": 146.48,
+              "minor": 146.48,
+              "vot_cost": 154.93
+            },
+            "hcv": {
+              "petrol": 146.97,
+              "diesel": 161.45,
+              "engine_oil": 190.2,
+              "other_oil": 150.73,
+              "grease": 150.73,
+              "property_damage": 130.02,
+              "tyre_cost": 116.28,
+              "spare_parts": 115.23,
+              "fixed_depreciation": 130.46,
+              "commodity_holding_cost": 146.58,
+              "passenger_cost": 154.93,
+              "crew_cost": 154.93,
+              "fatal": 146.48,
+              "major": 146.48,
+              "minor": 146.48,
+              "vot_cost": 154.93
+            },
+            "mcv": {
+              "petrol": 146.97,
+              "diesel": 161.45,
+              "engine_oil": 190.2,
+              "other_oil": 150.73,
+              "grease": 150.73,
+              "property_damage": 130.02,
+              "tyre_cost": 116.28,
+              "spare_parts": 115.23,
+              "fixed_depreciation": 130.46,
+              "commodity_holding_cost": 146.58,
+              "passenger_cost": 154.93,
+              "crew_cost": 154.93,
+              "fatal": 146.48,
+              "major": 146.48,
+              "minor": 146.48,
+              "vot_cost": 154.93
+            }
+          },
+          "ratio": {
+            "small_cars": {
+              "petrol": 1.7209601873536298,
+              "diesel": 1.7102754237288134,
+              "engine_oil": 1.4496951219512195,
+              "other_oil": 1.6295135135135135,
+              "grease": 1.6295135135135135,
+              "property_damage": 1.1485865724381625,
+              "tyre_cost": 1.1266129032258065,
+              "spare_parts": 1.1412544169611307,
+              "fixed_depreciation": 1.1463971880492092,
+              "commodity_holding_cost": 1.4412979351032449,
+              "passenger_cost": 1.2783003300330034,
+              "crew_cost": 1.2783003300330034,
+              "fatal": 1.105509433962264,
+              "major": 1.105509433962264,
+              "minor": 1.105509433962264,
+              "vot_cost": 1.2783003300330034
+            },
+            "big_cars": {
+              "petrol": 1.7209601873536298,
+              "diesel": 1.7102754237288134,
+              "engine_oil": 1.4496951219512195,
+              "other_oil": 1.6295135135135135,
+              "grease": 1.6295135135135135,
+              "property_damage": 1.1485865724381625,
+              "tyre_cost": 1.1266129032258065,
+              "spare_parts": 1.1412544169611307,
+              "fixed_depreciation": 1.1463971880492092,
+              "commodity_holding_cost": 1.4412979351032449,
+              "passenger_cost": 1.2783003300330034,
+              "crew_cost": 1.2783003300330034,
+              "fatal": 1.105509433962264,
+              "major": 1.105509433962264,
+              "minor": 1.105509433962264,
+              "vot_cost": 1.2783003300330034
+            },
+            "two_wheelers": {
+              "petrol": 1.7209601873536298,
+              "diesel": 1.7102754237288134,
+              "engine_oil": 1.4496951219512195,
+              "other_oil": 1.6295135135135135,
+              "grease": 1.6295135135135135,
+              "property_damage": 1.1485865724381625,
+              "tyre_cost": 1.1401923076923077,
+              "spare_parts": 1.1412544169611307,
+              "fixed_depreciation": 1.1463971880492092,
+              "commodity_holding_cost": 1.4412979351032449,
+              "passenger_cost": 1.2783003300330034,
+              "crew_cost": 1.2783003300330034,
+              "fatal": 1.105509433962264,
+              "major": 1.105509433962264,
+              "minor": 1.105509433962264,
+              "vot_cost": 1.2783003300330034
+            },
+            "o_buses": {
+              "petrol": 1.7209601873536298,
+              "diesel": 1.7102754237288134,
+              "engine_oil": 1.4496951219512195,
+              "other_oil": 1.6295135135135135,
+              "grease": 1.6295135135135135,
+              "property_damage": 1.1485865724381625,
+              "tyre_cost": 1.1926153846153846,
+              "spare_parts": 1.282155477031802,
+              "fixed_depreciation": 1.1463971880492092,
+              "commodity_holding_cost": 1.4412979351032449,
+              "passenger_cost": 1.2783003300330034,
+              "crew_cost": 1.2783003300330034,
+              "fatal": 1.105509433962264,
+              "major": 1.105509433962264,
+              "minor": 1.105509433962264,
+              "vot_cost": 1.2783003300330034
+            },
+            "d_buses": {
+              "petrol": 1.7209601873536298,
+              "diesel": 1.7102754237288134,
+              "engine_oil": 1.4496951219512195,
+              "other_oil": 1.6295135135135135,
+              "grease": 1.6295135135135135,
+              "property_damage": 1.1485865724381625,
+              "tyre_cost": 1.1926153846153846,
+              "spare_parts": 1.282155477031802,
+              "fixed_depreciation": 1.1463971880492092,
+              "commodity_holding_cost": 1.4412979351032449,
+              "passenger_cost": 1.2783003300330034,
+              "crew_cost": 1.2783003300330034,
+              "fatal": 1.105509433962264,
+              "major": 1.105509433962264,
+              "minor": 1.105509433962264,
+              "vot_cost": 1.2783003300330034
+            },
+            "lcv": {
+              "petrol": 1.7209601873536298,
+              "diesel": 1.7102754237288134,
+              "engine_oil": 1.4496951219512195,
+              "other_oil": 1.6295135135135135,
+              "grease": 1.6295135135135135,
+              "property_damage": 1.1485865724381625,
+              "tyre_cost": 1.1926153846153846,
+              "spare_parts": 1.0099035933391762,
+              "fixed_depreciation": 1.1463971880492092,
+              "commodity_holding_cost": 1.4412979351032449,
+              "passenger_cost": 1.2783003300330034,
+              "crew_cost": 1.2783003300330034,
+              "fatal": 1.105509433962264,
+              "major": 1.105509433962264,
+              "minor": 1.105509433962264,
+              "vot_cost": 1.2783003300330034
+            },
+            "hcv": {
+              "petrol": 1.7209601873536298,
+              "diesel": 1.7102754237288134,
+              "engine_oil": 1.4496951219512195,
+              "other_oil": 1.6295135135135135,
+              "grease": 1.6295135135135135,
+              "property_damage": 1.1485865724381625,
+              "tyre_cost": 1.1926153846153846,
+              "spare_parts": 1.0099035933391762,
+              "fixed_depreciation": 1.1463971880492092,
+              "commodity_holding_cost": 1.4412979351032449,
+              "passenger_cost": 1.2783003300330034,
+              "crew_cost": 1.2783003300330034,
+              "fatal": 1.105509433962264,
+              "major": 1.105509433962264,
+              "minor": 1.105509433962264,
+              "vot_cost": 1.2783003300330034
+            },
+            "mcv": {
+              "petrol": 1.7209601873536298,
+              "diesel": 1.7102754237288134,
+              "engine_oil": 1.4496951219512195,
+              "other_oil": 1.6295135135135135,
+              "grease": 1.6295135135135135,
+              "property_damage": 1.1485865724381625,
+              "tyre_cost": 1.1926153846153846,
+              "spare_parts": 1.0099035933391762,
+              "fixed_depreciation": 1.1463971880492092,
+              "commodity_holding_cost": 1.4412979351032449,
+              "passenger_cost": 1.2783003300330034,
+              "crew_cost": 1.2783003300330034,
+              "fatal": 1.105509433962264,
+              "major": 1.105509433962264,
+              "minor": 1.105509433962264,
+              "vot_cost": 1.2783003300330034
+            }
+          }
+        },
+        "common_state": {
+          "0": true,
+          "1": true,
+          "2": true,
+          "3": true,
+          "4": true,
+          "5": true,
+          "6": false,
+          "7": false,
+          "8": true,
+          "9": true,
+          "10": true,
+          "11": true,
+          "12": true,
+          "13": true,
+          "14": true,
+          "15": true
+        },
+        "custom_profiles": [
+          {
+            "metadata": {
+              "id": "wpi_custom_custom-user_2024",
+              "name": "custom-user",
+              "year": 2024,
+              "is_custom": true,
+              "remark": "",
+              "hash": "sha256:549d610e3878a4c3af7d25b867b4005f86d2e739553fb764b211bcba346ee95d"
+            },
+            "data": {
+              "fuel_cost": {
+                "petrol": 1.0,
+                "diesel": 1.0,
+                "engine_oil": 1.0,
+                "other_oil": 1.0,
+                "grease": 1.0
+              },
+              "vehicle_cost": {
+                "property_damage": {
+                  "small_cars": 1.0,
+                  "big_cars": 1.0,
+                  "two_wheelers": 1.0,
+                  "o_buses": 1.0,
+                  "d_buses": 1.0,
+                  "lcv": 1.0,
+                  "hcv": 1.0,
+                  "mcv": 1.0
+                },
+                "tyre_cost": {
+                  "small_cars": 1.0,
+                  "big_cars": 1.0,
+                  "two_wheelers": 1.0,
+                  "o_buses": 1.0,
+                  "d_buses": 1.0,
+                  "lcv": 1.0,
+                  "hcv": 1.0,
+                  "mcv": 1.0
+                },
+                "spare_parts": {
+                  "small_cars": 1.0,
+                  "big_cars": 1.0,
+                  "two_wheelers": 1.0,
+                  "o_buses": 1.0,
+                  "d_buses": 1.0,
+                  "lcv": 1.0,
+                  "hcv": 1.0,
+                  "mcv": 1.0
+                },
+                "fixed_depreciation": {
+                  "small_cars": 1.0,
+                  "big_cars": 1.0,
+                  "two_wheelers": 1.0,
+                  "o_buses": 1.0,
+                  "d_buses": 1.0,
+                  "lcv": 1.0,
+                  "hcv": 1.0,
+                  "mcv": 1.0
+                }
+              },
+              "commodity_holding_cost": {
+                "small_cars": 1.0,
+                "big_cars": 1.0,
+                "two_wheelers": 1.0,
+                "o_buses": 1.0,
+                "d_buses": 1.0,
+                "lcv": 1.0,
+                "hcv": 1.0,
+                "mcv": 1.0
+              },
+              "passenger_crew_cost": {
+                "passenger_cost": 1.0,
+                "crew_cost": 1.0
+              },
+              "medical_cost": { "fatal": 1.0, "major": 1.0, "minor": 1.0 },
+              "vot_cost": {
+                "small_cars": 1.0,
+                "big_cars": 1.0,
+                "two_wheelers": 1.0,
+                "o_buses": 1.0,
+                "d_buses": 1.0,
+                "lcv": 1.0,
+                "hcv": 1.0,
+                "mcv": 1.0
+              }
+            }
+          }
+        ]
+      }
+    },
+    "financial_data": {
+      "discount_rate": 6.7,
+      "discount_rate_source": "",
+      "inflation_rate": 5.15,
+      "inflation_rate_source": "",
+      "interest_rate": 7.75,
+      "interest_rate_source": "",
+      "investment_ratio": 0.5,
+      "investment_ratio_source": ""
+    },
+    "maintenance_data": {
+      "routine_inspection_cost": 0.1,
+      "routine_inspection_freq": 1,
+      "periodic_maintenance_cost": 0.6,
+      "periodic_maintenance_carbon_cost": 0.55,
+      "periodic_maintenance_freq": 5,
+      "major_inspection_cost": 0.5,
+      "major_inspection_freq": 5,
+      "major_repair_cost": 10.0,
+      "major_repair_carbon_cost": 0.55,
+      "major_repair_freq": 60,
+      "major_repair_duration": 3,
+      "bearing_exp_joint_cost": 12.5,
+      "bearing_exp_joint_freq": 25,
+      "bearing_exp_joint_duration": 2
+    },
+    "recycling_data": {
+      "included_items": [
+        {
+          "material_id": "f35ba3fa-a7c7-4c17-bd1b-f575537f4ce4",
+          "category": "Foundation",
+          "component": "Pile",
+          "material": "Steel Rebar (Fe500)",
+          "quantity": 5.21,
+          "unit": "mt",
+          "recyclability_pct": 75.0,
+          "recyclable_qty": 3.9074999999999998,
+          "scrap_rate": 32500.0,
+          "recovered_value": 126993.74999999999
+        },
+        {
+          "material_id": "9b581af2-a880-4e55-93d8-9dce3a09ece9",
+          "category": "Foundation",
+          "component": "Pile Cap",
+          "material": "Steel Rebar (Fe500)",
+          "quantity": 1.677,
+          "unit": "mt",
+          "recyclability_pct": 75.0,
+          "recyclable_qty": 1.2577500000000001,
+          "scrap_rate": 32500.0,
+          "recovered_value": 40876.87500000001
+        },
+        {
+          "material_id": "dc1b551b-f53c-41c5-ae84-e600de11c3fb",
+          "category": "Sub Structure",
+          "component": "Pier Cap",
+          "material": "Steel Rebar (Fe500)",
+          "quantity": 2.102,
+          "unit": "mt",
+          "recyclability_pct": 75.0,
+          "recyclable_qty": 1.5764999999999998,
+          "scrap_rate": 32500.0,
+          "recovered_value": 51236.24999999999
+        },
+        {
+          "material_id": "3d8bc9ae-d321-465a-81fc-8736434a6626",
+          "category": "Sub Structure",
+          "component": "Pedestal",
+          "material": "Steel Rebar (Fe500)",
+          "quantity": 0.0324,
+          "unit": "mt",
+          "recyclability_pct": 75.0,
+          "recyclable_qty": 0.0243,
+          "scrap_rate": 32500.0,
+          "recovered_value": 789.75
+        },
+        {
+          "material_id": "fa3a42fa-ebd7-4386-92cc-0bb23e9b0bf5",
+          "category": "Super Structure",
+          "component": "Girder",
+          "material": "Structural Steel main Girder (Fe 410 B)",
+          "quantity": 62.1923315,
+          "unit": "mt",
+          "recyclability_pct": 95.0,
+          "recyclable_qty": 59.082714925,
+          "scrap_rate": 26000.0,
+          "recovered_value": 1536150.58805
+        },
+        {
+          "material_id": "26f50773-57bb-41f5-ad14-7903a8d96340",
+          "category": "Super Structure",
+          "component": "Deck Slab",
+          "material": "Steel Rebar (Fe500)",
+          "quantity": 10.143,
+          "unit": "mt",
+          "recyclability_pct": 75.0,
+          "recyclable_qty": 7.6072500000000005,
+          "scrap_rate": 32500.0,
+          "recovered_value": 247235.62500000003
+        },
+        {
+          "material_id": "71d6ad4a-f2fc-435b-b10c-ea26021a808d",
+          "category": "Super Structure",
+          "component": "Deck Slab",
+          "material": "Steel Decking Sheet (310 MPA)",
+          "quantity": 3.105375,
+          "unit": "mt",
+          "recyclability_pct": 95.0,
+          "recyclable_qty": 2.9501062499999997,
+          "scrap_rate": 26000.0,
+          "recovered_value": 76702.7625
+        },
+        {
+          "material_id": "b745aefb-e28c-49e6-a1bd-6d27cd9b37f2",
+          "category": "Misc",
+          "component": "Railing  & Crash Barrier & Median",
+          "material": "Mild Steel railing",
+          "quantity": 35.0,
+          "unit": "rm",
+          "recyclability_pct": 95.0,
+          "recyclable_qty": 33.25,
+          "scrap_rate": 26000.0,
+          "recovered_value": 864500.0
+        }
+      ],
+      "cat_totals": {
+        "Foundation": 167870.625,
+        "Sub Structure": 52025.99999999999,
+        "Super Structure": 1860088.9755499999,
+        "Misc": 864500.0
+      },
+      "total_recovered_value": 2944485.6005499996,
+      "included_count": 8,
+      "total_count": 30,
+      "currency": ""
+    },
+    "demolition_data": {
+      "demolition_cost_pct": 10.0,
+      "demolition_carbon_cost_pct": 10.0,
+      "demolition_duration": 1,
+      "demolition_method": "Implosion"
+    }
+  },
+  "results": {
+    "initial_stage": {
+      "economic": {
+        "initial_construction_cost": 13510517.107590165,
+        "time_cost_of_loan": 226864.09976495153
+      },
+      "environmental": {
+        "initial_material_carbon_emission_cost": 362252.33909257106,
+        "initial_vehicular_emission_cost": 7687.78
+      },
+      "social": { "initial_road_user_cost": 20574204.61 }
+    },
+    "use_stage": {
+      "economic": {
+        "routine_inspection_costs": 691806.0284941545,
+        "periodic_maintenance": 769450.9703114751,
+        "major_inspection_costs": 641209.1419262293,
+        "major_repair_cost": 557984.3565434739,
+        "replacement_costs_for_bearing_and_expansion_joint": 1391899.311934074
+      },
+      "environmental": {
+        "periodic_carbon_costs": 18911.74561466677,
+        "major_repair_material_carbon_emission_costs": 822.8561882487752,
+        "major_repair_vehicular_emission_costs": 1831.76,
+        "vehicular_emission_costs_for_replacement_of_bearing_and_expansion_joint": 115.02
+      },
+      "social": {
+        "major_repair_road_user_costs": 4902199.91,
+        "road_user_costs_for_replacement_of_bearing_and_expansion_joint": 307821.75
+      }
+    },
+    "reconstruction": {
+      "economic": {
+        "total_demolition_and_disposal_costs": 447198.11626123457,
+        "cost_of_reconstruction_after_demolition": 4471981.162612345,
+        "total_scrap_value": 974624.73378205,
+        "time_cost_of_loan": 75092.01702219897
+      },
+      "environmental": {
+        "carbon_costs_demolition_and_disposal": 11990.552423964102,
+        "carbon_cost_of_reconstruction_after_demolition": 119905.52423964103,
+        "demolition_vehicular_emission_cost": 489.36,
+        "reconstruction_vehicular_emission_cost": 2544.66
+      },
+      "social": {
+        "ruc_demolition": 1309627.26,
+        "ruc_reconstruction": 6810061.73
+      }
+    },
+    "end_of_life": {
+      "economic": {
+        "total_demolition_and_disposal_costs": 312092.94518533285,
+        "total_scrap_value": 680176.17372705
+      },
+      "environmental": {
+        "carbon_costs_demolition_and_disposal": 8368.029033038392,
+        "demolition_vehicular_emission_cost": 341.51
+      },
+      "social": { "ruc_demolition": 913969.47 }
+    },
+    "warnings": [],
+    "notes": []
+  }
+}

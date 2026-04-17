@@ -44,7 +44,7 @@ from ..utils.wpi_manager import (
 
 
 # ── Integrity badge ───────────────────────────────────────────────────────────
-# Store token keys, not resolved colors — colors are fetched live in _update_badge
+# Store token keys, not resolved colors- colors are fetched live in _update_badge
 
 _BADGE = {
     IntegrityState.OK:       ("✅", "success", "Integrity verified"),

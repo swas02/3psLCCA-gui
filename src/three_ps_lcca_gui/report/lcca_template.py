@@ -1,167 +1,76 @@
-import sys
-import os
 import json
 from typing import Any, Dict
-from pathlib import Path
-import importlib.util
 
-_root = str(Path(__file__).resolve().parent.parent)
-sys.path.insert(0, _root)
-
-definitions_path = Path(_root) / "gui" / "components" / "utils" / "definitions.py"
-spec = importlib.util.spec_from_file_location("definitions", definitions_path)
-definitions = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(definitions)
-
-UNIT_DISPLAY = definitions.UNIT_DISPLAY
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Section key constants  (shared with lcca_generate.py)
-# ─────────────────────────────────────────────────────────────────────────────
-
-KEY_SHOW_BRIDGE_DESC        = "show_bridge_desc"
-KEY_SHOW_FINANCIAL          = "show_financial"
-KEY_SHOW_CONSTRUCTION       = "show_construction"
-KEY_SHOW_LCC_ASSUMPTIONS    = "show_lcc_assumptions"
-KEY_SHOW_USE_STAGE          = "show_use_stage"
-KEY_SHOW_AVG_TRAFFIC        = "show_avg_traffic"
-KEY_SHOW_ROAD_TRAFFIC       = "show_road_traffic"
-KEY_SHOW_PEAK_HOUR          = "show_peak_hour"
-KEY_SHOW_HUMAN_INJURY       = "show_human_injury"
-KEY_SHOW_VEHICLE_DAMAGE     = "show_vehicle_damage"
-KEY_SHOW_TYRE_COST          = "show_tyre_cost"
-KEY_SHOW_FUEL_OIL           = "show_fuel_oil"
-KEY_SHOW_NEW_VEHICLE        = "show_new_vehicle"
-KEY_SHOW_SOCIAL_CARBON      = "show_social_carbon"
-KEY_SHOW_MATERIAL_EMISSION  = "show_material_emission"
-KEY_SHOW_USE_EMISSION       = "show_use_emission"
-KEY_SHOW_VEHICLE_EMISSION   = "show_vehicle_emission"
-KEY_SHOW_ONSITE_EMISSION    = "show_onsite_emission"
-
-KEY_FRAMEWORK_FIGURE        = "framework_figure"
-KEY_BRIDGE_DESC             = "bridge_desc"
-KEY_FINANCIAL               = "financial"
-KEY_CONSTRUCTION            = "construction"
-KEY_LCC_ASSUMPTIONS         = "lcc_assumptions"
-KEY_USE_STAGE               = "use_stage"
-KEY_AVG_TRAFFIC             = "avg_traffic"
-KEY_ROAD_TRAFFIC            = "road_traffic"
-KEY_PEAK_HOUR               = "peak_hour"
-KEY_HUMAN_INJURY            = "human_injury"
-KEY_VEHICLE_DAMAGE          = "vehicle_damage"
-KEY_TYRE_COST               = "tyre_cost"
-KEY_FUEL_OIL                = "fuel_oil"
-KEY_NEW_VEHICLE             = "new_vehicle"
-KEY_SOCIAL_CARBON           = "social_carbon"
-KEY_MATERIAL_EMISSION       = "material_emission"
-KEY_USE_EMISSION            = "use_emission"
-KEY_VEHICLE_EMISSION        = "vehicle_emission"
-KEY_ONSITE_EMISSION         = "onsite_emission"
-
-# Results keys
-KEY_LCC_COMPONENTS          = "lcc_components"
-KEY_STAGE_COSTS             = "stage_costs"
-KEY_PILLAR_COSTS            = "pillar_costs"
-KEY_ECONOMIC_COSTS          = "economic_costs"
-KEY_SOCIAL_COSTS            = "social_costs"
-KEY_RUC_CONSTRUCTION        = "ruc_construction"
-KEY_ENVIRONMENTAL_COSTS     = "environmental_costs"
-
-# Section 3 result keys
-KEY_LCC_TABLE1              = "lcc_table1"
-KEY_STAGE_COSTS             = "stage_costs"
-KEY_PILLAR_COSTS            = "pillar_costs"
-KEY_ECONOMIC_COSTS          = "economic_costs"
-KEY_SOCIAL_COSTS            = "social_costs"
-KEY_RUC_CONSTRUCTION        = "ruc_construction"
-KEY_ENVIRONMENTAL_COSTS_37  = "environmental_costs_37"
-
-# New keys added for transport emission table
-KEY_SHOW_TRANSPORT_EMISSION = "show_transport_emission"
-KEY_TRANSPORT_EMISSION      = "transport_emission"
+from .utils import _fmt, _fmt_unit, _currency, _pct
+from .constants import (
+    KEY_SHOW_BRIDGE_DESC,
+    KEY_SHOW_FINANCIAL,
+    KEY_SHOW_CONSTRUCTION,
+    KEY_SHOW_LCC_ASSUMPTIONS,
+    KEY_SHOW_USE_STAGE,
+    KEY_SHOW_AVG_TRAFFIC,
+    KEY_SHOW_ROAD_TRAFFIC,
+    KEY_SHOW_PEAK_HOUR,
+    KEY_SHOW_HUMAN_INJURY,
+    KEY_SHOW_VEHICLE_DAMAGE,
+    KEY_SHOW_TYRE_COST,
+    KEY_SHOW_FUEL_OIL,
+    KEY_SHOW_NEW_VEHICLE,
+    KEY_SHOW_SOCIAL_CARBON,
+    KEY_SHOW_MATERIAL_EMISSION,
+    KEY_SHOW_USE_EMISSION,
+    KEY_SHOW_VEHICLE_EMISSION,
+    KEY_SHOW_ONSITE_EMISSION,
+    KEY_FRAMEWORK_FIGURE,
+    KEY_BRIDGE_DESC,
+    KEY_FINANCIAL,
+    KEY_CONSTRUCTION,
+    KEY_LCC_ASSUMPTIONS,
+    KEY_USE_STAGE,
+    KEY_AVG_TRAFFIC,
+    KEY_ROAD_TRAFFIC,
+    KEY_PEAK_HOUR,
+    KEY_HUMAN_INJURY,
+    KEY_VEHICLE_DAMAGE,
+    KEY_TYRE_COST,
+    KEY_FUEL_OIL,
+    KEY_NEW_VEHICLE,
+    KEY_SOCIAL_CARBON,
+    KEY_MATERIAL_EMISSION,
+    KEY_USE_EMISSION,
+    KEY_VEHICLE_EMISSION,
+    KEY_ONSITE_EMISSION,
+    KEY_LCC_COMPONENTS,
+    KEY_STAGE_COSTS,
+    KEY_PILLAR_COSTS,
+    KEY_ECONOMIC_COSTS,
+    KEY_SOCIAL_COSTS,
+    KEY_RUC_CONSTRUCTION,
+    KEY_ENVIRONMENTAL_COSTS,
+    KEY_LCC_TABLE1,
+    KEY_ENVIRONMENTAL_COSTS_37,
+    KEY_SHOW_TRANSPORT_EMISSION,
+    KEY_TRANSPORT_EMISSION,
+    KEY_SHOW_TITLE_PAGE,
+)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Helper functions
-# ─────────────────────────────────────────────────────────────────────────────
-
-def _fmt(value: Any, decimals: int = 2) -> str:
-    """
-    Return a nicely formatted string.
-    0 / 0.0 shows as '0', None/missing shows as blank.
-    """
-    if value is None:
-        return ""
-    if isinstance(value, bool):
-        return "Yes" if value else "No"
-    if isinstance(value, float):
-        if value == 0.0:
-            return "0"
-        return f"{value:,.{decimals}f}"
-    if isinstance(value, int):
-        return str(value)
-    return str(value)
-
-
-def _fmt_unit(unit: str) -> str:
-    """Return the display symbol for a unit code, e.g. m3 → m³."""
-    return UNIT_DISPLAY.get(unit, unit)
-
-
-def _currency(value: Any, currency: str = "INR") -> str:
-    """
-    Format as currency string.
-    0 shows as 'INR 0.00', None/missing shows as blank.
-    """
-    if value is None:
-        return ""
-    try:
-        f = float(value)
-        return f"{currency} {f:,.2f}"
-    except (TypeError, ValueError):
-        return str(value)
-
-
-def _pct(value: Any) -> str:
-    """Format a percentage value; show 0 as '0%', None as blank."""
-    if value is None:
-        return ""
-    try:
-        f = float(value)
-        return f"{f}%"
-    except (TypeError, ValueError):
-        return str(value)
 
 
 class LCCATemplate:
-    """
-    Reads a .3psLCCA JSON file and structures all data for the report.
-    """
+    """Structures export dict data for the report."""
 
-    def __init__(self, json_path: str):
-        self.json_path = json_path
-        self.raw: Dict = {}
-        self.inputs: Dict = {}
-        self.computed: Dict = {}
-        self.results: Dict = {}
-        self.currency: str = "INR"
-        self.load()
-
-    def load(self) -> None:
-        if not os.path.exists(self.json_path):
-            raise FileNotFoundError(f"JSON file not found: {self.json_path}")
-        with open(self.json_path, "r", encoding="utf-8") as fh:
-            self.raw = json.load(fh)
-        self.inputs   = self.raw.get("inputs", {})
-        self.computed = self.raw.get("computed", {})
-        self.results  = self.raw.get("results", {})
-        self.currency = (
-            self.inputs.get("general_info", {}).get("project_currency", "INR")
-        )
+    def __init__(self, data: Dict):
+        self.raw      = data
+        self.inputs   = data.get("inputs", {})
+        self.computed = data.get("computed", {})
+        self.results  = data.get("results", {})
+        self.currency = self.inputs.get("general_info", {}).get("project_currency", "INR")
 
     def get_config(self) -> Dict[str, bool]:
         """Return a dict of display flags - all True by default."""
         return {
+            KEY_SHOW_TITLE_PAGE:        True,
             KEY_SHOW_BRIDGE_DESC:       True,
             KEY_SHOW_FINANCIAL:         True,
             KEY_SHOW_CONSTRUCTION:      True,
@@ -185,6 +94,7 @@ class LCCATemplate:
 
     def get_report_data(self) -> Dict[str, Any]:
         """Return the complete flat data dict used by lcca_generate.py."""
+        gi = self.inputs.get("general_info", {})
         return {
             KEY_FRAMEWORK_FIGURE:   r"resource/image.jpeg",
             KEY_BRIDGE_DESC:        self._bridge_description(),
@@ -219,8 +129,23 @@ class LCCATemplate:
             KEY_ENVIRONMENTAL_COSTS_37: self._environmental_costs_37(),
             # Meta
             "currency":             self.currency,
-            "project_name":         self.inputs.get("general_info", {}).get("project_name", ""),
             "exported_at":          self.raw.get("exported_at", ""),
+            # Title page fields
+            "project_name":         gi.get("project_name", ""),
+            "project_code":         gi.get("project_code", ""),
+            "project_description":  gi.get("project_description", ""),
+            "remarks":              gi.get("remarks", ""),
+            "agency_name":          gi.get("agency_name", ""),
+            "contact_person":       gi.get("contact_person", ""),
+            "agency_address":       gi.get("agency_address", ""),
+            "agency_email":         gi.get("agency_email", ""),
+            "agency_phone":         gi.get("agency_phone", ""),
+            "agency_logo_b64":      gi.get("agency_logo", ""),
+            "reviewer_name":        gi.get("reviewer_name", ""),
+            "reviewer_organization": gi.get("reviewer_organization", ""),
+            "reviewer_address":     gi.get("reviewer_address", ""),
+            "reviewer_email":       gi.get("reviewer_email", ""),
+            "reviewer_phone":       gi.get("reviewer_phone", ""),
         }
 
     # ─────────────────────────────────────────────────────────────────────────
@@ -1040,6 +965,8 @@ if __name__ == "__main__":
     parser.add_argument("json", help="Path to .3psLCCA JSON file")
     args = parser.parse_args()
 
-    tmpl = LCCATemplate(args.json)
+    with open(args.json, "r", encoding="utf-8") as fh:
+        raw = json.load(fh)
+    tmpl = LCCATemplate(raw)
     data = tmpl.get_report_data()
     pprint.pprint(data, width=120)

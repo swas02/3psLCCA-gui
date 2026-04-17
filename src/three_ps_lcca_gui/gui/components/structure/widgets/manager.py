@@ -301,7 +301,7 @@ class StructureManagerWidget(QWidget):
                     item_to_edit["values"] = new_values
                     now = datetime.datetime.now().isoformat()
                     item_to_edit["meta"]["modified_on"] = now
-                    # Always overwrite snapshot — dialog rebuilds it fresh on each suggestion.
+                    # Always overwrite snapshot- dialog rebuilds it fresh on each suggestion.
                     # Keep the existing encoded value when nothing changed (empty string
                     # means no DB source was involved this edit).
                     if new_db_original is not None:

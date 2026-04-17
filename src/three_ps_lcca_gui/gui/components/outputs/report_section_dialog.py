@@ -7,21 +7,10 @@ the main 3psLCCA GUI application.
 
 import sys
 import os
-import json
 import shutil
 import tempfile
 import traceback
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Fix sys.path so report modules can be imported
-# ─────────────────────────────────────────────────────────────────────────────
-_project_root = os.path.dirname(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-)
-_report_dir = os.path.join(_project_root, "report")
-for p in [_report_dir, _project_root]:
-    if p not in sys.path:
-        sys.path.insert(0, p)
 
 from PySide6.QtWidgets import (
     QDialog,
@@ -54,7 +43,7 @@ from three_ps_lcca_gui.gui.styles import font as _f, btn_primary, btn_outline
 # ─────────────────────────────────────────────────────────────────────────────
 # Config keys
 # ─────────────────────────────────────────────────────────────────────────────
-from lcca_template import (
+from three_ps_lcca_gui.report.constants import (
     KEY_SHOW_BRIDGE_DESC,
     KEY_SHOW_FINANCIAL,
     KEY_SHOW_CONSTRUCTION,
@@ -74,63 +63,12 @@ from lcca_template import (
     KEY_SHOW_VEHICLE_EMISSION,
     KEY_SHOW_ONSITE_EMISSION,
     KEY_SHOW_TRANSPORT_EMISSION,
+    KEY_SHOW_TITLE_PAGE,
+    KEY_SHOW_INTRODUCTION,
+    KEY_SHOW_LCCA_RESULTS,
+    SECTION_MAP,
+    SUBSECTION_TABLE_MAP,
 )
-
-# ─────────────────────────────────────────────────────────────────────────────
-# SECTION_MAP - hierarchical structure of report sections/subsections
-# ─────────────────────────────────────────────────────────────────────────────
-
-SECTION_MAP = {
-    "Introduction": [],
-    "Input data": [
-        "Bridge geometry and description",
-        "User note",
-        "Construction data",
-        "Traffic data",
-        "Environmental input data",
-    ],
-    "LCCA results": [],
-}
-
-# ─────────────────────────────────────────────────────────────────────────────
-# MAPPING: Subsection names to their config keys and table labels
-# ─────────────────────────────────────────────────────────────────────────────
-
-SUBSECTION_TABLE_MAP = {
-    "Bridge geometry and description": [
-        ("Table 2-1: Bridge description", KEY_SHOW_BRIDGE_DESC),
-    ],
-    "User note": [
-        ("Table 2-2: Financial Data", KEY_SHOW_FINANCIAL),
-    ],
-    "Construction data": [
-        ("Table 2-3: Construction materials", KEY_SHOW_CONSTRUCTION),
-        ("Table 2-4: LCC assumptions", KEY_SHOW_LCC_ASSUMPTIONS),
-        ("Table 2-5: Use stage details", KEY_SHOW_USE_STAGE),
-    ],
-    "Traffic data": [
-        ("Table 2-6: Average daily traffic", KEY_SHOW_AVG_TRAFFIC),
-        ("Table 2-7: Road and traffic data", KEY_SHOW_ROAD_TRAFFIC),
-        ("Table 2-8: Peak hour distribution", KEY_SHOW_PEAK_HOUR),
-        ("Table 2-9: Human injury cost", KEY_SHOW_HUMAN_INJURY),
-        ("Table 2-10: Vehicle damage cost", KEY_SHOW_VEHICLE_DAMAGE),
-        ("Table 2-11: Tyre cost data", KEY_SHOW_TYRE_COST),
-        ("Table 2-12: Fuel, oil and grease", KEY_SHOW_FUEL_OIL),
-        ("Table 2-13: Cost of new vehicle", KEY_SHOW_NEW_VEHICLE),
-    ],
-    "Environmental input data": [
-        ("Table 2-14: Social cost of carbon", KEY_SHOW_SOCIAL_CARBON),
-        ("Table 2-15: Material emission factors", KEY_SHOW_MATERIAL_EMISSION),
-        ("Table 2-16: Use stage emissions", KEY_SHOW_USE_EMISSION),
-        ("Table 2-17: Vehicle emission factors", KEY_SHOW_VEHICLE_EMISSION),
-        ("Table 2-18: On-site emissions", KEY_SHOW_ONSITE_EMISSION),
-        ("Table 2-19: Transport emissions", KEY_SHOW_TRANSPORT_EMISSION),
-    ],
-}
-
-# Section-level toggle keys (for sections without tables)
-KEY_SHOW_INTRODUCTION = "show_introduction"
-KEY_SHOW_LCCA_RESULTS = "show_lcca_results"
 
 
 # ==============================================================================
@@ -287,7 +225,9 @@ class SectionTreeWidget(QTreeWidget):
             section_item.setCheckState(0, Qt.Checked)
             section_item.setFont(0, font_section)
             section_item.setForeground(0, col_section)
-            if section_name == "Introduction":
+            if section_name == "Title page":
+                section_item.setData(0, Qt.UserRole, KEY_SHOW_TITLE_PAGE)
+            elif section_name == "Introduction":
                 section_item.setData(0, Qt.UserRole, KEY_SHOW_INTRODUCTION)
             elif section_name == "LCCA results":
                 section_item.setData(0, Qt.UserRole, KEY_SHOW_LCCA_RESULTS)
@@ -356,8 +296,7 @@ class SectionTreeWidget(QTreeWidget):
         """Build config dict from current tree selection state."""
         config = {}
         self._collect_config(self.invisibleRootItem(), config)
-        # Ensure section-level keys are always present
-        config.setdefault(KEY_SHOW_INTRODUCTION, True)
+        config.setdefault(KEY_SHOW_TITLE_PAGE, True)
         config.setdefault(KEY_SHOW_LCCA_RESULTS, True)
         return config
 
@@ -380,36 +319,26 @@ class _PdfGenWorker(QThread):
     """Runs PDF generation on a background thread to avoid freezing the UI."""
 
     finished = Signal(str)        # emitted with final PDF path on success
-    errored = Signal(str, str)    # (error_msg, tex_path_or_empty) — work dir kept alive when tex_path set
+    errored = Signal(str, str)    # (error_msg, tex_path_or_empty)- work dir kept alive when tex_path set
 
-    def __init__(self, export_dict, config, output_dir):
+    def __init__(self, export_dict, config, output_dir, filename="LCCA_Report"):
         super().__init__()
         self._export_dict = export_dict
         self._config = config
         self._output_dir = output_dir
+        self._filename = filename
 
     def run(self):
         work_dir = tempfile.mkdtemp(prefix="3psLCCA_")
         try:
-            stem = "LCCA_Report"
+            stem = self._filename
             work_stem = os.path.join(work_dir, stem)
 
-            # Write temp JSON
-            tmp_json = os.path.join(work_dir, "input.3psLCCAFile")
-            with open(tmp_json, "w", encoding="utf-8") as f:
-                json.dump(self._export_dict, f, indent=2, ensure_ascii=False)
-
-            try:
-                from lcca_generate import generate_report
-                generate_report(
-                    work_stem, input_json=tmp_json, config_override=self._config,
-                    output_dir=work_dir,
-                )
-            finally:
-                try:
-                    os.remove(tmp_json)
-                except OSError:
-                    pass
+            from three_ps_lcca_gui.report.lcca_generate import generate_report
+            generate_report(
+                work_stem, export_dict=self._export_dict, config_override=self._config,
+                output_dir=work_dir,
+            )
 
             work_pdf = work_stem + ".pdf"
             if os.path.exists(work_pdf):
@@ -420,11 +349,11 @@ class _PdfGenWorker(QThread):
             else:
                 tex_path = work_stem + ".tex"
                 if os.path.exists(tex_path):
-                    # Keep work_dir alive — dialog cleans it up after export/close
+                    # Keep work_dir alive- dialog cleans it up after export/close
                     self.errored.emit(
-                        "PDF compilation failed — LaTeX could not produce a PDF.\n"
-                        "You can export the .tex file and compile it manually:\n"
-                        "  pdflatex LCCA_Report.tex",
+                        f"PDF compilation failed- LaTeX could not produce a PDF.\n"
+                        f"You can export the .tex file and compile it manually:\n"
+                        f"  pdflatex \"{stem}.tex\"",
                         tex_path,
                     )
                 else:
@@ -551,10 +480,15 @@ class ReportSectionDialog(QDialog):
 
     def generate_report_with_path(self):
         """Ask user for save location, then generate PDF."""
+        default_name = self._export_dict.get("project_name", "LCCA_Report")
+        # Sanitize filename (remove characters like / \ : * ? " < > |)
+        for char in '<>:"/\\|?*':
+            default_name = default_name.replace(char, "_")
+
         save_path, _ = QFileDialog.getSaveFileName(
             self,
             "Save PDF Report",
-            "LCCA_Report.pdf",
+            f"{default_name}.pdf",
             "PDF Files (*.pdf)",
         )
         if not save_path:
@@ -574,7 +508,7 @@ class ReportSectionDialog(QDialog):
         self._set_ui_enabled(False)
         QApplication.processEvents()
 
-        self._worker = _PdfGenWorker(export, config, output_dir)
+        self._worker = _PdfGenWorker(export, config, output_dir, filename=filename)
         self._worker.finished.connect(self._on_pdf_success)
         self._worker.errored.connect(self._on_pdf_error)
         self._worker.finished.connect(self._worker.deleteLater)
@@ -595,7 +529,7 @@ class ReportSectionDialog(QDialog):
         self.accept()
 
     def _on_pdf_error(self, error_msg: str, tex_path: str):
-        """Handle PDF generation error — offer .tex export when available."""
+        """Handle PDF generation error- offer .tex export when available."""
         self._set_ui_enabled(True)
 
         if not tex_path:

@@ -370,7 +370,7 @@ class _ColorDelegate(QStyledItemDelegate):
 
 
 class LCCBreakdownTable(QWidget):
-    """Detailed row-by-row LCC cost breakdown — pure QPainter widget.
+    """Detailed row-by-row LCC cost breakdown- pure QPainter widget.
 
     Columns: Stage (fixed) | Cost Item (draggable) | Value (draggable) | Relative Cost (draggable)
 
@@ -378,7 +378,7 @@ class LCCBreakdownTable(QWidget):
     shows the full text as a tooltip. Long labels wrap within their cell.
     """
 
-    _STAGE_W   = 64    # fixed — stage column never resizes
+    _STAGE_W   = 64    # fixed- stage column never resizes
     _PAD_X     = 6
     _VAL_PAD_X = 8   # horizontal padding for the Value column (col 3)
     _VAL_PAD_Y = 4   # vertical padding for the Value column (col 3)
@@ -388,8 +388,8 @@ class LCCBreakdownTable(QWidget):
     _DRAG_HIT  = 5     # px tolerance for divider hit-test
 
     # column ratio/width defaults  (flex_w = W - _STAGE_W)
-    _DEF_ITEM_RATIO = 0.25   # Cost Item  — 25 %
-    _DEF_BAR_RATIO  = 0.55   # Relative Cost bar — 55 % (highest priority)
+    _DEF_ITEM_RATIO = 0.25   # Cost Item - 25 %
+    _DEF_BAR_RATIO  = 0.55   # Relative Cost bar- 55 % (highest priority)
     # Value gets the remainder: 20 %
 
     # Colors from lcc_colors.py (single source of truth for this widget)
@@ -419,7 +419,7 @@ class LCCBreakdownTable(QWidget):
         self._total_content_h = 0
         self._max_val = 1.0
 
-        # Column layout state — ratios of the flexible zone (W - _STAGE_W)
+        # Column layout state- ratios of the flexible zone (W - _STAGE_W)
         self._item_ratio = self._DEF_ITEM_RATIO   # Cost Item / flex_w
         self._bar_ratio  = self._DEF_BAR_RATIO    # Relative Cost / flex_w
         # Value column gets the rest: flex_w * (1 - item - bar)
@@ -491,7 +491,7 @@ class LCCBreakdownTable(QWidget):
                     stage_color,
                     start,
                     row_idx - 1,
-                    0, 0,  # sy, sh — filled by _calculate_layout
+                    0, 0,  # sy, sh- filled by _calculate_layout
                 ])
                 if result_key == "use_stage":
                     _use_block_idx = block_idx
@@ -755,7 +755,7 @@ class LCCBreakdownTable(QWidget):
 
             pillar_color = pillar_colors.get(cat, QColor("#888888"))
 
-            # Row background — same light shade across Cost Item, Bar, and Value columns
+            # Row background- same light shade across Cost Item, Bar, and Value columns
             # Merged into one fill to avoid vertical gaps at x_bar/x_val
             tint = QColor(
                 min(255, pillar_color.red()   * 25 // 100 + 191),
@@ -764,7 +764,7 @@ class LCCBreakdownTable(QWidget):
             )
             p.fillRect(self._STAGE_W, ry, W - self._STAGE_W, rh, tint)
 
-            # Cost Item label (word-wrap) — dark text, bg is always light
+            # Cost Item label (word-wrap)- dark text, bg is always light
             p.setFont(row_font)
             p.setPen(QColor("#1a1a1a"))
             p.drawText(
@@ -774,7 +774,7 @@ class LCCBreakdownTable(QWidget):
                 label,
             )
 
-            # Value — semibold text in the 3rd column
+            # Value- semibold text in the 3rd column
             p.setFont(QFont(FONT_FAMILY, FS_BASE, FW_SEMIBOLD))
             p.setPen(color_success if value < 0 else QColor("#1a1a1a"))
             val_text = fmt_currency(value, self._currency, decimals=2)
@@ -786,7 +786,7 @@ class LCCBreakdownTable(QWidget):
             )
             p.setFont(row_font)
 
-            # Relative Cost bar — same color as Pillar (full opacity), last column
+            # Relative Cost bar- same color as Pillar (full opacity), last column
             filled = int((abs(value) / self._max_val) * bar_w_max)
             if value != 0:
                 filled = max(filled, 1)

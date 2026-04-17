@@ -99,7 +99,7 @@ def _M(x): return float(x) / 1_000_000
 
 
 def _build_stage_data(results: dict) -> list:
-    """[(label, value_M, color), ...] — one entry per stage."""
+    """[(label, value_M, color), ...]- one entry per stage."""
     st = compute_all_summaries(results).get("stagewise", {})
     mapping = [
         ("initial",            "Initial",     STAGE_COLORS["Initial"]),
@@ -111,7 +111,7 @@ def _build_stage_data(results: dict) -> list:
 
 
 def _build_pillar_total_data(results: dict) -> list:
-    """[(label, value_M, color), ...] — one bar per pillar total (negatives included)."""
+    """[(label, value_M, color), ...]- one bar per pillar total (negatives included)."""
     pt = compute_all_summaries(results).get("pillar_totals", {})
     rows = [
         ("Economic",      pt.get("eco",    0), PILLAR_COLORS["Economic"]),
@@ -122,7 +122,7 @@ def _build_pillar_total_data(results: dict) -> list:
 
 
 def _build_pillar_data(results: dict) -> list:
-    """[{"stage": label, "pillars": [(name, value_M), ...]}, ...] — pillar stacked."""
+    """[{"stage": label, "pillars": [(name, value_M), ...]}, ...]- pillar stacked."""
     pw = compute_all_summaries(results).get("pillar_wise", {})
     mapping = [
         ("initial",            "Initial"),
@@ -443,10 +443,7 @@ class AggregateChartWidget(QWidget):
         text_v.addWidget(title)
 
         desc = QLabel(
-            "Comparative analysis of cumulative project impacts across three core lifecycle "
-            "phases: Initial construction, the combined Use/Maintenance/Reconstruction stage, "
-            "and final End-of-Life. This visualization highlights the proportional distribution "
-            "of direct capital investments versus long-term externalized liabilities."
+            "A comparative analysis of cumulative project impacts across three core lifecycle phases: Initial Construction, combined Use/Maintenance/Reconstruction, and End-of-Life. This visualization illustrates the proportional split between direct capital investments and long-term externalized liabilities."
         )
         desc.setWordWrap(True)
         desc.setAlignment(Qt.AlignCenter)
@@ -454,7 +451,7 @@ class AggregateChartWidget(QWidget):
         desc.setStyleSheet(f"color: {get_token('text_secondary')}; border: none; background: transparent;")
         text_v.addWidget(desc)
 
-        # Ratio box — normalized so smallest = 1
+        # Ratio box- normalized so smallest = 1
         summary = compute_all_summaries(self._results)
         st      = summary.get("stagewise", {})
 

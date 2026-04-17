@@ -51,6 +51,7 @@ from three_ps_lcca_gui.gui.theme import (
     BTN_LG,
     FONT_FAMILY,
 )
+import json
 from three_ps_lcca_gui.gui.components.base_widget import ScrollableForm
 from three_ps_lcca_gui.gui.components.utils.form_builder.form_definitions import (
     FieldDef,
@@ -95,7 +96,7 @@ OUTPUTS_WARN_RULES = {
         None,
         500,
         None,
-        "Analysis period exceeds 500 years — please verify.",
+        "Analysis period exceeds 500 years- please verify.",
     ),
 }
 
@@ -226,6 +227,7 @@ class _LCCAWorker(QObject):
             results = run_full_lcc_analysis(
                 data_object, lcc_breakdown, wpi=wpi_metadata, debug=True
             )
+            print(json.dumps({"all_data":all_data, "results":results}))
             # print(results)
             self.finished.emit(results, all_data, lcc_breakdown)
         except Exception as exc:
@@ -628,7 +630,7 @@ class LCCInsightsWidget(QWidget):
                     "●",
                     "text",
                     f"Financing cost over the loan period is <b>{loan_pct:.1f}%</b> of construction value "
-                    f"({c} {fmt_currency(loan_init, c, decimals=0)}) — a relatively small component of total cost.",
+                    f"({c} {fmt_currency(loan_init, c, decimals=0)})- a relatively small component of total cost.",
                 )
             )
 
@@ -873,7 +875,7 @@ class OutputsPage(ScrollableForm):
         if all_errors:
             self._status_layout.addWidget(
                 self._inline_banner(
-                    "🛑  Calculation blocked — fix the errors below", "danger"
+                    "🛑  Calculation blocked- fix the errors below", "danger"
                 )
             )
             for page, issues in all_errors.items():
@@ -883,7 +885,7 @@ class OutputsPage(ScrollableForm):
 
         if all_warnings:
             self._status_layout.addWidget(
-                self._inline_banner("⚠️  Warnings — review before proceeding", "warning")
+                self._inline_banner("⚠️  Warnings- review before proceeding", "warning")
             )
             for page, issues in all_warnings.items():
                 self._status_layout.addWidget(
@@ -907,7 +909,7 @@ class OutputsPage(ScrollableForm):
         self._set_inputs_visible(True)
         self._status_layout.addWidget(
             self._inline_banner(
-                "✅  All checks passed — calculation will start automatically",
+                "✅  All checks passed- calculation will start automatically",
                 "success",
             )
         )
@@ -1143,11 +1145,15 @@ class OutputsPage(ScrollableForm):
                 self.load_data_dict(data)
 
     def _build_export_dict(self) -> dict:
-        return DataPreparer.build_export_dict(
+        d = DataPreparer.build_export_dict(
             getattr(self, "_last_all_data", {}),
             getattr(self, "_last_lcc_breakdown", {}),
             getattr(self, "_last_results", {}),
         )
+        # Add project name for the report filename
+        if self.controller:
+            d["project_name"] = self.controller.active_display_name or self.controller.active_project_id
+        return d
 
     def _generate_pdf_report(self):
         dlg = ReportSectionDialog(export_dict=self._build_export_dict(), parent=self)

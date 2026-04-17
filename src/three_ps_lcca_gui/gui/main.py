@@ -162,7 +162,7 @@ def main():
         ]:
             QFontDatabase.addApplicationFont(os.path.join(_font_dir, _ttf))
 
-    # Set app-level default font — body size, normal weight.
+    # Set app-level default font- body size, normal weight.
     # With font-size removed from the global QSS * rule, this becomes the
     # fallback for any widget that does not call setFont() explicitly.
     # Widgets that do call setFont(_f(...)) will use their own size correctly.

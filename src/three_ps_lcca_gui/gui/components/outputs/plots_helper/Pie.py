@@ -86,16 +86,14 @@ _TAB_META = [
     {
         "title": "Pillar Distribution",
         "desc": (
-            "Lifetime cost breakdown across the three sustainability pillars — "
-            "Economic, Environmental, and Social — aggregated over all lifecycle stages."
+            "Lifetime cost breakdown across the three sustainability pillars- "
+            "Economic, Environmental, and Social- aggregated over all lifecycle stages."
         ),
     },
     {
         "title": "Sustainability Matrix",
         "desc": (
-            "The inner ring maps total cost per lifecycle stage. "
-            "The outer ring dissects each stage into its Economic, "
-            "Environmental, and Social pillars."
+            "The ring maps cumulative cost per lifecycle stage, while the outer ring provides a disaggregated view of each stage across the Economic, Environmental, and Social pillars."
         ),
     },
 ]
@@ -137,7 +135,7 @@ def _nested_data_ok(results: dict) -> bool:
 
 
 def _build_pillar_data(results: dict):
-    """(label, value_M, color) triples from pillar_totals — skips zeros."""
+    """(label, value_M, color) triples from pillar_totals- skips zeros."""
     pt = compute_all_summaries(results).get("pillar_totals", {})
     rows = [
         ("Economic",      pt.get("eco",    0), COLORS["pillars"]["Economic"]),
@@ -471,7 +469,7 @@ class LCCPieWidget(QWidget):
         rb_v.addWidget(rb_note)
         left_v.addWidget(ratio_box)
 
-        # Percentage mode toggle — hidden when falling back to bar chart
+        # Percentage mode toggle- hidden when falling back to bar chart
         self._mode_cb = QCheckBox("Show Percentage Mode")
         self._mode_cb.setFont(_f(FS_BASE))
         self._mode_cb.setStyleSheet(
@@ -480,7 +478,7 @@ class LCCPieWidget(QWidget):
         self._mode_cb.setVisible(_pillar_ok)
         left_v.addWidget(self._mode_cb, 0, Qt.AlignCenter)
 
-        # Stage-wise toggle — disabled when nested pie has negatives
+        # Stage-wise toggle- disabled when nested pie has negatives
         self._stage_cb = QCheckBox("See stage wise")
         self._stage_cb.setFont(_f(FS_BASE))
         self._stage_cb.setStyleSheet(
@@ -491,7 +489,7 @@ class LCCPieWidget(QWidget):
         left_v.addWidget(self._stage_cb, 0, Qt.AlignCenter)
 
         if _pillar_ok and not _nested_ok:
-            _stage_note = QLabel("* Stage breakdown unavailable — negative values in stage data.")
+            _stage_note = QLabel("* Stage breakdown unavailable- negative values in stage data.")
             _stage_note.setAlignment(Qt.AlignCenter)
             _stage_note.setWordWrap(True)
             _stage_note.setFont(_f(FS_XS, FW_NORMAL, italic=True))
@@ -505,7 +503,7 @@ class LCCPieWidget(QWidget):
         self._plotters = []
 
         if not _pillar_ok:
-            # Pie can't handle negatives — show pillar totals as a plain bar chart
+            # Pie can't handle negatives- show pillar totals as a plain bar chart
             # (same 3 pillars the pie would have shown: Economic, Environmental, Social)
             pillar_bar_data = _build_pillar_total_data(self._results)
             if pillar_bar_data:
@@ -523,7 +521,7 @@ class LCCPieWidget(QWidget):
                 _no_data.setAlignment(Qt.AlignCenter)
                 self._content_h.addWidget(_no_data, 2)
         else:
-            # Chart 0 is fine — build pie stack
+            # Chart 0 is fine- build pie stack
             self._chart_stack = QStackedWidget()
             self._chart_stack.setMaximumHeight(500)
             self._chart_stack.setStyleSheet("background: transparent; border: none;")
@@ -541,7 +539,7 @@ class LCCPieWidget(QWidget):
             self._chart_stack.addWidget(c0)
             self._plotters.append(p0)
 
-            # Chart 1: nested stage+pillar donut — only if no negatives
+            # Chart 1: nested stage+pillar donut- only if no negatives
             if _nested_ok:
                 data1 = _build_nested_pie_data(self._results)
                 if data1:
@@ -563,7 +561,7 @@ class LCCPieWidget(QWidget):
         card_v.addWidget(content_row)
 
         if not _pillar_ok:
-            _note = QLabel("* Negative cost values detected — pie chart unavailable, showing bar chart instead.")
+            _note = QLabel("* Negative cost values detected- pie chart unavailable, showing bar chart instead.")
             _note.setAlignment(Qt.AlignCenter)
             _note.setWordWrap(True)
             _note.setFont(_f(FS_XS, FW_NORMAL, italic=True))

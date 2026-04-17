@@ -2,7 +2,7 @@
 gui/components/outputs/helper_functions/main.py
 
 Table-style horizontal bar chart for LCCA cost breakdown.
-Pure PySide6 QPainter widget — no matplotlib dependency.
+Pure PySide6 QPainter widget- no matplotlib dependency.
 
 Usage:
     widget = LCCABreakdownChart(data)
@@ -127,7 +127,7 @@ class LCCABreakdownChart(QWidget):
         p.setPen(QColor("#1a1a1a"))
         p.drawText(QRect(0, 4, W, _PAD_TOP - 4),
                    Qt.AlignmentFlag.AlignHCenter | Qt.AlignmentFlag.AlignVCenter,
-                   "LCCA Cost Breakdown — All Stages")
+                   "LCCA Cost Breakdown- All Stages")
 
         # ── header ────────────────────────────────────────────────────────────
         hdr_y = _PAD_TOP

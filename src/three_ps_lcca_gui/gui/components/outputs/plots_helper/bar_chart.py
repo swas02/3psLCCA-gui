@@ -72,7 +72,7 @@ def create_bar_chart(
             color=stage["color"], alpha=0.9,
         )
 
-    # Bars — red for costs, green for savings/negatives
+    # Bars- red for costs, green for savings/negatives
     bar_colors = ["#8b1a1a" if v >= 0 else "#2e7d32" for v in values]
     bars = ax.bar(x, values, 0.50, color=bar_colors)
 

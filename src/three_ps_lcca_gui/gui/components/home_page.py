@@ -704,7 +704,7 @@ class _EmptyState(QWidget):
     ):
         super().__init__(parent)
         self._manager = manager
-        self._logo_widget = None  # QSvgWidget — swapped on theme change
+        self._logo_widget = None  # QSvgWidget- swapped on theme change
         self._icon_lbl = None
         self._sub_lbl = None
         self._cta = None
@@ -717,7 +717,7 @@ class _EmptyState(QWidget):
         layout.addStretch()
 
         if not heading:
-            # Brand logo — _refresh() swaps the SVG file when dark/light flips
+            # Brand logo- _refresh() swaps the SVG file when dark/light flips
             from three_ps_lcca_gui.gui.themes import is_dark
             logo_file = "logo-3psLCCA-dark.svg" if is_dark() else "logo-3psLCCA-light.svg"
             path = os.path.join(_ASSETS_DIR, "logo", logo_file)

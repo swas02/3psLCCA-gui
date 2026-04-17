@@ -108,7 +108,41 @@ AGENCY_FIELDS = [
     ),
 ]
 
-GENERAL_FIELDS = PROJECT_INFO_FIELDS + AGENCY_FIELDS + [
+REVIEWER_FIELDS = [
+    Section("Reviewed By"),
+    FieldDef(
+        "reviewer_name",
+        "Name",
+        "",
+        "text",
+    ),
+    FieldDef(
+        "reviewer_organization",
+        "Organization",
+        "",
+        "text",
+    ),
+    FieldDef(
+        "reviewer_address",
+        "Address",
+        "",
+        "text",
+    ),
+    FieldDef(
+        "reviewer_email",
+        "Email",
+        "",
+        "text",
+    ),
+    FieldDef(
+        "reviewer_phone",
+        "Phone",
+        "",
+        "phone",
+    ),
+]
+
+GENERAL_FIELDS = PROJECT_INFO_FIELDS + AGENCY_FIELDS + REVIEWER_FIELDS + [
     # ── Project Settings ─────────────────────────────────────────────────
     Section("Project Settings"),
     FieldDef(
