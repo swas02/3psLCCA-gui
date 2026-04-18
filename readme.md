@@ -1,134 +1,136 @@
-# 3psLCCA - Life Cycle Cost Analysis for Bridge Projects
+# 3psLCCA - Bridge Life Cycle Cost Analysis
 
-A desktop application built with Python and PySide6 for performing Life Cycle Cost Analysis (LCCA) on bridge infrastructure projects.
-
----
-
-## Requirements
-
-The following software must be installed on your system:
-
-- **Python >= 3.12**: [Download Python](https://www.python.org/downloads/)
-- **Git**: [Download Git](https://git-scm.com/downloads)
-- **pdflatex**: Required for PDF report generation.
-  - **Windows**: Install [MikTeX](https://miktex.org/download) or [TeX Live](https://www.tug.org/texlive/).
-  - **Linux**: `sudo apt-get install texlive-latex-extra texlive-fonts-recommended`
-  - **macOS**: Install [MacTeX](https://www.tug.org/mactex/).
-- **Miniconda** or **Anaconda** (Required only for Method 2: Conda Installation). [Download Miniconda](https://docs.conda.io/en/latest/miniconda.html)
+3psLCCA is a desktop application for performing Life Cycle Cost Analysis (LCCA) on bridge infrastructure projects. It evaluates the economic performance of steel design options over their entire life cycle.
 
 ---
 
-## Installation
+## ⚙️ Installation (via Conda)
 
-### Method 1: Manual Installation (Recommended for Development)
+This is the recommended method as it automatically handles all dependencies, including a **portable LaTeX environment** for PDF reports. Using `conda-forge` avoids any Anaconda Terms of Service (ToS) requirements.
 
-Follow these steps to set up the project locally:
+### 1. Prerequisites
+- **Install Miniconda**: [Download and install Miniconda](https://docs.conda.io/en/latest/miniconda.html).
 
-**1. Clone the repositories**
-
-First, clone the main GUI repository and the core engine:
+### 2. Clean Conda Configuration (Run Once)
+Run these commands to ensure your Conda setup is clean and uses reliable open-source channels:
 
 ```bash
-# Clone the GUI repository
-git clone https://github.com/swas02/3psLCCA-gui.git
-cd 3psLCCA-gui
+# Remove problematic default channels
+conda config --remove channels defaults
 
-# Clone the core engine inside the project root
-git clone https://github.com/swas02/3psLCCA-core.git
+# Add required channels
+conda config --add channels conda-forge
+conda config --add channels osdag
+conda config --add channels zehen-249
+
+# Set channel priority to prevent conflicts
+conda config --set channel_priority strict
 ```
 
-**2. Set up a Virtual Environment**
-
+### 3. Setup and Run
 ```bash
-python -m venv venv
-```
+# Create the environment using the provided file
+conda env create -f environment.yml
 
-Activate the environment:
-- **Windows (PowerShell)**: `.\venv\Scripts\Activate.ps1`
-- **Windows (CMD)**: `.\venv\Scripts\activate.bat`
-- **macOS / Linux**: `source venv/bin/activate`
+# Activate the environment
+conda activate 3pslcca
 
-**3. Install Dependencies and Package**
-
-```bash
-pip install -r requirements.txt
+# Install the application locally
 pip install -e .
-```
 
----
-
-### Method 2: Installation via Conda
-
-This is the easiest way to run the application for general use.
-
-**1. Create the Conda Environment**
-
-```bash
-conda create -n test-lcca2 zehen-249::three-ps-lcca-gui -c osdag
-```
-
-> [!WARNING]
-> If you are using **Miniconda**, please ensure you are using the **latest version**. Older versions may have outdated environment managers that could lead to installation failures.
-
-**2. Activate the Environment**
-
-```bash
-conda activate test-lcca2
-```
-
----
-
-## Running the Application
-
-### If installed via Method 1 (Manual):
-You can run the application using either of the following commands from the project root:
-
-```bash
-# Option A: Using the entry point script
-three-ps-lcca-gui
-
-# Option B: Using the python module
-python -m three_ps_lcca_gui.gui.main
-```
-
-### If installed via Method 2 (Conda):
-Ensure your environment is active, then run:
-
-```bash
+# Run the application
 three-ps-lcca-gui
 ```
 
 ---
 
-## Developer Tools
+## 🔄 Keeping Up to Date
 
-The project includes internal tools for database maintenance and debugging. To launch the developer tools menu:
+To get the latest features and bug fixes for both the interface and the calculation engine:
 
+1. **Update the source code**:
+   ```bash
+   git pull origin main
+   ```
+
+2. **Update the environment**:
+   ```bash
+   # Ensure your environment is active
+   conda activate 3pslcca
+
+   # Update libraries and prune old ones
+   conda env update -f environment.yml --prune
+
+   # Force update the internal Core engine from GitHub
+   pip install --upgrade git+https://github.com/swas02/3psLCCA-core.git@main
+
+   # Re-sync local package entry points
+   pip install -e .
+
+   # Launch the application
+   three-ps-lcca-gui
+   ```
+
+---
+
+## 🗑️ Uninstallation & Cleanup
+
+To completely remove the application and its environment from your system:
+
+```bash
+# Deactivate the environment (if active)
+conda deactivate
+
+# Remove the conda environment
+conda env remove -n 3pslcca
+```
+
+---
+
+## 🛠️ Development Setup
+
+If you are contributing to the source code, please **first follow the [Installation (via Conda)](#⚙️-installation-via-conda) steps above**, then complete these additional steps:
+
+1. **Clone the Project**:
+   ```bash
+   git clone https://github.com/swas02/3psLCCA-gui.git
+   cd 3psLCCA-gui
+   ```
+
+2. **Install in Editable Mode**:
+   This allows you to see your code changes immediately without reinstalling the package:
+   ```bash
+   # Ensure your environment is active
+   conda activate 3pslcca
+   
+   # Install the project locally for development
+   pip install -e .
+   ```
+
+---
+
+## 📄 PDF Report Generation
+- **Conda Environment**: Uses a built-in portable LaTeX engine (no extra setup required).
+- **Manual Installation**: Requires a system-wide LaTeX distribution (e.g., [MiKTeX](https://miktex.org/)) added to your system PATH.
+
+---
+
+## ❓ Troubleshooting
+
+### SSL Errors (CondaSSLError)
+If you encounter an SSL error on Windows (`record layer failure`):
+1. Disable SSL verification temporarily: `conda config --set ssl_verify false`.
+2. Try the installation again: `conda env create -f environment.yml`.
+3. If you use a VPN, try disconnecting it before running the setup.
+
+---
+
+## 🔧 Maintenance & Tools
+To access internal database management and debugging tools:
 ```bash
 python devtools/launcher.py
 ```
-
 Available tools:
-- **Project Inspector**: Inspect and repair `.3psLCCA` project archives.
 - **WPI Database**: Manage Wholesale Price Index data.
-- **Catalog Builder**: Rebuild the material catalog index.
-- **Unit Manager**: Manage measurement units and conversions.
-- **Docs Builder**: Build HTML documentation from Markdown.
-
----
-
-## Project Structure
-
-```
-.
-├── 3psLCCA-core/           # Core LCCA calculation engine (cloned separately)
-├── devtools/               # Developer tools and utility scripts
-├── src/
-│   └── three_ps_lcca_gui/  # Main application package
-│       ├── core/           # Engine wrappers and safe-saving logic
-│       ├── data/           # WPI and Unit databases
-│       ├── gui/            # PySide6 UI components and assets
-│       └── report/         # LaTeX/PDF report generation
-├── docs/                   # Documentation source
-└── requirements.txt        # Python dependencies
-```
+- **Catalog Builder**: Rebuild material and section catalogs.
+- **Project Inspector**: Repair and inspect `.3psLCCA` project files.

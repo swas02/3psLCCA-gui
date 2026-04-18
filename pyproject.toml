@@ -23,8 +23,17 @@ name = "three_ps_lcca_gui"
 version = "1.0.0"
 dependencies = [
     "platformdirs",
+    "PySide6",
+    "psutil",
+    "Pillow",
+    "matplotlib",
+    "pandas",
+    "numpy",
+    "openpyxl",
+    "PyYAML",
+    "pylatex",
 ]
-requires-python = ">= 3.10, < 3.13"
+requires-python = ">= 3.10"
 
 description = "A Python package for performing life cycle cost analysis (LCCA) on three primary steel design options: hot-rolled, cold-formed, and built-up steel sections. This package provides tools and functions to evaluate the economic performance of these steel design options over their entire life cycle, including initial costs, maintenance costs, and end-of-life costs. It is designed to assist engineers and decision-makers in selecting the most cost-effective steel design option for their projects."
 
