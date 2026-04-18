@@ -17,14 +17,14 @@ three_ps_lcca_gui = [
     "gui/components/structure/registry/material_database/*",
     "gui/components/utils/doc_handler/assets/*",
     "gui/components/utils/doc_handler/site/*",
-    "gui/themes/*"
-
+    "gui/themes/*",
+    "report/3psLCCAReportTitlePage.tex"
 ]
 
 [tool.setuptools.packages.find]
 namespaces = true
 where = ["src"]
-
+exclude = ["*.debug", "*.tests", "*.egg-info"]
 
 [project]
 name = "three_ps_lcca_gui"
@@ -53,5 +53,4 @@ license = {file = "LICENSE"}
 keywords = ["steel design", "life cycle analysis", "engineering"]
 
 [project.scripts]
-three-ps-lcca-gui = "three_ps_lcca_gui.gui.main:main"
-
+threePSLCCA = "three_ps_lcca_gui.gui.main:main"
