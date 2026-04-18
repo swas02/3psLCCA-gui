@@ -30,16 +30,16 @@ conda config --set channel_priority strict
 ### 3. Setup and Run
 ```bash
 # Create the environment using the provided file
-conda env create -f environment.yml
+conda create -n 3pslcca
 
 # Activate the environment
 conda activate 3pslcca
 
-# Install the application locally
-pip install -e .
+# Install application
+conda install three-ps-lcca-gui 
 
 # Run the application
-three-ps-lcca-gui
+threePSLCCA
 ```
 
 ---
@@ -104,7 +104,7 @@ If you are contributing to the source code, please **first follow the [Installat
    conda activate 3pslcca
    
    # Install the project locally for development
-   pip install -e .
+   conda env create -f environment.yml -n 3pslcca
    ```
 
 ---
