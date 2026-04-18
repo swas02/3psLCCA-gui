@@ -49,6 +49,7 @@ requirements:
     - pylatex
     - three-ps-lcca-core
     - osdag::osdag_latex_env
+    - platformdirs
 
 about:
   summary: >-

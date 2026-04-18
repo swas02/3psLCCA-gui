@@ -8,7 +8,7 @@ data/user_db/profile.json
 # ─────────────────────────────────────────────
 # User
 # ─────────────────────────────────────────────
-user_projects/
+*/user_projects
 debug/
 dev_notes/
 data/user_db

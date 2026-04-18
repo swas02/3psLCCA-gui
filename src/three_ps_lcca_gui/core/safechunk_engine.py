@@ -133,7 +133,9 @@ class SafeChunkEngine:
         use_local=False: Returns platform-specific AppData path (via platformdirs).
         """
         if use_local:
-            return "user_projects"
+            path = os.path.abspath(os.path.join("lcca", "user_projects"))
+            os.makedirs(path, exist_ok=True)
+            return path
 
         # Resolve defaults
         name = app_name or SafeChunkEngine.APP_NAME
@@ -146,11 +148,15 @@ class SafeChunkEngine:
                 "WARNING: SafeChunkEngine.APP_NAME/AUTHOR not set. "
                 "Defaulting to local 'user_projects' folder."
             )
-            return "user_projects"
+            path = os.path.abspath(os.path.join("lcca", "user_projects"))
+            os.makedirs(path, exist_ok=True)
+            return path
 
         # Standard AppData path
-        path = platformdirs.user_data_dir(name, author)
-        return os.path.join(path, "user_projects")
+        base = platformdirs.user_data_dir(name)
+        full_path = os.path.join(base, author , "user_projects")
+        os.makedirs(full_path, exist_ok=True)
+        return full_path
 
     def __init__(
         self,
