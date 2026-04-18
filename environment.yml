@@ -5,18 +5,16 @@ channels:
   - zehen-249
   - nodefaults
 dependencies:
-  - python=3.12
-  - pip
+  - python>=3.10,<3.13
+  - pyside6<6.10
+  - psutil
+  - Pillow
+  - matplotlib
   - pandas
   - numpy
   - openpyxl
   - PyYAML
   - pylatex
-  - osdag_latex_env
-  - pip:
-    - PySide6
-    - psutil
-    - Pillow
-    - matplotlib
-    - platformdirs
-    - git+https://github.com/swas02/3psLCCA-core.git@main
+  - three-ps-lcca-core
+  - osdag::osdag_latex_env
+  - platformdirs
