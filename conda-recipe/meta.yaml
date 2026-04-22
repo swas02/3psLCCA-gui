@@ -17,7 +17,7 @@ source:
 build:
   number: 0
   noarch: python
-  script:  "{{ PYTHON }} -m pip install --no-deps --ignore-installed --force-reinstall . -vv"
+  script:  "{{ PYTHON }} -m pip install --no-deps . -vv"
   entry_points:
     - threePSLCCA = three_ps_lcca_gui.gui.main:main
 
