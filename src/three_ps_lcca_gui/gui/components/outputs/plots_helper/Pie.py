@@ -78,6 +78,7 @@ COLORS = {
     },
 }
 
+# Restored original wedge widths
 _WEDGE      = {"width": 0.30, "edgecolor": "none", "linewidth": 0}
 _WEDGE_SIMP = {"width": 0.42, "edgecolor": "none", "linewidth": 0}
 
@@ -115,7 +116,7 @@ class WheelForwarder(QObject):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# DATA HELPERS
+# DATA & CHART HELPERS
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _M(x): return float(x) / 1_000_000
@@ -131,7 +132,6 @@ def _nested_data_ok(results: dict) -> bool:
     """Return False if any per-stage pillar value is negative."""
     pw = compute_all_summaries(results).get("pillar_wise", {})
     return all(v >= 0 for stage in pw.values() for v in stage.values())
-
 
 
 def _build_pillar_data(results: dict):
@@ -168,6 +168,51 @@ def _build_nested_pie_data(results: dict) -> list:
     return data
 
 
+def _add_smart_labels(ax, wedges, labels, text_color, line_color, threshold=20.0, leader_radius=1.3):
+    """
+    Dynamically places labels inside large wedges or outside with a true radial leader line for small wedges.
+    """
+    for i, p in enumerate(wedges):
+        slice_width = p.theta2 - p.theta1
+        if slice_width <= 0.1:
+            continue
+
+        angle = (p.theta2 - p.theta1) / 2.0 + p.theta1
+        y = np.sin(np.deg2rad(angle))
+        x = np.cos(np.deg2rad(angle))
+        label_text = labels[i]
+
+        if slice_width > threshold:
+            # Inside placement
+            r_mid = p.r - (p.width / 2.0 if p.width else p.r / 2.0)
+            ax.text(
+                x * r_mid, y * r_mid, label_text,
+                ha="center", va="center", color=text_color,
+                fontsize=8, fontweight="bold", zorder=10, clip_on=False
+            )
+        else:
+            # True Radial explosion for outside placement
+            x_edge, y_edge = x * p.r, y * p.r
+            
+            x_text = x * leader_radius
+            y_text = y * leader_radius
+            
+            # Tiny horizontal nudge for the text anchor
+            sign = 1 if x >= 0 else -1
+            x_text += 0.05 * sign
+            
+            horizontal_align = "left" if x >= 0 else "right"
+
+            ax.annotate(
+                label_text, 
+                xy=(x_edge, y_edge), 
+                xytext=(x_text, y_text),
+                ha=horizontal_align, va="center", color=text_color, fontsize=8, fontweight="bold",
+                arrowprops=dict(arrowstyle="-", color=line_color, lw=1.2, alpha=0.8),
+                zorder=10, annotation_clip=False, clip_on=False
+            )
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # CHART 0 – Simple pillar donut
 # ─────────────────────────────────────────────────────────────────────────────
@@ -186,13 +231,15 @@ class SimplePillarPlotter:
         self.fig.patch.set_alpha(0.0)
         self.ax  = self.fig.add_subplot(111)
         self.ax.set_facecolor("none")
-        self.fig.subplots_adjust(left=0.02, right=0.98, bottom=0.15, top=0.95)
+        self.fig.subplots_adjust(left=0.0, right=1.0, bottom=0.05, top=0.95)
         self.fig.canvas.mpl_connect("motion_notify_event", self._hover)
 
     def _fmt(self, val: float) -> str:
         if self.mode == "Percentage":
-            return f"{val / (self.total or 1.0) * 100:.1f}%"
-        return f"{fmt_currency(val, self.currency, decimals=2)} Million {self.currency}"
+            total = self.total if self.total > 0 else 1.0
+            return f"{val / total * 100:.1f}%"
+        # Shortened "Million" to "M" to save horizontal label space
+        return f"{fmt_currency(val, self.currency, decimals=2)} M {self.currency}"
 
     def _hover(self, event):
         if event.inaxes != self.ax or not hasattr(self, "annot"):
@@ -210,13 +257,15 @@ class SimplePillarPlotter:
         self.fig.canvas.draw_idle()
 
     def set_mode(self, is_percentage: bool):
+        # Dynamically redraw the chart when mode is changed to update the labels
         self.mode = "Percentage" if is_percentage else "Value"
-        if hasattr(self, "center_text"):
-            self.center_text.set_text(f"TOTAL\n{self._fmt(self.total)}")
+        self.ax.clear()
+        self.setup_plot()
         self.fig.canvas.draw_idle()
 
     def setup_plot(self):
         tc = get_token("text")
+        lc = get_token("surface_mid")
         self.ax.set(aspect="equal")
 
         if not self.values:
@@ -224,9 +273,17 @@ class SimplePillarPlotter:
             self.ax.axis("off")
             return self.fig
 
+        # Restored Original Radius: 1.05
         self.wedges, _ = self.ax.pie(
             self.values, radius=1.05, colors=self.colors, wedgeprops=_WEDGE_SIMP,
         )
+        
+        # Build multi-line labels that contain BOTH the text and the number/percentage
+        display_labels = [f"{l}\n{self._fmt(v)}" for l, v in zip(self.labels, self.values)]
+        
+        # Adding labels. Leader lines stop perfectly at 1.25 radius.
+        _add_smart_labels(self.ax, self.wedges, display_labels, tc, lc, threshold=20.0, leader_radius=1.25)
+
         self.center_text = self.ax.text(
             0, 0, f"TOTAL\n{self._fmt(self.total)}",
             ha="center", va="center", fontsize=10, fontweight="bold", color=tc,
@@ -235,16 +292,21 @@ class SimplePillarPlotter:
             "", xy=(0, 0), xytext=(20, 20), textcoords="offset points",
             bbox=dict(boxstyle="round,pad=0.5", fc=get_token("base"),
                       ec=get_token("surface_mid"), alpha=0.9),
-            zorder=10, fontweight="bold", color=tc,
+            zorder=15, fontweight="bold", color=tc,
         )
         self.annot.set_visible(False)
 
         legend_els = [Patch(facecolor=c, label=l) for l, c in zip(self.labels, self.colors)]
         self.ax.legend(
-            handles=legend_els, loc="upper center", bbox_to_anchor=(0.5, -0.08),
+            handles=legend_els, loc="upper center", bbox_to_anchor=(0.5, -0.05),
             ncol=3, frameon=False, fontsize=8, labelcolor=tc,
         )
         self.ax.axis("off")
+        
+        # Massive horizontal padding to completely protect long text strings
+        self.ax.set_xlim(-2.0, 2.0)
+        self.ax.set_ylim(-1.5, 1.5)
+        
         return self.fig
 
 
@@ -261,7 +323,7 @@ class SustainabilityCircularPlotter:
         self.fig.patch.set_alpha(0.0)
         self.ax  = self.fig.add_subplot(111)
         self.ax.set_facecolor("none")
-        self.fig.subplots_adjust(left=0.02, right=0.98, bottom=0.15, top=0.95)
+        self.fig.subplots_adjust(left=0.0, right=1.0, bottom=0.05, top=0.95)
         self._prepare_data()
         self.fig.canvas.mpl_connect("motion_notify_event", self._hover)
 
@@ -283,7 +345,8 @@ class SustainabilityCircularPlotter:
         if self.mode == "Percentage":
             total = self.total_value if self.total_value > 0 else 1.0
             return f"{val / total * 100:.1f}%"
-        return f"{fmt_currency(val, self.currency, decimals=2)} Million {self.currency}"
+        # Shortened "Million" to "M" to save horizontal label space
+        return f"{fmt_currency(val, self.currency, decimals=2)} M {self.currency}"
 
     def _hover(self, event):
         if event.inaxes != self.ax or not hasattr(self, "annot"):
@@ -304,26 +367,41 @@ class SustainabilityCircularPlotter:
         self.fig.canvas.draw_idle()
 
     def set_mode(self, is_percentage: bool):
+        # Dynamically redraw the chart when mode is changed to update the labels
         self.mode = "Percentage" if is_percentage else "Value"
-        self.center_text.set_text(f"TOTAL\n{self._fmt(self.total_value)}")
+        self.ax.clear()
+        self.setup_plot()
         self.fig.canvas.draw_idle()
 
     def setup_plot(self):
         tc  = get_token("text")
         sep = get_token("surface_mid")
         self.ax.set(aspect="equal")
+
+        # Restored Original Radii: 0.8 and 1.1
         self.inner_wedges, _ = self.ax.pie(
             self.inner_vals, radius=0.8, colors=self.inner_colors, wedgeprops=_WEDGE,
         )
         self.outer_wedges, _ = self.ax.pie(
             self.outer_vals, radius=1.1, colors=self.outer_colors, wedgeprops=_WEDGE,
         )
+        
+        # Build multi-line labels containing text AND numbers/percentages
+        inner_display = [f"{l}\n{self._fmt(v)}" for l, v in zip(self.inner_labels, self.inner_vals)]
+        outer_display = [f"{l.split(' - ')[1]}\n{self._fmt(v)}" for l, v in zip(self.outer_labels, self.outer_vals)]
+
+        # Adding labels. Leader lines stop perfectly at 1.30 radius.
+        _add_smart_labels(self.ax, self.inner_wedges, inner_display, tc, sep, threshold=35.0, leader_radius=1.30)
+        _add_smart_labels(self.ax, self.outer_wedges, outer_display, tc, sep, threshold=20.0, leader_radius=1.30)
+
+        # Restored original connecting line endpoints
         if self.total_value > 0:
             angles = np.cumsum(self.inner_vals) / self.total_value * 2 * np.pi
             for angle in angles:
                 x = [0.5 * np.cos(angle), 1.1 * np.cos(angle)]
                 y = [0.5 * np.sin(angle), 1.1 * np.sin(angle)]
                 self.ax.plot(x, y, color=sep, lw=1.5, alpha=0.5)
+                
         self.center_text = self.ax.text(
             0, 0, f"TOTAL\n{self._fmt(self.total_value)}",
             ha="center", va="center", fontsize=10, fontweight="bold", color=tc,
@@ -332,17 +410,23 @@ class SustainabilityCircularPlotter:
             "", xy=(0, 0), xytext=(20, 20), textcoords="offset points",
             bbox=dict(boxstyle="round,pad=0.5", fc=get_token("base"),
                       ec=get_token("surface_mid"), alpha=0.9),
-            zorder=10, fontweight="bold", color=tc,
+            zorder=15, fontweight="bold", color=tc,
         )
         self.annot.set_visible(False)
+        
         legend_els  = [Patch(facecolor=COLORS["stages"].get(l, "#AAA"), label=l)
                        for l in self.inner_labels]
         legend_els += [Patch(facecolor=c, label=l) for l, c in COLORS["pillars"].items()]
         self.ax.legend(
-            handles=legend_els, loc="upper center", bbox_to_anchor=(0.5, -0.08),
+            handles=legend_els, loc="upper center", bbox_to_anchor=(0.5, -0.05),
             ncol=3, frameon=False, fontsize=8, labelcolor=tc,
         )
         self.ax.axis("off")
+        
+        # Massive horizontal padding to completely protect long text strings
+        self.ax.set_xlim(-2.0, 2.0)
+        self.ax.set_ylim(-1.5, 1.5)
+
         return self.fig
 
 
