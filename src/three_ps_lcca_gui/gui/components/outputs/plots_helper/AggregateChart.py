@@ -37,9 +37,9 @@ from PySide6.QtWidgets import (
 
 from three_ps_lcca_gui.gui.theme import (
     FONT_FAMILY,
-    FS_SM, FS_BASE, FS_LG, FS_SUBHEAD, FS_XL, FS_MD, FS_XS,
+    FS_SM, FS_BASE, FS_LG, FS_SUBHEAD, FS_XS,
     FW_NORMAL, FW_BOLD,
-    SP1, SP2, SP3, SP4, SP5, SP6, RADIUS_LG, RADIUS_XL,
+    SP2, SP4, SP6, RADIUS_LG, RADIUS_XL,
 )
 from three_ps_lcca_gui.gui.themes import get_token
 from three_ps_lcca_gui.gui.styles import font as _f
@@ -146,7 +146,7 @@ def _build_pillar_data(results: dict) -> list:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# SHARED HELPER
+# SHARED HELPERS
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _rounded_bar(ax, patch, radius=0.05):
@@ -164,24 +164,63 @@ def _rounded_bar(ax, patch, radius=0.05):
     return fp
 
 
+class _BasePlotter:
+    def __init__(self, currency: str):
+        self.currency = currency
+        self.fig = plt.figure(figsize=(9, 6))
+        self.fig.patch.set_alpha(0.0)
+        self.ax = self.fig.add_subplot(111)
+        self.ax.set_facecolor("none")
+        self.fig.subplots_adjust(left=0.1, right=0.75, bottom=0.15, top=0.9)
+        self.fig.canvas.mpl_connect("motion_notify_event", self._hover)
+
+    def _hover(self, event):
+        pass
+
+    def _setup_spines(self, tc):
+        for s in self.ax.spines.values():
+            s.set_visible(False)
+        for spine in ("left", "bottom"):
+            self.ax.spines[spine].set_visible(True)
+            self.ax.spines[spine].set_edgecolor(tc)
+            self.ax.spines[spine].set_linewidth(0.8)
+
+    def _setup_annotation(self, tc):
+        self.annot = self.ax.annotate(
+            "", xy=(0, 0), xytext=(15, 15), textcoords="offset points",
+            bbox=dict(boxstyle="round,pad=0.5", fc=get_token("base"),
+                      ec=get_token("surface_mid"), alpha=0.9),
+            zorder=10, fontweight="bold", color=tc, fontsize=8,
+        )
+        self.annot.set_visible(False)
+
+    def _make_legend(self, handles, title, tc):
+        leg = self.ax.legend(
+            handles=handles, title=title,
+            loc="center left", bbox_to_anchor=(1.02, 0.5),
+            frameon=False, fontsize=8, title_fontsize=9, labelcolor=tc,
+        )
+        plt.setp(leg.get_title(), color=tc)
+
+    def _setup_axes_style(self, tc, gc, x, xlabels, ylabel):
+        self.ax.set_xticks(x)
+        self.ax.set_xticklabels(xlabels, fontweight="bold", color=tc, fontsize=9)
+        self.ax.set_ylabel(ylabel, fontweight="bold", color=tc, fontsize=9)
+        self.ax.tick_params(axis="both", colors=tc, labelsize=8)
+        self.ax.yaxis.grid(True, linestyle="--", alpha=0.3, color=gc)
+        self.ax.set_axisbelow(True)
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # CHART 0 – Stage-wise bars  (default)
 # ─────────────────────────────────────────────────────────────────────────────
 
-class StageBarPlotter:
+class StageBarPlotter(_BasePlotter):
     def __init__(self, data: list, currency: str = "INR"):
-        # data: [(label, value_M, color), ...]
-        self.labels   = [d[0] for d in data]
-        self.values   = [d[1] for d in data]
-        self.colors   = [d[2] for d in data]
-        self.currency = currency
-
-        self.fig = plt.figure(figsize=(9, 6))
-        self.fig.patch.set_alpha(0.0)
-        self.ax  = self.fig.add_subplot(111)
-        self.ax.set_facecolor("none")
-        self.fig.subplots_adjust(left=0.1, right=0.75, bottom=0.15, top=0.9)
-        self.fig.canvas.mpl_connect("motion_notify_event", self._hover)
+        super().__init__(currency)
+        self.labels = [d[0] for d in data]
+        self.values = [d[1] for d in data]
+        self.colors = [d[2] for d in data]
         self._fancy: list = []
 
     def _hover(self, event):
@@ -207,7 +246,7 @@ class StageBarPlotter:
     def setup_plot(self):
         tc = get_token("text")
         gc = get_token("surface_mid")
-        x  = np.arange(len(self.labels))
+        x  = np.arange(len(self.labels)) * 0.75
 
         bars = self.ax.bar(x, self.values, color=self.colors, edgecolor="none", width=0.5)
         self._fancy = [_rounded_bar(self.ax, p) for p in bars.patches]
@@ -217,73 +256,41 @@ class StageBarPlotter:
         pad   = (max_v - min_v) * 0.12 or 1.0
         for i, val in enumerate(self.values):
             if val > 0:
-                self.ax.text(
-                    i, val + pad * 0.18,
+                self.ax.text(x[i], val + pad * 0.18,
                     f"{fmt_currency(val, self.currency, decimals=2)}",
-                    ha="center", va="bottom", fontsize=8, fontweight="bold", color=tc,
-                )
+                    ha="center", va="bottom", fontsize=8, fontweight="bold", color=tc)
             elif val < 0:
-                self.ax.text(
-                    i, val - pad * 0.18,
+                self.ax.text(x[i], val - pad * 0.18,
                     f"{fmt_currency(val, self.currency, decimals=2)}",
-                    ha="center", va="top", fontsize=8, fontweight="bold", color=tc,
-                )
+                    ha="center", va="top", fontsize=8, fontweight="bold", color=tc)
 
-        self.ax.set_xticks(x)
-        self.ax.set_xticklabels(self.labels, fontweight="bold", color=tc, fontsize=9)
-        self.ax.set_ylabel(f"Total Cost (Million {self.currency})", fontweight="bold", color=tc, fontsize=9)
-        self.ax.tick_params(axis="both", colors=tc, labelsize=8)
-        self.ax.yaxis.grid(True, linestyle="--", alpha=0.3, color=gc)
-        self.ax.set_axisbelow(True)
+        self._setup_axes_style(tc, gc, x, self.labels, f"Total Cost (Million {self.currency})")
         if self.values:
             self.ax.set_ylim(min(0, min_v) - pad, max(0, max_v) + pad)
 
-        for s in self.ax.spines.values():
-            s.set_visible(False)
-        for spine in ("left", "bottom"):
-            self.ax.spines[spine].set_visible(True)
-            self.ax.spines[spine].set_edgecolor(tc)
-            self.ax.spines[spine].set_linewidth(0.8)
-
-        self.annot = self.ax.annotate(
-            "", xy=(0, 0), xytext=(15, 15), textcoords="offset points",
-            bbox=dict(boxstyle="round,pad=0.5", fc=get_token("base"),
-                      ec=get_token("surface_mid"), alpha=0.9),
-            zorder=10, fontweight="bold", color=tc, fontsize=8,
+        self._setup_spines(tc)
+        self._setup_annotation(tc)
+        self._make_legend(
+            [Patch(facecolor=c, label=l) for l, c in zip(self.labels, self.colors)],
+            "Lifecycle Stages", tc,
         )
-        self.annot.set_visible(False)
-
-        legend_els = [Patch(facecolor=c, label=l) for l, c in zip(self.labels, self.colors)]
-        leg = self.ax.legend(
-            handles=legend_els, title="Lifecycle Stages",
-            loc="center left", bbox_to_anchor=(1.02, 0.5),
-            frameon=False, fontsize=8, title_fontsize=9, labelcolor=tc,
-        )
-        plt.setp(leg.get_title(), color=tc)
         return self.fig
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# CHART 1 – Pillar-wise stacked bars  (existing)
+# CHART 1 – Pillar-wise stacked bars
 # ─────────────────────────────────────────────────────────────────────────────
 
-class SustainabilityBarPlotter:
+class SustainabilityBarPlotter(_BasePlotter):
     def __init__(self, data: list, currency: str = "INR"):
+        super().__init__(currency)
         self.data       = data
-        self.currency   = currency
         self.stages     = [d["stage"] for d in data]
         self.categories = ["Economic", "Environmental", "Social"]
         self.values     = {
             cat: [next((p[1] for p in d["pillars"] if p[0] == cat), 0) for d in data]
             for cat in self.categories
         }
-
-        self.fig = plt.figure(figsize=(9, 6))
-        self.fig.patch.set_alpha(0.0)
-        self.ax  = self.fig.add_subplot(111)
-        self.ax.set_facecolor("none")
-        self.fig.subplots_adjust(left=0.1, right=0.75, bottom=0.15, top=0.9)
-        self.fig.canvas.mpl_connect("motion_notify_event", self._hover)
 
     def _hover(self, event):
         if event.inaxes != self.ax or not hasattr(self, "annot"):
@@ -295,7 +302,7 @@ class SustainabilityBarPlotter:
                     if np.allclose(patch.get_facecolor()[:3],
                                    matplotlib.colors.to_rgb(PILLAR_COLORS[cat])):
                         x_pos     = patch.get_x() + patch.get_width() / 2
-                        stage_idx = int(round(x_pos))
+                        stage_idx = int(round(x_pos / 0.75))
                         if 0 <= stage_idx < len(self.stages):
                             val = self.values[cat][stage_idx]
                             self.annot.set_text(
@@ -316,7 +323,7 @@ class SustainabilityBarPlotter:
     def setup_plot(self):
         tc = get_token("text")
         gc = get_token("surface_mid")
-        x          = np.arange(len(self.stages))
+        x          = np.arange(len(self.stages)) * 0.75
         pos_bottom = np.zeros(len(self.stages))
         neg_bottom = np.zeros(len(self.stages))
 
@@ -325,18 +332,14 @@ class SustainabilityBarPlotter:
             pos_vals = np.where(vals > 0, vals, 0.0)
             neg_vals = np.where(vals < 0, vals, 0.0)
             if pos_vals.any():
-                container = self.ax.bar(
-                    x, pos_vals, bottom=pos_bottom,
-                    color=PILLAR_COLORS[cat], edgecolor="none", width=0.5,
-                )
+                container = self.ax.bar(x, pos_vals, bottom=pos_bottom,
+                    color=PILLAR_COLORS[cat], edgecolor="none", width=0.5)
                 for patch in container:
                     _rounded_bar(self.ax, patch)
                 pos_bottom += pos_vals
             if neg_vals.any():
-                container = self.ax.bar(
-                    x, neg_vals, bottom=neg_bottom,
-                    color=PILLAR_COLORS[cat], edgecolor="none", width=0.5,
-                )
+                container = self.ax.bar(x, neg_vals, bottom=neg_bottom,
+                    color=PILLAR_COLORS[cat], edgecolor="none", width=0.5)
                 for patch in container:
                     _rounded_bar(self.ax, patch)
                 neg_bottom += neg_vals
@@ -346,48 +349,23 @@ class SustainabilityBarPlotter:
         pad   = (y_max - y_min) * 0.12 or 1.0
         for i in range(len(self.stages)):
             if pos_bottom[i] > 0:
-                self.ax.text(
-                    i, pos_bottom[i] + pad * 0.18,
+                self.ax.text(x[i], pos_bottom[i] + pad * 0.18,
                     f"{fmt_currency(pos_bottom[i], self.currency, decimals=2)}",
-                    ha="center", va="bottom", fontsize=8, fontweight="bold", color=tc,
-                )
+                    ha="center", va="bottom", fontsize=8, fontweight="bold", color=tc)
             if neg_bottom[i] < 0:
-                self.ax.text(
-                    i, neg_bottom[i] - pad * 0.18,
+                self.ax.text(x[i], neg_bottom[i] - pad * 0.18,
                     f"{fmt_currency(neg_bottom[i], self.currency, decimals=2)}",
-                    ha="center", va="top", fontsize=8, fontweight="bold", color=tc,
-                )
+                    ha="center", va="top", fontsize=8, fontweight="bold", color=tc)
 
-        self.ax.set_xticks(x)
-        self.ax.set_xticklabels(self.stages, fontweight="bold", color=tc, fontsize=9)
-        self.ax.set_ylabel(f"Total Cost (Million {self.currency})", fontweight="bold", color=tc, fontsize=9)
-        self.ax.tick_params(axis="both", colors=tc, labelsize=8)
-        self.ax.yaxis.grid(True, linestyle="--", alpha=0.3, color=gc)
-        self.ax.set_axisbelow(True)
+        self._setup_axes_style(tc, gc, x, self.stages, f"Total Cost (Million {self.currency})")
         self.ax.set_ylim(min(0, y_min) - pad, max(0, y_max) + pad)
 
-        for s in self.ax.spines.values():
-            s.set_visible(False)
-        for spine in ("left", "bottom"):
-            self.ax.spines[spine].set_visible(True)
-            self.ax.spines[spine].set_edgecolor(tc)
-            self.ax.spines[spine].set_linewidth(0.8)
-
-        self.annot = self.ax.annotate(
-            "", xy=(0, 0), xytext=(15, 15), textcoords="offset points",
-            bbox=dict(boxstyle="round,pad=0.5", fc=get_token("base"),
-                      ec=get_token("surface_mid"), alpha=0.9),
-            zorder=10, fontweight="bold", color=tc, fontsize=8,
+        self._setup_spines(tc)
+        self._setup_annotation(tc)
+        self._make_legend(
+            [Patch(facecolor=PILLAR_COLORS[cat], label=cat) for cat in self.categories],
+            "Sustainability Pillars", tc,
         )
-        self.annot.set_visible(False)
-
-        legend_els = [Patch(facecolor=PILLAR_COLORS[cat], label=cat) for cat in self.categories]
-        leg = self.ax.legend(
-            handles=legend_els, title="Sustainability Pillars",
-            loc="center left", bbox_to_anchor=(1.02, 0.5),
-            frameon=False, fontsize=8, title_fontsize=9, labelcolor=tc,
-        )
-        plt.setp(leg.get_title(), color=tc)
         return self.fig
 
 
@@ -556,7 +534,7 @@ class AggregateChartWidget(QWidget):
             lbl.setAlignment(Qt.AlignCenter)
             self._chart_stack.addWidget(lbl)
 
-        # Chart 1: pillar-wise (existing stacked)
+        # Chart 1: pillar-wise (stacked)
         pillar_data = _build_pillar_data(self._results)
         if pillar_data:
             p1   = SustainabilityBarPlotter(pillar_data, currency=self._currency)
