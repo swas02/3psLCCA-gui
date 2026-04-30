@@ -16,6 +16,7 @@ import tempfile
 
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
 from matplotlib.patches import Patch, FancyBboxPatch
 
 from ..gui.components.outputs.plots_helper.Pie import (
@@ -113,7 +114,8 @@ def _plot_pillar_donut(results: dict, currency: str) -> plt.Figure:
     colors = [i[2] for i in items]
     total  = sum(values) or 1.0
 
-    fig, ax = plt.subplots(figsize=(9, 7))
+    fig = Figure(figsize=(9, 7))
+    ax = fig.add_subplot(111)
     fig.patch.set_facecolor(_BG)
     ax.set_facecolor(_BG)
     ax.set_aspect("equal")
@@ -172,7 +174,8 @@ def _plot_sustainability_matrix(results: dict, currency: str) -> plt.Figure:
 
     total = sum(inner_vals) or 1.0
 
-    fig, ax = plt.subplots(figsize=(11, 9))
+    fig = Figure(figsize=(11, 9))
+    ax = fig.add_subplot(111)
     fig.patch.set_facecolor(_BG)
     ax.set_facecolor(_BG)
     ax.set_aspect("equal")
@@ -260,7 +263,8 @@ def _plot_stage_bars(results: dict, currency: str) -> plt.Figure:
     values = [d[1] for d in data]
     colors = [d[2] for d in data]
 
-    fig, ax = plt.subplots(figsize=(9, 6))
+    fig = Figure(figsize=(9, 6))
+    ax = fig.add_subplot(111)
     fig.patch.set_facecolor(_BG)
     ax.set_facecolor(_BG)
     fig.subplots_adjust(left=0.10, right=0.75, bottom=0.15, top=0.90)
@@ -329,7 +333,8 @@ def _plot_pillar_bars(results: dict, currency: str) -> plt.Figure:
         for cat in categories
     }
 
-    fig, ax = plt.subplots(figsize=(9, 6))
+    fig = Figure(figsize=(9, 6))
+    ax = fig.add_subplot(111)
     fig.patch.set_facecolor(_BG)
     ax.set_facecolor(_BG)
     fig.subplots_adjust(left=0.10, right=0.75, bottom=0.15, top=0.90)

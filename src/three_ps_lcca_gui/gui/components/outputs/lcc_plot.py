@@ -41,6 +41,10 @@ try:
 except ImportError:
     from matplotlib.backends.backend_qt import FigureCanvasQTAgg, NavigationToolbar2QT
 
+class _ChartToolbar(NavigationToolbar2QT):
+    toolitems = [t for t in NavigationToolbar2QT.toolitems
+                 if t[0] not in ("Subplots", "Customize")]
+
 
 
 class HeatmapDelegate(QStyledItemDelegate):
@@ -189,33 +193,33 @@ class LCCDetailsTable(QWidget):
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Interactive)
         self.table.horizontalHeader().setMinimumSectionSize(120)
-        self.table.horizontalHeader().setFont(QFont(FONT_FAMILY, FS_SM, FW_BOLD))
-        
+        self.table.horizontalHeader().setFont(QFont(FONT_FAMILY, FS_BASE, FW_BOLD))
+
         self.delegate = HeatmapDelegate(self._col_maxima, currency, self)
         self.table.setItemDelegate(self.delegate)
-        
+
         self._build_data(results)
-        
+
         lay.addWidget(self.table)
-        
+
         # ── Legend ────────────────────────────────────────────────────────────
         legend_container = QWidget()
         leg_lay = QVBoxLayout(legend_container)
         leg_lay.setContentsMargins(0, SP2, 0, 0)
-        
+
         lbl = QLabel("RELATIVE COST INTENSITY")
-        lbl.setFont(QFont(FONT_FAMILY, FS_XS, FW_BOLD))
+        lbl.setFont(QFont(FONT_FAMILY, FS_SM, FW_BOLD))
         lbl.setStyleSheet(f"color: {get_token('text_disabled')};")
         lbl.setAlignment(Qt.AlignCenter)
         leg_lay.addWidget(lbl)
-        
+
         scale_row = QHBoxLayout()
         scale_row.setSpacing(SP2)
-        
+
         low_lbl = QLabel("Low")
-        low_lbl.setFont(QFont(FONT_FAMILY, FS_XS, FW_MEDIUM))
+        low_lbl.setFont(QFont(FONT_FAMILY, FS_SM, FW_MEDIUM))
         scale_row.addWidget(low_lbl)
-        
+
         gradient = QFrame()
         gradient.setFixedHeight(10)
         gradient.setFixedWidth(200)
@@ -226,9 +230,9 @@ class LCCDetailsTable(QWidget):
         )
         gradient.setStyleSheet(grad_css)
         scale_row.addWidget(gradient)
-        
+
         high_lbl = QLabel("High")
-        high_lbl.setFont(QFont(FONT_FAMILY, FS_XS, FW_MEDIUM))
+        high_lbl.setFont(QFont(FONT_FAMILY, FS_SM, FW_MEDIUM))
         scale_row.addWidget(high_lbl)
         
         leg_lay.addLayout(scale_row)
@@ -895,7 +899,7 @@ class LCCChartWidget(QWidget):
         self._canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
         self._scroll_forwarder = _ScrollForwarder(self)
         self._canvas.installEventFilter(self._scroll_forwarder)
-        toolbar = NavigationToolbar2QT(self._canvas, self)
+        toolbar = _ChartToolbar(self._canvas, self)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)

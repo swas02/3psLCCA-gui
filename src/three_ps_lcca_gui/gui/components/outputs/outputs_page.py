@@ -124,7 +124,7 @@ def _section_heading(title: str) -> QLabel:
     lbl = QLabel(title)
     lbl.setWordWrap(True)
     lbl.setContentsMargins(0, SP6, 0, SP3)
-    lbl.setFont(_f(FS_SUBHEAD, FW_BOLD))
+    lbl.setFont(_f(FS_LG, FW_BOLD))
     lbl.setStyleSheet(f"color: {get_token('text')}; letter-spacing: 0.5px;")
     return lbl
 
@@ -327,7 +327,7 @@ class LCCSummaryCards(QWidget):
         # Title
         title_lbl = QLabel(title.upper())
         title_lbl.setWordWrap(True)
-        title_lbl.setFont(_f(FS_SM, FW_BOLD))
+        title_lbl.setFont(_f(FS_BASE, FW_BOLD))
         title_lbl.setStyleSheet(
             f"color: {get_token('text_secondary')}; letter-spacing: 1.5px; border: none;"
         )
@@ -343,7 +343,7 @@ class LCCSummaryCards(QWidget):
         rl.setSpacing(SP1)
 
         curr_lbl = QLabel(self._currency)
-        curr_lbl.setFont(_f(FS_XS, FW_NORMAL))
+        curr_lbl.setFont(_f(FS_SM, FW_NORMAL))
         curr_lbl.setStyleSheet(
             f"color: {get_token('text_secondary')}; margin-bottom: {SP2}px;"
         )
@@ -362,7 +362,7 @@ class LCCSummaryCards(QWidget):
         # Subtitle
         sub_lbl = QLabel(subtitle)
         sub_lbl.setWordWrap(True)
-        sub_lbl.setFont(_f(FS_XS, FW_NORMAL))
+        sub_lbl.setFont(_f(FS_BASE, FW_NORMAL))
         sub_lbl.setStyleSheet(
             f"color: {get_token('text_secondary')}; border: none;"
         )
@@ -979,14 +979,9 @@ class OutputsPage(ScrollableForm):
 
         self._status_layout.addWidget(banner)
 
-        # Dashboard sections built incrementally so the UI stays responsive
-        self._pending_results = results
-        _ap = int(self.analysis_period.value())
-        self._result_build_steps = [
-            # ── Top-level results ──
+        sections = [
             lambda r: _section_heading("At a Glance"),
             lambda r: LCCSummaryCards(r, currency=self._currency),
-            # ── High-level charts ──
             lambda r: _divider(),
             lambda r: _section_heading("Life cycle cost distribution"),
             lambda r: _section_description(
@@ -994,14 +989,12 @@ class OutputsPage(ScrollableForm):
             ),
             lambda r: LCCPieWidget(r, currency=self._currency),
             lambda r: AggregateChartWidget(r, currency=self._currency),
-            # ── Stage summary by pillar ──
             lambda r: _divider(),
             lambda r: _section_heading("Consolidated stage summary"),
             lambda r: _section_description(
                 "A consolidated presentation of costs across the three pillars (economic, social, and environmental) for each lifecycle stage. This table facilitates the identification of phases that bear the most substantial burden."
             ),
             lambda r: LCCDetailsTable(r, currency=self._currency),
-            # ── Granular cost breakdown ──
             lambda r: _divider(),
             lambda r: _section_heading("Itemized detail"),
             lambda r: _section_description(
@@ -1009,25 +1002,27 @@ class OutputsPage(ScrollableForm):
             ),
             lambda r: LCCBreakdownTable(r, currency=self._currency),
         ]
-        QTimer.singleShot(0, self._build_next_result_widget)
+        QTimer.singleShot(0, lambda: self._build_result_widgets(results, sections))
 
-    def _build_next_result_widget(self):
-        if not self._result_build_steps:
-            return
-        factory = self._result_build_steps.pop(0)
-        try:
-            widget = factory(self._pending_results)
-            if widget:
-                # Insert before the implicit stretch at the end
-                self._status_layout.insertWidget(
-                    self._status_layout.count() - 1, widget
-                )
-        except Exception as e:
-            err = QLabel(f"Render error: {e}")
-            err.setFont(_f(FS_BASE, italic=True))
-            err.setStyleSheet(f"color: {get_token('text_secondary')};")
-            self._status_layout.insertWidget(self._status_layout.count() - 1, err)
-        QTimer.singleShot(0, self._build_next_result_widget)
+    def _build_result_widgets(self, results, sections):
+        insert_pos = 0  # banner sits at the end; insert everything before it
+        for factory in sections:
+            try:
+                widget = factory(results)
+                if widget:
+                    self._status_layout.insertWidget(insert_pos, widget)
+                    insert_pos += 1
+            except Exception as e:
+                err = QLabel(f"Render error: {e}")
+                err.setFont(_f(FS_BASE, italic=True))
+                err.setStyleSheet(f"color: {get_token('text_secondary')};")
+                self._status_layout.insertWidget(insert_pos, err)
+                insert_pos += 1
+
+        # Scroll back to the top so the first result card is visible
+        scroll = self.layout.itemAt(0).widget()
+        if scroll and hasattr(scroll, "verticalScrollBar"):
+            scroll.verticalScrollBar().setValue(0)
 
     # ── Page wiring ───────────────────────────────────────────
 

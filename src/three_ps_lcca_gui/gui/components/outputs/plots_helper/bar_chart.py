@@ -10,7 +10,7 @@ import os
 import numpy as np
 import matplotlib
 matplotlib.use("QtAgg")
-import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
 from matplotlib import font_manager as _fm
 
 from three_ps_lcca_gui.gui.theme import FONT_FAMILY
@@ -54,7 +54,8 @@ def create_bar_chart(
     x = np.arange(_N)
 
     fig_width = max(14, _N * 0.65)
-    fig, ax = plt.subplots(figsize=(fig_width, 6))
+    fig = Figure(figsize=(fig_width, 6))
+    ax = fig.add_subplot(111)
     fig.patch.set_facecolor(bg_color)
     ax.set_facecolor(bg_color)
     ax.tick_params(axis='x', colors=text_color, labelsize=6)

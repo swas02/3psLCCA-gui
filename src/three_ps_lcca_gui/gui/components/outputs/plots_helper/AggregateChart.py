@@ -10,15 +10,20 @@ import os
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.figure import Figure
 from matplotlib.patches import Patch, FancyBboxPatch
 from matplotlib import font_manager as _fm
 
 matplotlib.use("QtAgg")
 
 try:
-    from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
+    from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg, NavigationToolbar2QT
 except ImportError:
-    from matplotlib.backends.backend_qt import FigureCanvasQTAgg
+    from matplotlib.backends.backend_qt import FigureCanvasQTAgg, NavigationToolbar2QT
+
+class _ChartToolbar(NavigationToolbar2QT):
+    toolitems = [t for t in NavigationToolbar2QT.toolitems
+                 if t[0] not in ("Subplots", "Customize")]
 
 from PySide6.QtCore import QEvent, QObject, QSize, Qt
 from PySide6.QtGui import QFont
@@ -167,7 +172,7 @@ def _rounded_bar(ax, patch, radius=0.05):
 class _BasePlotter:
     def __init__(self, currency: str):
         self.currency = currency
-        self.fig = plt.figure(figsize=(9, 6))
+        self.fig = Figure(figsize=(9, 6))
         self.fig.patch.set_alpha(0.0)
         self.ax = self.fig.add_subplot(111)
         self.ax.set_facecolor("none")
@@ -515,6 +520,8 @@ class AggregateChartWidget(QWidget):
         self._chart_stack = QStackedWidget()
         self._chart_stack.setMaximumHeight(420)
         self._chart_stack.setStyleSheet("background: transparent; border: none;")
+        self._toolbar_stack = QStackedWidget()
+        self._toolbar_stack.setStyleSheet("background: transparent; border: none;")
 
         scroller = WheelForwarder(self)
 
@@ -529,10 +536,12 @@ class AggregateChartWidget(QWidget):
             c0.setMaximumHeight(420)
             c0.installEventFilter(scroller)
             self._chart_stack.addWidget(c0)
+            self._toolbar_stack.addWidget(_ChartToolbar(c0, self))
         else:
             lbl = QLabel("Insufficient data.")
             lbl.setAlignment(Qt.AlignCenter)
             self._chart_stack.addWidget(lbl)
+            self._toolbar_stack.addWidget(QWidget())
 
         # Chart 1: pillar-wise (stacked)
         pillar_data = _build_pillar_data(self._results)
@@ -545,21 +554,34 @@ class AggregateChartWidget(QWidget):
             c1.setMaximumHeight(420)
             c1.installEventFilter(scroller)
             self._chart_stack.addWidget(c1)
+            self._toolbar_stack.addWidget(_ChartToolbar(c1, self))
         else:
             lbl = QLabel("Insufficient data.")
             lbl.setAlignment(Qt.AlignCenter)
             self._chart_stack.addWidget(lbl)
+            self._toolbar_stack.addWidget(QWidget())
 
         self._pillar_cb.toggled.connect(
             lambda checked: self._chart_stack.setCurrentIndex(1 if checked else 0)
+        )
+        self._pillar_cb.toggled.connect(
+            lambda checked: self._toolbar_stack.setCurrentIndex(1 if checked else 0)
         )
 
         if self._default_pillar_view:
             self._pillar_cb.setChecked(True)
 
-        self._card_layout.addWidget(self._chart_stack, 2)
+        self._chart_cont = QWidget()
+        self._chart_cont.setStyleSheet("background: transparent; border: none;")
+        chart_cv = QVBoxLayout(self._chart_cont)
+        chart_cv.setContentsMargins(0, 0, 0, 0)
+        chart_cv.setSpacing(0)
+        chart_cv.addWidget(self._chart_stack)
+        chart_cv.addWidget(self._toolbar_stack)
+
+        self._card_layout.addWidget(self._chart_cont, 2)
         # Wide mode: chart on the left
-        self._card_layout.insertWidget(0, self._chart_stack)
+        self._card_layout.insertWidget(0, self._chart_cont)
 
         self._main_v.addWidget(self.card)
 
@@ -575,7 +597,7 @@ class AggregateChartWidget(QWidget):
             self._text_panel.setMaximumWidth(16777215)
         else:
             self._card_layout.setDirection(QBoxLayout.Direction.LeftToRight)
-            self._card_layout.insertWidget(0, self._chart_stack)
+            self._card_layout.insertWidget(0, self._chart_cont)
             self._text_panel.setFixedWidth(350)
 
     def minimumSizeHint(self):

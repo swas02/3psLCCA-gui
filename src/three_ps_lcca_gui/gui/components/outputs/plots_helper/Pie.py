@@ -8,17 +8,21 @@ Two-tab pie widget:
 
 import os
 import matplotlib
-import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.figure import Figure
 from matplotlib.patches import Patch
 from matplotlib import font_manager as _fm
 
 matplotlib.use("QtAgg")
 
 try:
-    from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
+    from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg, NavigationToolbar2QT
 except ImportError:
-    from matplotlib.backends.backend_qt import FigureCanvasQTAgg
+    from matplotlib.backends.backend_qt import FigureCanvasQTAgg, NavigationToolbar2QT
+
+class _ChartToolbar(NavigationToolbar2QT):
+    toolitems = [t for t in NavigationToolbar2QT.toolitems
+                 if t[0] not in ("Subplots", "Customize")]
 
 from PySide6.QtCore import QEvent, QObject, QSize, Qt
 from PySide6.QtGui import QFont
@@ -149,32 +153,103 @@ def _build_nested_pie_data(results: dict) -> list:
     return data
 def _add_smart_labels(ax, wedges, labels, text_color, line_color, threshold=None, leader_radius=1.3):
     """
-    Forces all labels completely OUTSIDE the pie chart using leader lines.
-    Lines are pinned slightly inside the slice and forced to render with no shrink padding.
+    Anti-overlap elbow labels.
+
+    Labels are split into left / right hemispheres, stacked vertically with a
+    push-apart relaxation pass, then each label is connected back to its slice
+    with a two-segment leader:  edge-dot → radial elbow → (adjusted) label column.
     """
+    entries = []
     for i, p in enumerate(wedges):
-        slice_width = p.theta2 - p.theta1
-        if slice_width <= 0.1: continue
-
+        if p.theta2 - p.theta1 <= 0.5:
+            continue
         angle = (p.theta2 + p.theta1) / 2.0
-        theta_rad = np.deg2rad(angle)
-        x = np.cos(theta_rad)
-        y = np.sin(theta_rad)
-        label_text = labels[i]
+        rad = np.deg2rad(angle)
+        cx, cy = np.cos(rad), np.sin(rad)
+        entries.append({
+            "cx": cx, "cy": cy,
+            "x0": cx * p.r, "y0": cy * p.r,
+            "y_nat": cy * leader_radius,
+            "label": labels[i],
+        })
 
-        # Start the line slightly inside the pie slice (95% of radius) so it clearly connects
-        x_edge, y_edge = x * (p.r * 0.95), y * (p.r * 0.95)
-        x_text, y_text = x * leader_radius, y * leader_radius
-        ha = "left" if x >= 0 else "right"
-        
-        ax.annotate(
-            label_text, 
-            xy=(x_edge, y_edge), 
-            xytext=(x_text, y_text),
-            ha=ha, va="center", color=text_color, fontsize=8, fontweight="bold",
-            # We use text_color for the line to guarantee it shows up, and remove shrink padding
-            arrowprops=dict(arrowstyle="-", color=text_color, lw=1.0, alpha=0.6, shrinkA=0, shrinkB=0),
-            zorder=10, annotation_clip=False
+    if not entries:
+        return
+
+    MIN_GAP = 0.22  # vertical clearance between two-line label centres
+
+    def _resolve(group):
+        """Push labels apart until no two centres are closer than MIN_GAP."""
+        group = sorted(group, key=lambda e: -e["y_nat"])
+        ys = [e["y_nat"] for e in group]
+        for _ in range(300):
+            moved = False
+            for j in range(len(ys) - 1):
+                gap = ys[j] - ys[j + 1]
+                if gap < MIN_GAP:
+                    shift = (MIN_GAP - gap) / 2
+                    ys[j]     += shift
+                    ys[j + 1] -= shift
+                    moved = True
+            if not moved:
+                break
+        return group, ys
+
+    def _draw(group, ys, ha, x_col):
+        tick = 0.05 if ha == "left" else -0.05
+        for e, y_lbl in zip(group, ys):
+            # Two-segment leader: slice edge → natural elbow → adjusted label column
+            ax.plot(
+                [e["x0"], e["cx"] * leader_radius, x_col],
+                [e["y0"], e["y_nat"],               y_lbl],
+                color=line_color, lw=0.8, alpha=0.9,
+                solid_capstyle="round", zorder=9, clip_on=False,
+            )
+            ax.plot(e["x0"], e["y0"], "o", color=line_color,
+                    markersize=2.5, alpha=0.9, zorder=10, clip_on=False)
+
+            parts = e["label"].split("\n", 1)
+            name  = parts[0]
+            value = parts[1] if len(parts) > 1 else ""
+            x_txt = x_col + tick
+
+            if value:
+                ax.text(x_txt, y_lbl + 0.065, name, ha=ha, va="center",
+                        color=text_color, fontsize=7.5, fontweight="bold",
+                        clip_on=False, zorder=11)
+                ax.text(x_txt, y_lbl - 0.065, value, ha=ha, va="center",
+                        color=text_color, fontsize=6.5, alpha=0.65,
+                        clip_on=False, zorder=11)
+            else:
+                ax.text(x_txt, y_lbl, name, ha=ha, va="center",
+                        color=text_color, fontsize=7.5, fontweight="bold",
+                        clip_on=False, zorder=11)
+
+    right = [e for e in entries if e["cx"] >= 0]
+    left  = [e for e in entries if e["cx"] <  0]
+    x_col = leader_radius + 0.14
+
+    if right:
+        g, ys = _resolve(right)
+        _draw(g, ys, "left",  x_col)
+    if left:
+        g, ys = _resolve(left)
+        _draw(g, ys, "right", -x_col)
+
+def _add_inner_band_labels(ax, wedges, labels, text_color):
+    """Stage names rendered inside the inner donut band — no leader lines needed."""
+    for i, p in enumerate(wedges):
+        if p.theta2 - p.theta1 <= 5.0:
+            continue
+        angle = (p.theta2 + p.theta1) / 2.0
+        rad = np.deg2rad(angle)
+        r_mid = p.r - p.width / 2          # radial midpoint of the band
+        cx, cy = np.cos(rad) * r_mid, np.sin(rad) * r_mid
+        ax.text(
+            cx, cy, labels[i],
+            ha="center", va="center",
+            color=text_color, fontsize=6.5, fontweight="bold",
+            clip_on=False, zorder=11,
         )
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -188,11 +263,11 @@ class SimplePillarPlotter:
         self.total, self.currency, self.mode = sum(self.values), currency, "Value"
         
         # Original layout size
-        self.fig = plt.figure(figsize=(7, 6))
+        self.fig = Figure(figsize=(7, 6))
         self.fig.patch.set_alpha(0.0)
         self.ax = self.fig.add_subplot(111)
         self.ax.set_facecolor("none")
-        self.fig.subplots_adjust(left=0.05, right=0.95, bottom=0.15, top=0.95)
+        self.fig.subplots_adjust(left=0.02, right=0.98, bottom=0.12, top=0.98)
 
     def _fmt(self, val: float) -> str:
         if self.mode == "Percentage": return f"{val / (self.total or 1) * 100:.1f}%"
@@ -225,9 +300,8 @@ class SimplePillarPlotter:
         self.ax.legend(handles=legend_els, loc="upper center", bbox_to_anchor=(0.5, -0.05), ncol=3, frameon=False, fontsize=8, labelcolor=tc)
         
         self.ax.axis("off")
-        # Restored original bounds to keep size exactly as it was
-        self.ax.set_xlim(-1.6, 1.6)
-        self.ax.set_ylim(-1.6, 1.6)
+        self.ax.set_xlim(-1.85, 1.85)
+        self.ax.set_ylim(-1.85, 1.85)
         return self.fig
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -239,11 +313,11 @@ class SustainabilityCircularPlotter:
         self.data, self.currency, self.mode = data, currency, "Value"
         
         # Original layout size
-        self.fig = plt.figure(figsize=(7, 6))
+        self.fig = Figure(figsize=(7, 6))
         self.fig.patch.set_alpha(0.0)
         self.ax = self.fig.add_subplot(111)
         self.ax.set_facecolor("none")
-        self.fig.subplots_adjust(left=0.05, right=0.95, bottom=0.15, top=0.95)
+        self.fig.subplots_adjust(left=0.02, right=0.98, bottom=0.12, top=0.98)
         self._prepare_data()
 
     def _prepare_data(self):
@@ -270,16 +344,18 @@ class SustainabilityCircularPlotter:
     def setup_plot(self):
         tc, sep = get_token("text"), get_token("surface_mid")
         self.ax.set(aspect="equal")
-        
-        # Original radii restored
+
         self.inner_wedges, _ = self.ax.pie(self.inner_vals, radius=0.8, colors=self.inner_colors, wedgeprops=_WEDGE)
         self.outer_wedges, _ = self.ax.pie(self.outer_vals, radius=1.1, colors=self.outer_colors, wedgeprops=_WEDGE)
-        
-        inner_disp = [f"{l}\n{self._fmt(v)}" for l, v in zip(self.inner_labels, self.inner_vals)]
-        outer_disp = [f"{l.split(' - ')[1]}\n{self._fmt(v)}" for l, v in zip(self.outer_labels, self.outer_vals)]
-        
-        _add_smart_labels(self.ax, self.inner_wedges, inner_disp, tc, sep, threshold=20.0, leader_radius=1.45)
-        _add_smart_labels(self.ax, self.outer_wedges, outer_disp, tc, sep, threshold=15.0, leader_radius=1.20)
+
+        outer_disp = []
+        for l, v in zip(self.outer_labels, self.outer_vals):
+            stage, pillar = l.split(" - ", 1)
+            outer_disp.append(f"{stage} | {pillar}\n{self._fmt(v)}")
+
+        # Inner ring: no text — stage is already encoded in each outer label
+        # Outer ring: "Init | Eco / value" elbow labels, well clear of the outer edge
+        _add_smart_labels(self.ax, self.outer_wedges, outer_disp, tc, sep, threshold=15.0, leader_radius=1.45)
 
         # Original connecting lines restored
         if self.total_value > 0:
@@ -297,9 +373,8 @@ class SustainabilityCircularPlotter:
         self.ax.legend(handles=legend_els, loc="upper center", bbox_to_anchor=(0.5, -0.05), ncol=3, frameon=False, fontsize=8, labelcolor=tc)
         
         self.ax.axis("off")
-        # Restored original bounds
-        self.ax.set_xlim(-1.6, 1.6)
-        self.ax.set_ylim(-1.6, 1.6)
+        self.ax.set_xlim(-2.1, 2.1)
+        self.ax.set_ylim(-2.1, 2.1)
         return self.fig
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -423,7 +498,14 @@ class LCCPieWidget(QWidget):
                 c_bar.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
                 c_bar.setStyleSheet("background: transparent; border: none;")
                 c_bar.installEventFilter(WheelForwarder(self))
-                self._content_h.addWidget(c_bar, 2)
+                chart_cont = QWidget()
+                chart_cont.setStyleSheet("background: transparent; border: none;")
+                cv = QVBoxLayout(chart_cont)
+                cv.setContentsMargins(0, 0, 0, 0)
+                cv.setSpacing(0)
+                cv.addWidget(c_bar)
+                cv.addWidget(_ChartToolbar(c_bar, chart_cont))
+                self._content_h.addWidget(chart_cont, 2)
             else:
                 _no_data = QLabel("No data available.")
                 _no_data.setAlignment(Qt.AlignCenter)
@@ -432,6 +514,8 @@ class LCCPieWidget(QWidget):
             self._chart_stack = QStackedWidget()
             self._chart_stack.setMaximumHeight(500)
             self._chart_stack.setStyleSheet("background: transparent; border: none;")
+            self._toolbar_stack = QStackedWidget()
+            self._toolbar_stack.setStyleSheet("background: transparent; border: none;")
             scroller = WheelForwarder(self)
 
             p0 = SimplePillarPlotter(self._results, currency=self._currency)
@@ -441,6 +525,7 @@ class LCCPieWidget(QWidget):
             c0.setStyleSheet("background: transparent; border: none;")
             c0.installEventFilter(scroller)
             self._chart_stack.addWidget(c0)
+            self._toolbar_stack.addWidget(_ChartToolbar(c0, self))
             self._plotters.append(p0)
 
             if _nested_ok:
@@ -453,11 +538,21 @@ class LCCPieWidget(QWidget):
                     c1.setStyleSheet("background: transparent; border: none;")
                     c1.installEventFilter(scroller)
                     self._chart_stack.addWidget(c1)
+                    self._toolbar_stack.addWidget(NavigationToolbar2QT(c1, self))
                     self._plotters.append(p1)
 
             self._mode_cb.toggled.connect(self._on_mode_change)
             self._stage_cb.toggled.connect(lambda c: self._chart_stack.setCurrentIndex(1 if c else 0))
-            self._content_h.addWidget(self._chart_stack, 2)
+            self._stage_cb.toggled.connect(lambda c: self._toolbar_stack.setCurrentIndex(1 if c else 0))
+
+            chart_cont = QWidget()
+            chart_cont.setStyleSheet("background: transparent; border: none;")
+            cv = QVBoxLayout(chart_cont)
+            cv.setContentsMargins(0, 0, 0, 0)
+            cv.setSpacing(0)
+            cv.addWidget(self._chart_stack)
+            cv.addWidget(self._toolbar_stack)
+            self._content_h.addWidget(chart_cont, 2)
 
         card_v.addWidget(content_row)
 
