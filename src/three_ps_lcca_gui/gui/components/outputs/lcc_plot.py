@@ -778,26 +778,47 @@ class LCCBreakdownTable(QWidget):
                 label,
             )
 
-            # Value- semibold text in the 3rd column
-            p.setFont(QFont(FONT_FAMILY, FS_BASE, FW_SEMIBOLD))
-            p.setPen(color_success if value < 0 else QColor("#1a1a1a"))
+            # Value & bar — diverging at x_bar.
+            # Positive: value text left of x_bar, bar grows RIGHT from x_bar.
+            # Negative: bar grows LEFT from x_bar, value text right of x_bar.
             val_text = fmt_currency(value, self._currency, decimals=2)
-            p.drawText(
-                QRect(x_val + self._VAL_PAD_X, ry + self._VAL_PAD_Y,
-                      x_bar - x_val - self._VAL_PAD_X * 2, rh - self._VAL_PAD_Y * 2),
-                Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter,
-                val_text,
-            )
-            p.setFont(row_font)
-
-            # Relative Cost bar- same color as Pillar (full opacity), last column
+            bar_h = rh - _bar_pad * 2
             filled = int((abs(value) / self._max_val) * bar_w_max)
             if value != 0:
                 filled = max(filled, 1)
-            bar_color = QColor(pillar_color)
-            bar_h = rh - _bar_pad * 2
-            p.fillRect(x_bar + _bar_pad, ry + _bar_pad,
-                       filled, bar_h, bar_color)
+
+            p.setFont(QFont(FONT_FAMILY, FS_BASE, FW_SEMIBOLD))
+            if value < 0:
+                # Bar grows left from x_bar — same width scale as positive bars
+                p.fillRect(
+                    x_bar - filled, ry + _bar_pad,
+                    filled, bar_h,
+                    QColor(pillar_color),
+                )
+                # Value text in the right (Relative Cost) column
+                p.setPen(QColor("#1a1a1a"))
+                p.drawText(
+                    QRect(x_bar + self._VAL_PAD_X, ry + self._VAL_PAD_Y,
+                          bar_w - self._VAL_PAD_X * 2, rh - self._VAL_PAD_Y * 2),
+                    Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+                    val_text,
+                )
+            else:
+                # Bar grows right — original behaviour
+                p.fillRect(
+                    x_bar + _bar_pad, ry + _bar_pad,
+                    filled, bar_h,
+                    QColor(pillar_color),
+                )
+                # Value text in the left (Value) column — original behaviour
+                p.setPen(QColor("#1a1a1a"))
+                p.drawText(
+                    QRect(x_val + self._VAL_PAD_X, ry + self._VAL_PAD_Y,
+                          x_bar - x_val - self._VAL_PAD_X * 2, rh - self._VAL_PAD_Y * 2),
+                    Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter,
+                    val_text,
+                )
+            p.setFont(row_font)
 
         # ── stage blocks ──────────────────────────────────────────────────────
         p.setFont(QFont(FONT_FAMILY, FS_MD, FW_BOLD))
