@@ -530,10 +530,12 @@ class _ComparisonChart(QWidget):
         class _ChartToolbar(NavigationToolbar2QT):
             toolitems = [t for t in NavigationToolbar2QT.toolitems
                          if t[0] not in ("Subplots", "Customize")]
+            def set_message(self, s): pass
 
         canvas = FigureCanvasQTAgg(fig)
         canvas.setMinimumHeight(340)
         canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        canvas.wheelEvent = lambda event: event.ignore()
         toolbar = _ChartToolbar(canvas, self)
 
         self.layout().addWidget(toolbar)
@@ -1230,7 +1232,9 @@ class ComparisonPickerPanel(QWidget):
         ap    = entry["analysis_period"]
         hid   = entry["id"]
 
-        avail       = {p: p in self._live_caches for p in pids}
+        avail = {p: p in self._live_caches for p in pids}
+        if self.manager:
+            avail = {p: (v and not self.manager.is_project_open(p)) for p, v in avail.items()}
         avail_count = sum(avail.values())
         any_avail   = avail_count > 0
         all_avail   = avail_count == len(pids)
@@ -1242,20 +1246,12 @@ class ComparisonPickerPanel(QWidget):
             f"#histCard {{ background: {get_token('surface')}; "
             f"border: 1px solid {get_token('surface_mid')}; "
             f"border-radius: {RADIUS_LG}px; }}"
+            f"#histCard:hover {{ border-color: {get_token('primary')}; }}"
         )
         card_h = QHBoxLayout(card)
-        # SP3 bottom keeps content away from the rounded border corner
-        card_h.setContentsMargins(0, 0, SP3, SP4)
+        card_h.setContentsMargins(0, 0, 0, 0)
         card_h.setSpacing(0)
 
-        # Left accent strip
-        strip = QFrame()
-        strip.setFixedWidth(3)
-        strip.setStyleSheet(
-            f"background: {get_token('primary' if any_avail else 'text_disabled')}; "
-            f"border-radius: 2px;"
-        )
-        card_h.addWidget(strip)
 
         # ── Content ───────────────────────────────────────────────────────────
         content = QWidget()
@@ -1309,14 +1305,12 @@ class ComparisonPickerPanel(QWidget):
         dots_h.addStretch()
         cv.addLayout(dots_h)
 
-        # AP override note
-        if ap > 0:
-            ap_lbl = QLabel(f"Analysis period: {ap} yrs (override)")
-            ap_lbl.setFont(_f(FS_SM))
-            ap_lbl.setStyleSheet(
-                f"color: {get_token('text_secondary')}; background: transparent;"
-            )
-            cv.addWidget(ap_lbl)
+        # AP note
+        ap_text = f"Analysis period: {ap} yrs" if ap > 0 else "Each project uses its own analysis period"
+        ap_lbl = QLabel(ap_text)
+        ap_lbl.setFont(_f(FS_SM))
+        ap_lbl.setStyleSheet(f"color: {get_token('text_secondary')}; background: transparent;")
+        cv.addWidget(ap_lbl)
 
         # Unavailability inline note
         if not all_avail:
@@ -1363,6 +1357,8 @@ class ComparisonPickerPanel(QWidget):
             f"border-radius: {BTN_SM // 2}px; color: {get_token('text_secondary')}; padding: 0; }}"
             f"QPushButton:hover {{ border-color: {get_token('danger')}; color: {get_token('danger')}; "
             f"background: transparent; }}"
+            f"QToolTip {{ color: {get_token('text')}; background: {get_token('surface')}; "
+            f"border: 1px solid {get_token('surface_mid')}; padding: 4px 8px; }}"
         )
         del_btn.clicked.connect(lambda _, h=hid: self._remove_history(h))
         br_h.addWidget(del_btn)

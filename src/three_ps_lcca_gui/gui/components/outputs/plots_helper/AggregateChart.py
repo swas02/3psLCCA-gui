@@ -24,6 +24,7 @@ except ImportError:
 class _ChartToolbar(NavigationToolbar2QT):
     toolitems = [t for t in NavigationToolbar2QT.toolitems
                  if t[0] not in ("Subplots", "Customize")]
+    def set_message(self, s): pass
 
 from PySide6.QtCore import QEvent, QObject, QSize, Qt
 from PySide6.QtGui import QFont

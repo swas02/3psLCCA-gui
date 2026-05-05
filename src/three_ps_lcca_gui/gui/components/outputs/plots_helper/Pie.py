@@ -23,6 +23,7 @@ except ImportError:
 class _ChartToolbar(NavigationToolbar2QT):
     toolitems = [t for t in NavigationToolbar2QT.toolitems
                  if t[0] not in ("Subplots", "Customize")]
+    def set_message(self, s): pass
 
 from PySide6.QtCore import QEvent, QObject, QSize, Qt
 from PySide6.QtGui import QFont
@@ -538,7 +539,7 @@ class LCCPieWidget(QWidget):
                     c1.setStyleSheet("background: transparent; border: none;")
                     c1.installEventFilter(scroller)
                     self._chart_stack.addWidget(c1)
-                    self._toolbar_stack.addWidget(NavigationToolbar2QT(c1, self))
+                    self._toolbar_stack.addWidget(_ChartToolbar(c1, self))
                     self._plotters.append(p1)
 
             self._mode_cb.toggled.connect(self._on_mode_change)
