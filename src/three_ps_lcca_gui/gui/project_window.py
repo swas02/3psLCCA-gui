@@ -327,6 +327,7 @@ class ProjectWindow(QMainWindow):
             self.controller = ProjectController()
 
         self.project_id = None
+        self._needs_initial_landing = False
 
         self.setWindowTitle("3psLCCA - Home")
         _icon_path = os.path.join(_ASSETS_DIR, "logo", "logo-3psLCCA.ico")
@@ -546,6 +547,7 @@ class ProjectWindow(QMainWindow):
         self.outputs_page.calculation_completed.connect(
             self._on_calculation_done)
         self.outputs_page.validate_requested.connect(self._run_calculate)
+        self.outputs_page.compare_requested.connect(self._on_compare_requested)
 
         # Page widgets are built lazily on first sidebar click via _get_or_create_widget
         self.widget_map = {"Outputs": self.outputs_page}
@@ -659,14 +661,51 @@ class ProjectWindow(QMainWindow):
         if not self._project_ui_ready:
             self._setup_project_ui()
             self._project_ui_ready = True
+
         display = self.controller.active_display_name or self.project_id
         self.setWindowTitle(f"3psLCCA - {display}")
         self.main_stack.setCurrentWidget(self.project_widget)
-        self.content_stack.setCurrentWidget(
-            self._get_or_create_widget("General Information"))
-        items = self.sidebar.findItems("General Information", Qt.MatchExactly)
-        if items:
-            self.sidebar.setCurrentItem(items[0])
+
+        # ── Auto-Results Logic ──────────────────────────────────────────
+        # If project was previously analyzed and locked (fit for comparison),
+        # land directly on the Outputs page and compile results in real-time.
+        # This only runs on the INITIAL load, not when returning from Home tab.
+        if self._needs_initial_landing:
+            self._needs_initial_landing = False
+            is_locked_on_disk = False
+            try:
+                info = SafeChunkEngine.get_project_info(self.project_id)
+                if info and info.get("user_meta", {}).get("fit_for_comparison"):
+                    is_locked_on_disk = True
+            except:
+                pass
+
+            if is_locked_on_disk:
+                # Sync UI state to locked
+                self.btn_lock.setChecked(True)
+                self._on_lock_toggled(True)
+                
+                # Ensure all pages are built and registered
+                for name in self._page_names:
+                    self._get_or_create_widget(name)
+                self.outputs_page.register_pages(self.widget_map)
+                
+                # Switch to Outputs and run calculation silently (no cache write)
+                self.content_stack.setCurrentWidget(self.outputs_page)
+                self.outputs_page.run_calculation(save_cache=False)
+                
+                items = self.sidebar.findItems("Outputs", Qt.MatchExactly)
+                if items:
+                    self.sidebar.setCurrentItem(items[0])
+                return
+
+        # Standard landing or return: General Information (or keep current)
+        if not self.content_stack.currentWidget():
+            self.content_stack.setCurrentWidget(
+                self._get_or_create_widget("General Information"))
+            items = self.sidebar.findItems("General Information", Qt.MatchExactly)
+            if items:
+                self.sidebar.setCurrentItem(items[0])
 
     def preload_all(self, on_complete):
         """Setup project UI if needed, then build every page widget one per
@@ -772,12 +811,19 @@ class ProjectWindow(QMainWindow):
         if items:
             self.sidebar.setCurrentItem(items[0])
 
+    def _on_compare_requested(self, project_id: str):
+        """Shortcut from OutputsPage: close project and navigate to comparison picker."""
+        self._close_project()
+        if self.home_widget:
+            self.home_widget.switch_to_compare(preselect_pid=project_id)
+
     # ── Controller signals ────────────────────────────────────────────────────
 
     def _on_project_loaded(self):
         if not self.controller.active_project_id:
             return
         self.project_id = self.controller.active_project_id
+        self._needs_initial_landing = True
         display = self.controller.active_display_name or self.project_id
         self.setWindowTitle(f"3psLCCA - {display}")
         self.status_bar.showMessage(f"Project: {display}")

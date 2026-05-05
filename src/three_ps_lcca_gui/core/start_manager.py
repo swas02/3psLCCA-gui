@@ -5,6 +5,7 @@ Manages user-level home page data in data/user.db.
 Tables: user_profile, pinned_projects, recent_projects, home_preferences
 """
 
+import json
 import os
 import sqlite3
 from datetime import datetime
@@ -59,6 +60,15 @@ def _ensure_tables():
                 key         TEXT PRIMARY KEY,
                 value       TEXT,
                 updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
+            );
+
+            CREATE TABLE IF NOT EXISTS comparison_history (
+                id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                compared_at     TEXT NOT NULL DEFAULT (datetime('now')),
+                label           TEXT NOT NULL,
+                project_ids     TEXT NOT NULL,
+                project_names   TEXT NOT NULL,
+                analysis_period INTEGER NOT NULL DEFAULT 0
             );
         """)
 
@@ -174,3 +184,49 @@ def set_pref(key: str, value: str):
             ON CONFLICT(key) DO UPDATE SET value = excluded.value,
                                            updated_at = excluded.updated_at
         """, (key, value, _now()))
+
+
+# ── Comparison history ─────────────────────────────────────────────────────────
+
+def add_comparison(label: str, project_ids: list, project_names: list,
+                   analysis_period: int = 0) -> int:
+    """Record a confirmed comparison group. Returns the new row id."""
+    with _conn() as c:
+        cur = c.execute("""
+            INSERT INTO comparison_history
+                (compared_at, label, project_ids, project_names, analysis_period)
+            VALUES (?, ?, ?, ?, ?)
+        """, (_now(), label,
+              json.dumps(project_ids), json.dumps(project_names),
+              analysis_period))
+        return cur.lastrowid
+
+
+def get_comparison_history(limit: int = 100) -> list[dict]:
+    """Return comparison history rows newest-first, with decoded JSON fields."""
+    with _conn() as c:
+        rows = c.execute("""
+            SELECT id, compared_at, label, project_ids, project_names, analysis_period
+            FROM comparison_history
+            ORDER BY compared_at DESC
+            LIMIT ?
+        """, (limit,)).fetchall()
+    result = []
+    for row in rows:
+        d = dict(row)
+        d["project_ids"]   = json.loads(d["project_ids"])
+        d["project_names"] = json.loads(d["project_names"])
+        result.append(d)
+    return result
+
+
+def delete_comparison(history_id: int):
+    """Remove a comparison history row by id."""
+    with _conn() as c:
+        c.execute("DELETE FROM comparison_history WHERE id = ?", (history_id,))
+
+
+def delete_all_comparisons():
+    """Clear the entire comparison history table."""
+    with _conn() as c:
+        c.execute("DELETE FROM comparison_history")

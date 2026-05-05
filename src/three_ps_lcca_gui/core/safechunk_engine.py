@@ -202,6 +202,7 @@ class SafeChunkEngine:
         self.blob_manifest_path = self.project_path / "blob_manifest.json"
         self.blobs_path = self.project_path / "blobs"
         self.version_path = self.project_path / "version.json"
+        self.project_meta_path = self.project_path / "project_meta.json"
         self.lock_path = self.project_path / ".lock"
         self.wal_path = self.project_path / "wal.log"
 
@@ -1422,6 +1423,61 @@ class SafeChunkEngine:
         """Returns names of all stored chunks."""
         return [f.name[: -len(LCCA_EXT)] for f in self.chunks_path.glob(f"*{LCCA_EXT}")]
 
+    @requires_active
+    def delete_chunk(self, chunk_name: str) -> bool:
+        """
+        Permanently deletes a chunk and all its backup copies from disk.
+        Clears any staged (unsaved) version from memory, removes WAL entries
+        to prevent crash-replay resurrection, and prunes the manifest entry.
+        Returns True on success, False if the chunk did not exist or deletion failed.
+        """
+        if not self._safe_name(chunk_name):
+            self._log(f"delete_chunk: rejected unsafe chunk_name: {chunk_name!r}")
+            return False
+
+        lcca = self.chunks_path     / f"{chunk_name}{LCCA_EXT}"
+        bak  = self.chunks_bak_path / f"{chunk_name}{BAK_EXT}"
+        ebak = self.chunks_bak_path / f"{chunk_name}{EBAK_EXT}"
+
+        try:
+            # Hold the write lock while clearing staged data and unlinking .lcca
+            # so a concurrent _commit_to_disk can't write the chunk back between steps.
+            # Do NOT cancel _debounce_timer here — it is shared across all chunks.
+            with self._write_lock:
+                was_staged = chunk_name in self._staged_data
+                self._staged_data.pop(chunk_name, None)
+
+                if not lcca.exists() and not was_staged:
+                    self._log(f"delete_chunk: '{chunk_name}' not found.")
+                    return False
+
+                if lcca.exists():
+                    lcca.unlink()
+
+            # Remove backup copies outside the lock — no concurrent writer can create them
+            for path in (bak, ebak):
+                if path.exists():
+                    try:
+                        path.unlink()
+                    except Exception as e:
+                        self._log(f"delete_chunk: could not remove {path.name}: {e}")
+
+            # Remove WAL entry so crash-replay can't resurrect the chunk on next open
+            self._wal_remove(chunk_name)
+
+            # Prune manifest so integrity check never re-flags it as missing
+            manifest = self._load_manifest()
+            manifest.get("chunks", {}).pop(chunk_name, None)
+            self._save_manifest(manifest)
+
+            self._session_dirty = True
+            self._log(f"Chunk deleted: '{chunk_name}'.")
+            return True
+
+        except Exception as e:
+            self._handle_error(f"delete_chunk failed for '{chunk_name}': {e}")
+            return False
+
     def get_rollback_options(self, chunk_name: str) -> list[dict]:
         """
         Returns available rollback copies for a chunk with timestamps.
@@ -1778,6 +1834,31 @@ class SafeChunkEngine:
             self._handle_error(f"Rename failed: {e}")
             return False
 
+    def write_user_meta(self, key: str, value) -> bool:
+        """
+        Writes a single key-value pair to project_meta.json.
+        project_meta.json is always plain JSON and is the right place for
+        any app-level or user-level flags/notes (e.g. "fit_for_comparison",
+        custom tags, author notes). Keys are arbitrary strings; values must
+        be JSON-serialisable. Existing keys are preserved.
+        """
+        try:
+            existing = self._read_admin(self.project_meta_path)
+            existing[key] = value
+            self._write_admin(self.project_meta_path, existing)
+            self._log(f"user_meta['{key}'] set to {value!r}.")
+            return True
+        except Exception as e:
+            self._handle_error(f"write_user_meta failed for '{key}': {e}")
+            return False
+
+    def read_user_meta(self, key: str, default=None):
+        """
+        Reads a single key from project_meta.json.
+        Returns default if the key is absent or the file does not exist.
+        """
+        return self._read_admin(self.project_meta_path).get(key, default)
+
     def delete_project(self, confirmed: bool = False) -> bool:
         if not confirmed:
             return False
@@ -1892,6 +1973,7 @@ class SafeChunkEngine:
                 "created_at": None,
                 "last_modified": None,
                 "status": "ok",
+                "user_meta": {},
                 "project_path": str(item),
             }
 
@@ -1912,6 +1994,11 @@ class SafeChunkEngine:
                         info["status"] = "crashed"
                 else:
                     info["status"] = "corrupted"
+
+            # project_meta.json — app/user metadata (always plain JSON)
+            pm = item / "project_meta.json"
+            if pm.exists():
+                info["user_meta"] = SafeChunkEngine._read_admin(pm)
 
             # Timestamps
             try:
@@ -1956,6 +2043,7 @@ class SafeChunkEngine:
             "last_checkpoint_date": None,
             "clean_close": True,
             "readable": False,
+            "user_meta": {},
             "size_kb": 0,
             "project_path": str(item),
         }
@@ -1972,6 +2060,10 @@ class SafeChunkEngine:
                 info["status"] = "crashed"
         elif vf.exists():
             info["status"] = "corrupted"
+
+        pm = item / "project_meta.json"
+        if pm.exists():
+            info["user_meta"] = SafeChunkEngine._read_admin(pm)
 
         lock = item / ".lock"
         if lock.exists() and SafeChunkEngine._is_lock_live(lock):

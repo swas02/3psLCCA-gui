@@ -9,7 +9,6 @@ from PySide6.QtWidgets import (
     QFormLayout,
     QFrame,
     QGridLayout,
-    QGroupBox,
     QHBoxLayout,
     QLabel,
     QProgressBar,
@@ -29,10 +28,7 @@ from three_ps_lcca_gui.gui.theme import (
     SP4,
     SP5,
     SP6,
-    SP8,
-    RADIUS_MD,
     RADIUS_LG,
-    RADIUS_XL,
     FS_XS,
     FS_SM,
     FS_BASE,
@@ -41,8 +37,6 @@ from three_ps_lcca_gui.gui.theme import (
     FS_SUBHEAD,
     FS_XL,
     FS_DISP,
-    FS_DISP_LG,
-    FS_DISP_XL,
     FW_NORMAL,
     FW_MEDIUM,
     FW_SEMIBOLD,
@@ -75,6 +69,7 @@ from .report_section_dialog import ReportSectionDialog
 
 CHUNK = "outputs_data"
 CHUNK_AP = "analysis_period"
+CHUNK_COMPARISON = "comparison_cache"
 
 OUTPUTS_FIELDS = [
     FieldDef(
@@ -267,7 +262,7 @@ class _LCCAWorker(QObject):
 class LCCSummaryCards(QWidget):
     """Three top-line KPI cards: Total LCCA, Initial Investment, Future Liabilities."""
 
-    def __init__(self, results: dict, currency: str = "INR", parent=None):
+    def __init__(self, results: dict, currency: str, parent=None):
         super().__init__(parent)
         self._results = results
         self._currency = currency
@@ -389,7 +384,7 @@ class LCCSummaryCards(QWidget):
 class LCCIntroWidget(QWidget):
     """One-paragraph context block shown at the top of every results report."""
 
-    def __init__(self, results: dict, analysis_period: int = 0, currency: str = "INR", parent=None):
+    def __init__(self, results: dict, analysis_period: int, currency: str, parent=None):
         super().__init__(parent)
         self._build(results, analysis_period, currency)
 
@@ -460,7 +455,7 @@ class LCCInsightsWidget(QWidget):
         "text": "text_secondary",
     }
 
-    def __init__(self, results: dict, currency: str = "INR", parent=None):
+    def __init__(self, results: dict, currency: str, parent=None):
         super().__init__(parent)
         self._currency = currency
         self._build(results)
@@ -661,6 +656,7 @@ class OutputsPage(ScrollableForm):
     navigate_requested = Signal(str)
     calculation_completed = Signal()
     validate_requested = Signal()
+    compare_requested = Signal(str)
 
     CALC_TIMEOUT_MS = 30_000
 
@@ -673,7 +669,7 @@ class OutputsPage(ScrollableForm):
         self._timeout_timer = None
         self._elapsed_timer = None
         self._elapsed_secs = 0
-        self._currency = "INR"
+        self._currency = ""
         self._current_status = "idle"
         self._status_args: dict = {}
         self._build_ui()
@@ -1000,18 +996,29 @@ class OutputsPage(ScrollableForm):
         self._last_results = results
         self._clear_status()
 
-        # PDF export at the top of results
-        pdf_row = QWidget()
-        pdf_h = QHBoxLayout(pdf_row)
-        pdf_h.setContentsMargins(0, 0, 0, SP3)
+        # Toolbar for results (PDF + Comparison)
+        toolbar_row = QWidget()
+        tl_h = QHBoxLayout(toolbar_row)
+        tl_h.setContentsMargins(0, 0, 0, SP3)
+        tl_h.setSpacing(SP3)
+
         pdf_btn = QPushButton("Generate PDF Report")
         pdf_btn.setFixedHeight(BTN_MD)
         pdf_btn.setFont(_f(FS_BASE, FW_MEDIUM))
         pdf_btn.setStyleSheet(btn_primary())
         pdf_btn.clicked.connect(self._generate_pdf_report)
-        pdf_h.addWidget(pdf_btn, 0, Qt.AlignLeft)
-        pdf_h.addStretch()
-        self._status_layout.addWidget(pdf_row)
+        tl_h.addWidget(pdf_btn)
+
+        comp_btn = QPushButton("Add to Comparison ↗")
+        comp_btn.setFixedHeight(BTN_MD)
+        comp_btn.setFont(_f(FS_BASE, FW_MEDIUM))
+        comp_btn.setStyleSheet(btn_ghost())
+        comp_btn.setToolTip("Close project and add to the comparison workspace")
+        comp_btn.clicked.connect(self._on_compare_clicked)
+        tl_h.addWidget(comp_btn)
+
+        tl_h.addStretch()
+        self._status_layout.addWidget(toolbar_row)
 
         sections = [
             lambda r: _section_heading("At a Glance"),
@@ -1103,14 +1110,15 @@ class OutputsPage(ScrollableForm):
             self.show_success()
             self.run_calculation()
 
-    def run_calculation(self):
+    def run_calculation(self, save_cache: bool = True):
+        self._save_cache_on_finish = save_cache
         all_data = {}
         for name, page in self._pages.items():
             if hasattr(page, "get_data"):
                 res = page.get_data()
                 all_data[res["chunk"]] = res["data"]
 
-        self._currency = all_data.get("general_info", {}).get("project_currency", "INR")
+        self._currency = all_data.get("general_info", {}).get("project_currency")
         self._show_calculating()
 
         self._calc_thread = QThread(self)
@@ -1131,6 +1139,10 @@ class OutputsPage(ScrollableForm):
         self._has_results = True
         self._last_all_data = all_data
         self._last_lcc_breakdown = lcc_breakdown
+        
+        if getattr(self, "_save_cache_on_finish", True):
+            self._write_comparison_cache(results, all_data, lcc_breakdown)
+            
         self._show_calculation_success(results)
         self.calculation_completed.emit()
 
@@ -1144,6 +1156,7 @@ class OutputsPage(ScrollableForm):
         self._has_results = False
         self._show_idle()
         self._save_state("idle", {})
+        self._destroy_comparison_cache()
 
     def freeze(self, frozen: bool):
         self.btn_calculate.setEnabled(not frozen)
@@ -1190,6 +1203,29 @@ class OutputsPage(ScrollableForm):
 
     def _on_proceed(self):
         self.run_calculation()
+
+    def _on_compare_clicked(self):
+        if self.controller and self.controller.active_project_id:
+            self.compare_requested.emit(self.controller.active_project_id)
+
+    def _write_comparison_cache(self, results: dict, all_data: dict, lcc_breakdown: dict):
+        if self.controller:
+            self.controller.save_chunk_data(CHUNK_COMPARISON, {
+                "is_valid": True,
+                "analysis_period": int(self.analysis_period.value()),
+                "currency": self._currency,
+                "all_data": all_data,
+                "lcc_breakdown": lcc_breakdown,
+                "results": results,
+            })
+            if self.controller.engine:
+                self.controller.engine.force_sync()
+                self.controller.engine.write_user_meta("fit_for_comparison", True)
+
+    def _destroy_comparison_cache(self):
+        if self.controller and self.controller.engine:
+            self.controller.engine.delete_chunk(CHUNK_COMPARISON)
+            self.controller.engine.write_user_meta("fit_for_comparison", False)
 
     def _save_state(self, status: str, data: dict):
         if self.controller and self.controller.engine:

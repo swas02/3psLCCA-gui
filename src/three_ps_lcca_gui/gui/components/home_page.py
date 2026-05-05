@@ -16,7 +16,7 @@ import getpass
 from datetime import datetime
 
 from three_ps_lcca_gui.gui.version import VERSION
-from PySide6.QtCore import Qt, QSize, QPoint, QPointF, QRect, QRectF, QTimer, Signal, QStandardPaths
+from PySide6.QtCore import Qt, QSize, QPoint, QPointF, QRect, QRectF, QTimer, Signal, QStandardPaths, QObject, QEvent
 from PySide6.QtGui import QFont, QColor, QPainter, QBrush, QPen, QPalette, QPolygonF, QPixmap
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtSvgWidgets import QSvgWidget
@@ -42,6 +42,7 @@ from PySide6.QtWidgets import (
     QDialog,
     QFormLayout,
     QSizePolicy,
+    QStackedWidget,
 )
 from three_ps_lcca_gui.core.safechunk_engine import SafeChunkEngine
 import three_ps_lcca_gui.core.start_manager as sm
@@ -80,6 +81,7 @@ from three_ps_lcca_gui.gui.styles import (
     btn_ghost_checkable,
 )
 from three_ps_lcca_gui.gui.components.settings_dialog import SettingsDialog
+from three_ps_lcca_gui.gui.components.outputs.comparison_page import ComparisonPickerPanel
 
 _GUI_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 _ASSETS_DIR = os.path.join(_GUI_DIR, "assets")
@@ -161,6 +163,7 @@ class _NavButton(QWidget):
     HOME = "home"
     NEW = "new"
     OPEN = "open"
+    COMPARE = "compare"
     SETTINGS = "settings"
 
     def __init__(
@@ -214,6 +217,8 @@ class _NavButton(QWidget):
             self._draw_new(p, cx, iy)
         elif self._icon_type == self.OPEN:
             self._draw_open(p, cx, iy)
+        elif self._icon_type == self.COMPARE:
+            self._draw_compare(p, cx, iy)
         elif self._icon_type == self.SETTINGS:
             self._draw_settings(p, cx, iy)
 
@@ -283,6 +288,16 @@ class _NavButton(QWidget):
         )
 
     @staticmethod
+    def _draw_compare(p: QPainter, cx: int, cy: int):
+        # Two pairs of bars suggesting side-by-side comparison
+        # Left pair
+        p.drawRect(QRectF(cx - 11, cy - 6, 4, 14))  # tall
+        p.drawRect(QRectF(cx - 6,  cy - 1, 4,  9))  # short
+        # Right pair
+        p.drawRect(QRectF(cx + 2,  cy - 3, 4, 11))  # medium
+        p.drawRect(QRectF(cx + 7,  cy - 6, 4, 14))  # tall
+
+    @staticmethod
     def _draw_settings(p: QPainter, cx: int, cy: int):
         import math
 
@@ -327,8 +342,25 @@ class _NavButton(QWidget):
             self.update()
         super().leaveEvent(event)
 
+    def set_selected(self, v: bool):
+        self._selected = v
+        self._hover = False
+        self.update()
+
 
 # ── Right-panel grid card delegate ────────────────────────────────────────────
+
+
+class _ResizeFilter(QObject):
+    """Calls a callback whenever the watched widget is resized."""
+    def __init__(self, callback, parent=None):
+        super().__init__(parent)
+        self._cb = callback
+
+    def eventFilter(self, obj, event):
+        if event.type() == QEvent.Resize:
+            self._cb()
+        return False
 
 
 class _GridCardDelegate(QStyledItemDelegate):
@@ -336,9 +368,11 @@ class _GridCardDelegate(QStyledItemDelegate):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self._mouse_pos = QPoint(-1, -1)  # viewport-relative; set by _GridList
-        self._loading_pid = None
-        self._loading_dots = 0  # 0 / 1 / 2 → "." / ".." / "..."
+        self._mouse_pos    = QPoint(-1, -1)
+        self._loading_pid  = None
+        self._loading_dots = 0
+        self.comparison_mode     = False
+        self._comp_selected: set = set()   # pids selected for comparison
 
     def _card_h(self, status: str) -> int:
         return CARD_H_WARN if status in ("crashed", "corrupted") else CARD_H_NORM
@@ -492,57 +526,94 @@ class _GridCardDelegate(QStyledItemDelegate):
 
         tx = rect.left() + SP4
 
-        # ── ⋮ menu button ─────────────────────────────────────────────────
-        menu_col = QColor(get_token("primary")
-                          ) if is_sel else QColor(muted_col)
-        menu_col.setAlpha(200 if is_hov else 150)
-        painter.setPen(menu_col)
-        painter.setFont(_f(FS_MD, FW_BOLD))
-        painter.drawText(
-            QRect(R - 28, rect.top(), 24, card_h),
-            Qt.AlignCenter,
-            "\u22ee",
-        )
+        # ── Comparison mode: checkbox, no hover controls ───────────────────
+        if self.comparison_mode:
+            is_locked = (status == "locked")
+            pid_here  = data.get("project_id", "")
+            checked   = pid_here in self._comp_selected
+            cb_size   = 16
+            cb_x      = R - cb_size - SP3
+            cb_y      = rect.top() + (card_h - cb_size) // 2
+            cb_rect   = QRect(cb_x, cb_y, cb_size, cb_size)
+            prim      = QColor(get_token("primary"))
 
-        # ── Hover controls ────────────────────────────────────────────────
-        if is_hov:
-            star_rect = QRect(R - 58, rect.top(), 26, card_h)
-            star_hov = star_rect.contains(self._mouse_pos)
-
-            # Logic: Fill if pinned OR if mouse is specifically over the star
-            show_filled = is_pinned or star_hov
-            star_icon = "\u2605" if show_filled else "\u2606"
-
-            star_col = QColor(get_token("primary"))
-            star_col.setAlpha(220 if show_filled else 130)
-
-            painter.setPen(star_col)
-            painter.setFont(_f(FS_MD + 1, FW_NORMAL))
-            painter.drawText(star_rect, Qt.AlignCenter, star_icon)
-
-            pill_label = "Return \u203a" if status == "locked" else "Open"
-            pill_h, pill_w = 22, 56
-            pill_x = R - 58 - SP2 - pill_w
-            pill_y = rect.top() + (card_h - pill_h) // 2
-            pill_rect = QRect(pill_x, pill_y, pill_w, pill_h)
-            prim = QColor(get_token("primary"))
-            pill_hov = pill_rect.contains(self._mouse_pos)
-            if pill_hov:
-                painter.setBrush(QBrush(prim))
-                painter.setPen(Qt.NoPen)
-                painter.drawRoundedRect(pill_rect, pill_h // 2, pill_h // 2)
-                painter.setPen(QColor(get_token("base")))
-            else:
+            if is_locked:
+                # Show the standard Return button even in comparison mode
+                pill_label = "Return ›"
+                pill_h, pill_w = 16, 64
+                pill_x = R - SP4 - pill_w
+                pill_y = rect.top() + (card_h - pill_h) // 2
+                pill_rect = QRect(pill_x, pill_y, pill_w, pill_h)
+                
                 painter.setPen(QPen(prim, 1))
                 painter.setBrush(Qt.NoBrush)
                 painter.drawRoundedRect(pill_rect, pill_h // 2, pill_h // 2)
+                painter.setFont(_f(FS_SM, FW_MEDIUM))
                 painter.setPen(prim)
-            painter.setFont(_f(FS_SM, FW_MEDIUM))
-            painter.drawText(pill_rect, Qt.AlignCenter, pill_label)
+                painter.drawText(pill_rect, Qt.AlignCenter, pill_label)
+                right_edge = pill_x - SP2
+            elif checked:
+                painter.setBrush(QBrush(prim))
+                painter.setPen(Qt.NoPen)
+                painter.drawRoundedRect(cb_rect, 3, 3)
+                painter.setPen(QPen(QColor(get_token("base")), 1.8,
+                                    Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+                painter.drawLine(cb_x + 3,  cb_y + 8,  cb_x + 6,  cb_y + 11)
+                painter.drawLine(cb_x + 6,  cb_y + 11, cb_x + 13, cb_y + 4)
+                right_edge = cb_x - SP2
+            else:
+                border_col = QColor(prim) if is_hov else QColor(muted_col)
+                painter.setPen(QPen(border_col, 1.4))
+                painter.setBrush(Qt.NoBrush)
+                painter.drawRoundedRect(cb_rect, 3, 3)
+                right_edge = cb_x - SP2
 
-            right_edge = pill_x - SP2
+        # ── Normal mode: menu + hover controls ────────────────────────────
         else:
-            right_edge = R - 32
+            menu_col = QColor(get_token("primary")) if is_sel else QColor(muted_col)
+            menu_col.setAlpha(200 if is_hov else 150)
+            painter.setPen(menu_col)
+            painter.setFont(_f(FS_MD, FW_BOLD))
+            painter.drawText(
+                QRect(R - 28, rect.top(), 24, card_h),
+                Qt.AlignCenter,
+                "⋮",
+            )
+
+            if is_hov:
+                star_rect   = QRect(R - 58, rect.top(), 26, card_h)
+                star_hov    = star_rect.contains(self._mouse_pos)
+                show_filled = is_pinned or star_hov
+                star_col    = QColor(get_token("primary"))
+                star_col.setAlpha(220 if show_filled else 130)
+                painter.setPen(star_col)
+                painter.setFont(_f(FS_MD + 1, FW_NORMAL))
+                painter.drawText(star_rect, Qt.AlignCenter,
+                                 "★" if show_filled else "☆")
+
+                pill_label = "Return ›" if status == "locked" else "Open"
+                pill_w = 64 if status == "locked" else 56
+                pill_h = 22
+                pill_x = R - 58 - SP2 - pill_w
+                pill_y = rect.top() + (card_h - pill_h) // 2
+                pill_rect = QRect(pill_x, pill_y, pill_w, pill_h)
+                prim = QColor(get_token("primary"))
+                pill_hov = pill_rect.contains(self._mouse_pos)
+                if pill_hov:
+                    painter.setBrush(QBrush(prim))
+                    painter.setPen(Qt.NoPen)
+                    painter.drawRoundedRect(pill_rect, pill_h // 2, pill_h // 2)
+                    painter.setPen(QColor(get_token("base")))
+                else:
+                    painter.setPen(QPen(prim, 1))
+                    painter.setBrush(Qt.NoBrush)
+                    painter.drawRoundedRect(pill_rect, pill_h // 2, pill_h // 2)
+                    painter.setPen(prim)
+                painter.setFont(_f(FS_SM, FW_MEDIUM))
+                painter.drawText(pill_rect, Qt.AlignCenter, pill_label)
+                right_edge = pill_x - SP2
+            else:
+                right_edge = R - 32
             dot_token = {
                 "locked": "info",
                 "crashed": "danger",
@@ -595,6 +666,21 @@ class _GridCardDelegate(QStyledItemDelegate):
             "   \u00b7   ".join(m for m in meta if m),
         )
 
+        # ── Status dot for locked/crashed in comparison mode ──────────────
+        if self.comparison_mode and status != "ok":
+            dot_token = {
+                "locked": "info",
+                "crashed": "danger",
+                "corrupted": "warning",
+            }.get(status)
+            if dot_token:
+                dot_hex = get_token(dot_token)
+                painter.setPen(Qt.NoPen)
+                painter.setBrush(QColor(dot_hex))
+                painter.drawEllipse(
+                    right_edge - 8, rect.top() + (card_h - 7) // 2, 7, 7
+                )
+
         # ── Warning line ──────────────────────────────────────────────────
         if status == "crashed":
             warn_col = QColor(get_token("danger"))
@@ -617,9 +703,10 @@ class _GridCardDelegate(QStyledItemDelegate):
 
 
 class _GridList(QListWidget):
-    menu_requested = Signal(str, QPoint)
-    open_requested = Signal(str)
-    pin_toggled = Signal(str)
+    menu_requested      = Signal(str, QPoint)
+    open_requested      = Signal(str)
+    pin_toggled         = Signal(str)
+    comparison_toggled  = Signal(str, bool)   # (pid, is_now_selected)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -654,9 +741,26 @@ class _GridList(QListWidget):
                 item = self.item(index.row())
                 data = item.data(Qt.UserRole) if item else None
                 if isinstance(data, dict):
-                    pid = data["project_id"]
-                    # Swallow all clicks on a card that is currently loading
+                    pid      = data["project_id"]
                     delegate = self.itemDelegate()
+                    # ── Comparison mode: toggle checkbox, nothing else ──────
+                    if getattr(delegate, "comparison_mode", False):
+                        if event.button() == Qt.LeftButton:
+                            is_locked = (data.get("status") == "locked")
+                            if is_locked:
+                                # Allow returning to project even in comparison mode
+                                self.open_requested.emit(data["project_id"])
+                                return
+                            sel = delegate._comp_selected
+                            if pid in sel:
+                                sel.discard(pid)
+                                self.comparison_toggled.emit(pid, False)
+                            else:
+                                sel.add(pid)
+                                self.comparison_toggled.emit(pid, True)
+                            self.viewport().update()
+                        return
+                    # Swallow all clicks on a card that is currently loading
                     if getattr(delegate, "_loading_pid", None) == pid:
                         return
                     gpos = self.viewport().mapToGlobal(event.pos())
@@ -805,7 +909,12 @@ class HomePage(QWidget):
 
         root.addWidget(self._make_sidebar())
         root.addWidget(self._make_divider_v())
-        root.addWidget(self._make_right_panel(), stretch=1)
+
+        self._stack = QStackedWidget()
+        self._stack.addWidget(self._make_right_panel())      # index 0: project grid
+        self._comparison_panel = ComparisonPickerPanel(manager=self.manager)
+        self._stack.addWidget(self._comparison_panel)        # index 1: compare
+        root.addWidget(self._stack, stretch=1)
 
     # ── Left sidebar ──────────────────────────────────────────────────────────
 
@@ -819,9 +928,11 @@ class HomePage(QWidget):
         layout.setContentsMargins(0, SP4, 0, SP4)
         layout.setSpacing(0)
 
-        # ── Home (always selected) ─────────────────────────────────────────
+        # ── Home ──────────────────────────────────────────────────────────
         home_btn = _NavButton(_NavButton.HOME, "Home", selected=True)
         home_btn.setToolTip("Home")
+        home_btn.clicked.connect(self._switch_to_home)
+        self._nav_home = home_btn
         layout.addWidget(home_btn)
 
         # ── New ───────────────────────────────────────────────────────────
@@ -835,6 +946,13 @@ class HomePage(QWidget):
         open_btn.setToolTip("Open / Import a project file")
         open_btn.clicked.connect(self._load_shared_project)
         layout.addWidget(open_btn)
+
+        # ── Compare ───────────────────────────────────────────────────────
+        compare_btn = _NavButton(_NavButton.COMPARE, "Compare")
+        compare_btn.setToolTip("Compare Projects")
+        compare_btn.clicked.connect(self._switch_to_compare)
+        self._nav_compare = compare_btn
+        layout.addWidget(compare_btn)
 
         layout.addStretch()
 
@@ -851,10 +969,115 @@ class HomePage(QWidget):
         if dlg.exec() == QDialog.Accepted:
             self._update_greeting()
 
+    def _on_comp_toggle(self, pid: str, selected: bool):
+        n = len(self.grid_list.itemDelegate()._comp_selected)
+        if n >= 2:
+            self._comp_fab.setText(f"Compare {n} Projects  →")
+            self._comp_fab.show()
+            self._apply_fab_style()
+            self._reposition_comp_fab()
+        else:
+            self._comp_fab.hide()
+
+    def _on_home_compare_clicked(self):
+        from three_ps_lcca_gui.gui.components.outputs.comparison_page import (
+            ComparisonResultWindow, _read_cache_from_disk, _sm as comp_sm
+        )
+        from pathlib import Path
+        delegate = self.grid_list.itemDelegate()
+        pids = list(delegate._comp_selected)
+        if len(pids) < 2:
+            return
+
+        # Mutual exclusivity: filter out projects that are currently open for editing
+        open_pids = [p for p in pids if self.manager.is_project_open(p)]
+        if open_pids:
+            by_pid = {p["project_id"]: p for p in self._all_projects}
+            open_names = [by_pid.get(p, {}).get("display_name", p) for p in open_pids]
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.information(
+                self, "Projects Open for Editing",
+                "The following projects are currently open and cannot be included in a comparison:\n\n- " +
+                "\n- ".join(open_names) +
+                "\n\nPlease close them or use the 'Add to Comparison' shortcut from within the project."
+            )
+            return
+
+        base   = Path(SafeChunkEngine.get_default_base_dir())
+        caches = {p: _read_cache_from_disk(base, p) for p in pids}
+        caches = {p: c for p, c in caches.items() if c.get("is_valid")}
+        if len(caches) < 2:
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.warning(self, "Cannot Compare",
+                "Some selected projects no longer have valid analyses.")
+            return
+        # Resolve display names from the project list
+        by_pid = {p["project_id"]: p for p in self._all_projects}
+        pid_list  = list(caches.keys())
+        name_list = [by_pid.get(p, {}).get("display_name", p) for p in pid_list]
+
+        project_set = frozenset(pid_list)
+
+        # Raise existing window for the same group if already open
+        panel = self._comparison_panel
+        existing = panel._open_windows.get(project_set)
+        if existing and existing.isVisible():
+            existing.raise_()
+            existing.activateWindow()
+            return
+
+        win = ComparisonResultWindow(pids=pid_list, names=name_list,
+                                     caches=caches, override_ap=0)
+        # Store in panel._open_windows to keep a Python reference alive
+        # and prevent the window from being GC'd before its threads start.
+        panel._open_windows[project_set] = win
+        win.show()
+
+        label = "  ·  ".join(sorted(name_list))
+        comp_sm.add_comparison(label, pid_list, name_list, 0)
+        panel.soft_refresh()
+
+        # Clear selection and hide FAB
+        delegate._comp_selected.clear()
+        self._comp_fab.hide()
+        self.grid_list.viewport().update()
+
+    def _switch_to_home(self):
+        self._stack.setCurrentIndex(0)
+        self._nav_home.set_selected(True)
+        self._nav_compare.set_selected(False)
+
+    def switch_to_compare(self, preselect_pid: str = None):
+        """Public method to navigate to the comparison tab, optionally pre-selecting a project."""
+        self._stack.setCurrentIndex(1)
+        self._nav_home.set_selected(False)
+        self._nav_compare.set_selected(True)
+        self._comparison_panel.refresh()
+        if preselect_pid:
+            self._comparison_panel.preselect_project(preselect_pid)
+
+    def _switch_to_compare(self):
+        self.switch_to_compare()
+
+    def _is_project_in_comparison(self, pid: str) -> bool:
+        return self._comparison_panel.is_in_active_comparison(pid)
+
+    def _safe_open_project(self, pid: str):
+        if self._is_project_in_comparison(pid):
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.information(
+                self, "Project in Comparison",
+                "This project is currently open in a comparison window.\n"
+                "Close or finish that comparison before opening the project."
+            )
+            return
+        self.manager.open_project(project_id=pid)
+
     # ── Right panel ───────────────────────────────────────────────────────────
 
     def _make_right_panel(self) -> QWidget:
         panel = QWidget()
+        self._right_panel = panel
         layout = QVBoxLayout(panel)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
@@ -930,6 +1153,7 @@ class HomePage(QWidget):
             ("Recent", "recent"),
             ("Name", "name"),
             ("Pinned", "pinned"),
+            ("Compare", "compare"),
         ]:
             btn = QPushButton(label)
             btn.setFixedHeight(BTN_SM)
@@ -967,10 +1191,9 @@ class HomePage(QWidget):
         )
         self.grid_list.itemDoubleClicked.connect(self._open_from_grid)
         self.grid_list.menu_requested.connect(self._show_grid_menu)
-        self.grid_list.open_requested.connect(
-            lambda pid: self.manager.open_project(project_id=pid)
-        )
+        self.grid_list.open_requested.connect(self._safe_open_project)
         self.grid_list.pin_toggled.connect(self._toggle_pin_by_id)
+        self.grid_list.comparison_toggled.connect(self._on_comp_toggle)
         layout.addWidget(self.grid_list, stretch=1)
 
         # ── Footer: Sponsors Area ──────────────────────────────────────────
@@ -1017,7 +1240,51 @@ class HomePage(QWidget):
         self._refresh_styles()
         theme_manager().theme_changed.connect(self._refresh_styles)
 
+        # ── Floating Compare FAB (child of panel, not in layout) ──────────
+        self._comp_fab = QPushButton("Compare Selected")
+        self._comp_fab.setParent(panel)
+        self._comp_fab.setFixedHeight(BTN_LG)
+        self._comp_fab.setFont(_f(FS_BASE, FW_SEMIBOLD))
+        self._comp_fab.setCursor(Qt.PointingHandCursor)
+        self._comp_fab.clicked.connect(self._on_home_compare_clicked)
+        self._comp_fab.hide()
+        self._comp_fab.adjustSize()
+        self._apply_fab_style()
+
+        self._panel_resize_filter = _ResizeFilter(self._reposition_comp_fab, panel)
+        panel.installEventFilter(self._panel_resize_filter)
+
         return panel
+
+    def _apply_fab_style(self):
+        prim   = get_token("primary")
+        base   = get_token("base")
+        r      = BTN_LG // 2
+        hover  = QColor(prim).darker(110).name()
+        active = QColor(prim).darker(125).name()
+        self._comp_fab.setStyleSheet(
+            f"QPushButton {{"
+            f"  background: {prim}; color: {base};"
+            f"  border-radius: {r}px; border: none;"
+            f"  padding: 0 {SP6}px;"
+            f"}}"
+            f"QPushButton:hover {{ background: {hover}; }}"
+            f"QPushButton:pressed {{ background: {active}; }}"
+        )
+
+    def _reposition_comp_fab(self):
+        if not hasattr(self, "_comp_fab") or not self._comp_fab.isVisible():
+            return
+        panel = self._right_panel
+        self._comp_fab.adjustSize()
+        w = self._comp_fab.sizeHint().width() + SP6 * 2
+        h = BTN_LG
+        self._comp_fab.setFixedSize(w, h)
+        footer_h = self.footer.height()
+        x = panel.width()  - w - SP8
+        y = panel.height() - footer_h - h - SP5
+        self._comp_fab.move(x, y)
+        self._comp_fab.raise_()
 
     # ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -1119,6 +1386,10 @@ class HomePage(QWidget):
 
         self.footer.setStyleSheet(
             f"background: {get_token('surface')}; border: none;")
+
+        if hasattr(self, "_comp_fab"):
+            self._apply_fab_style()
+
         self._update_greeting()
 
     @staticmethod
@@ -1161,11 +1432,26 @@ class HomePage(QWidget):
                 return btn.property("sort_key")
         return "recent"
 
+    def _is_compare_mode(self) -> bool:
+        return self._current_sort() == "compare"
+
     def _on_sort_btn(self):
         sender = self.sender()
         for btn in self._sort_btns:
             btn.setChecked(btn is sender)
-        sm.set_pref("sort_order", self._current_sort())
+        key = self._current_sort()
+        delegate = self.grid_list.itemDelegate()
+        if key == "compare":
+            delegate.comparison_mode = True
+            delegate._comp_selected.clear()
+            self.grid_list.setSelectionMode(QAbstractItemView.NoSelection)
+            self._comp_fab.hide()   # hidden until ≥2 selected
+        else:
+            delegate.comparison_mode = False
+            delegate._comp_selected.clear()
+            self.grid_list.setSelectionMode(QAbstractItemView.SingleSelection)
+            self._comp_fab.hide()
+            sm.set_pref("sort_order", key)
         self._render_grid()
 
     def _on_search(self, text: str):
@@ -1228,27 +1514,32 @@ class HomePage(QWidget):
 
         # Explicitly re-apply current sort and filter
         self._render_grid()
+        # Keep comparison panel in sync if it is currently visible
+        if self._stack.currentIndex() == 1:
+            self._comparison_panel.soft_refresh()
 
     def _render_grid(self):
         self.grid_list.clear()
         sort_key = self._current_sort()
         projects = list(self._all_projects)
-        if sort_key == "pinned":
+        if sort_key == "compare":
+            projects = [p for p in projects
+                        if p.get("user_meta", {}).get("fit_for_comparison")]
+            projects.sort(key=lambda p: (p.get("display_name") or "").lower())
+            self.grid_section_lbl.setText("READY TO COMPARE")
+        elif sort_key == "pinned":
             projects = [p for p in projects if p.get("pinned")]
             self.grid_section_lbl.setText("PINNED PROJECTS")
         elif sort_key == "name":
             projects.sort(key=lambda p: (p.get("display_name") or "").lower())
             self.grid_section_lbl.setText("ALL PROJECTS - A–Z")
         else:
-            # Sort by the most recent of either last_opened_at or last_modified
             def get_latest_time(p):
-                # We want the highest (most recent) timestamp
                 t1 = p.get("last_opened_at") or ""
                 t2 = p.get("last_modified") or ""
                 return max(t1, t2)
-
-            projects.sort(key=lambda p: (get_latest_time(
-                p), (p.get("display_name") or "").lower()), reverse=True)
+            projects.sort(key=lambda p: (get_latest_time(p),
+                          (p.get("display_name") or "").lower()), reverse=True)
             self.grid_section_lbl.setText("RECENT PROJECTS")
         q = getattr(self, "_search_text", "").strip().lower()
         if q:
@@ -1272,7 +1563,11 @@ class HomePage(QWidget):
             has_any = len(self._all_projects) > 0
 
             # Logic: Only show the center CTA if we are in 'Recent' view and have 0 projects total
-            if q:
+            if sort_key == "compare":
+                head = "No projects ready"
+                sub = "Run and lock an analysis on at least two projects to compare them."
+                show_cta = False
+            elif q:
                 head = "No matches found"
                 sub = f'We couldn\'t find any projects matching "{q}". Try adjusting your search.'
                 show_cta = False
@@ -1315,7 +1610,7 @@ class HomePage(QWidget):
     def _open_from_grid(self):
         pid = self._selected_pid_grid()
         if pid:
-            self.manager.open_project(project_id=pid)
+            self._safe_open_project(pid)
 
     def _show_grid_menu(self, pid: str, pos: QPoint):
         self._show_project_menu(pid, pos)
@@ -1327,7 +1622,7 @@ class HomePage(QWidget):
         is_pin = sm.is_pinned(pid)
         menu = QMenu(self)
         menu.addAction(
-            "Open", lambda: self.manager.open_project(project_id=pid))
+            "Open", lambda: self._safe_open_project(pid))
         menu.addSeparator()
         if is_pin:
             menu.addAction("Unpin", lambda: self._toggle_pin(pid, False))
@@ -1361,7 +1656,7 @@ class HomePage(QWidget):
         self.manager.refresh_all_home_screens()
 
     def _delete_pid(self, pid: str, display: str):
-        if self.manager.is_project_open(pid):
+        if self.manager.is_project_open(pid) or self._is_project_in_comparison(pid):
             QMessageBox.warning(self, "Cannot Delete", "Close project first.")
             return
         if QMessageBox.warning(self, "Delete Project", f"Delete '{display}'?", QMessageBox.Ok | QMessageBox.Cancel) == QMessageBox.Ok:
@@ -1372,7 +1667,7 @@ class HomePage(QWidget):
             self.manager.refresh_all_home_screens()
 
     def _rename_by_pid(self, pid: str, current_name: str):
-        if self.manager.is_project_open(pid):
+        if self.manager.is_project_open(pid) or self._is_project_in_comparison(pid):
             QMessageBox.warning(self, "Cannot Rename", "Close project first.")
             return
         new_name, ok = QInputDialog.getText(
@@ -1387,7 +1682,7 @@ class HomePage(QWidget):
 
     def _duplicate_project(self, pid: str, current_name: str):
         """Create a clone of the project with ' - Copy' appended to name."""
-        if self.manager.is_project_open(pid):
+        if self.manager.is_project_open(pid) or self._is_project_in_comparison(pid):
             QMessageBox.warning(self, "Cannot Duplicate",
                                 "Please close the project before duplicating.")
             return
@@ -1449,7 +1744,7 @@ class HomePage(QWidget):
                 src_engine.detach()
 
     def _share_project(self, pid: str, display: str):
-        if self.manager.is_project_open(pid):
+        if self.manager.is_project_open(pid) or self._is_project_in_comparison(pid):
             QMessageBox.warning(self, "Cannot Export", "Close project first.")
             return
         
