@@ -111,5 +111,5 @@ Desktop.ini
 *.db
 *.local.json
 src/three_ps_lcca_gui/gui/components/outputs/suggestion_for_output.md
-src/three_ps_lcca_gui/gui/assets/themes/arrow_down.svg
-src/three_ps_lcca_gui/gui/assets/themes/arrow_down_disabled.svg
+# src/three_ps_lcca_gui/gui/assets/themes/arrow_down.svg
+# src/three_ps_lcca_gui/gui/assets/themes/arrow_down_disabled.svg
