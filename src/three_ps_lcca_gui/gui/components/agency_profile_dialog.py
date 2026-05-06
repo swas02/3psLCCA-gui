@@ -124,3 +124,5 @@ class AgencyProfileDialog(QDialog):
             QMessageBox.warning(self, "Invalid Name", "Profile name cannot be empty.")
 
 
+
+

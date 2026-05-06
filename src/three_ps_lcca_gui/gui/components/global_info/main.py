@@ -23,8 +23,6 @@ from ..utils.validation_helpers import clear_field_styles, freeze_form, freeze_w
 from ..utils.countries_data import CURRENCIES, COUNTRIES
 
 
-from ..utils.doc_handler import make_doc_opener
-_DOC_OPENER = make_doc_opener("general")
 
 
 GENERAL_FIELDS = []
@@ -162,7 +160,7 @@ GENERAL_FIELDS = PROJECT_INFO_FIELDS + AGENCY_FIELDS + REVIEWER_FIELDS + [
         "Unit System",
         "Measurement system for all dimensional inputs (Metric or Imperial). Set at project creation.",
         "text",
-        doc_slug="unit-system",
+        doc_slug=["general", "unit-system"],
     ),
     FieldDef(
         "sor_database",
@@ -170,7 +168,7 @@ GENERAL_FIELDS = PROJECT_INFO_FIELDS + AGENCY_FIELDS + REVIEWER_FIELDS + [
         "Schedule of Rates database used to auto-suggest material names and rates in the Material Dialog.",
         "combo",
         options=[],
-        doc_slug="sor-database",
+        doc_slug=["general", "sor-database"],
     ),
 ]
 
@@ -186,7 +184,7 @@ class GeneralInfo(ScrollableForm):
     def __init__(self, controller=None):
         super().__init__(controller=controller, chunk_name="general_info")
 
-        self.required_keys = build_form(self, GENERAL_FIELDS, _DOC_OPENER)
+        self.required_keys = build_form(self, GENERAL_FIELDS)
 
         # Lock country and currency - disable widget so user can't edit,
         # but keep in _field_map so get_data_dict() saves them normally

@@ -3,31 +3,31 @@ FIELD_DEFINITIONS = {
     "material_name": {
         "label": "Material Name",
         "explanation": "Name of the material or work item as it appears in your project schedule.",
-        "doc_slug": "material-name",
+        "doc_slug": ["material", "material-name"],
         "required": True,
     },
     "quantity": {
         "label": "Quantity",
         "explanation": "Total quantity of this material required on site, expressed in your project unit (Unit A).",
-        "doc_slug": "quantity",
+        "doc_slug": ["material", "quantity"],
         "required": True,
     },
     "unit": {
         "label": "Unit",
         "explanation": "The site/project unit for quantity. Example: m3, kg, m, nos.",
-        "doc_slug": "unit",
+        "doc_slug": ["material", "unit"],
         "required": True,
     },
     "rate": {
         "label": "Rate (Cost)",
         "explanation": "Unit cost of this material in your project currency.",
-        "doc_slug": "rate",
+        "doc_slug": ["material", "rate"],
         "required": False,
     },
     "rate_source": {
         "label": "Rate Source",
         "explanation": "Reference for the rate used. Example: DSR 2023, Market Rate, Quoted Rate.",
-        "doc_slug": "rate-source",
+        "doc_slug": ["material", "rate-source"],
         "required": False,
     },
     # ── Carbon Emission ─────────────────────────────────────────────────────
@@ -37,7 +37,7 @@ FIELD_DEFINITIONS = {
             "Carbon emission factor from a standard reference (e.g. IFC, IPCC, ICE Database), "
             "expressed in kgCO₂e per Unit B. Example: 0.159 kgCO₂e/kg for ready-mix concrete."
         ),
-        "doc_slug": "emission-factor",
+        "doc_slug": ["material", "emission-factor"],
         "required": False,
     },
     "carbon_unit": {
@@ -46,13 +46,13 @@ FIELD_DEFINITIONS = {
             "Unit in which the emission factor is expressed, taken from the standard reference. "
             "Format: kgCO₂e/<unit> - e.g. kgCO₂e/kg, kgCO₂e/m3."
         ),
-        "doc_slug": "carbon-unit",
+        "doc_slug": ["material", "carbon-unit"],
         "required": False,
     },
     "carbon_emission_src": {
         "label": "Emission Factor Source",
         "explanation": "Reference database or standard used for the emission factor. Example: ICE v3.0, IPCC AR6, ecoinvent.",
-        "doc_slug": "emission-factor-source",
+        "doc_slug": ["material", "emission-factor-source"],
         "required": False,
     },
     "conversion_factor": {
@@ -62,7 +62,7 @@ FIELD_DEFINITIONS = {
             "Example: quantity in m³ but emission factor is per kg - enter density, e.g. 2400 for concrete. "
             "Formula: Carbon = Quantity × Conversion Factor × Emission Factor."
         ),
-        "doc_slug": "conversion-factor",
+        "doc_slug": ["material", "conversion-factor"],
         "required": False,
     },
     # ── Recyclability ───────────────────────────────────────────────────────
@@ -70,12 +70,12 @@ FIELD_DEFINITIONS = {
         "label": "Scrap Rate (per unit)",
         "explanation": (
             "Salvage value received per unit of material after demolition, "
-            "expressed in the project’s base currency per unit (e.g., per kg, per ton, per m³). "
+            "expressed in the project's base currency per unit (e.g., per kg, per ton, per m³). "
             "This represents the resale price of the recovered material. "
             "Example: If new steel costs 100 per kg and recovered scrap steel "
             "can be sold for 50 per kg, enter 50."
         ),
-        "doc_slug": "scrap-rate",
+        "doc_slug": ["material", "scrap-rate"],
         "required": False,
     },
     "post_demolition_recovery_percentage": {
@@ -86,20 +86,20 @@ FIELD_DEFINITIONS = {
             "Example: If 100 kg of steel was initially used and 90 kg can be "
             "recovered, enter 90."
         ),
-        "doc_slug": "post-demolition-recovery",
+        "doc_slug": ["material", "post-demolition-recovery"],
         "required": False,
     },
     # ── Categorization ──────────────────────────────────────────────────────
     "grade": {
         "label": "Grade",
         "explanation": "Material grade or specification. Example: M25 for concrete, Fe500 for rebar.",
-        "doc_slug": "grade",
+        "doc_slug": ["material", "grade"],
         "required": False,
     },
     "type": {
         "label": "Type",
         "explanation": "Material category. Example: Concrete, Steel, Masonry, Timber.",
-        "doc_slug": "material-type",
+        "doc_slug": ["material", "material-type"],
         "required": False,
     },
 }

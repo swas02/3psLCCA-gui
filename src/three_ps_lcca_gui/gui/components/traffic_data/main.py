@@ -143,8 +143,6 @@ _DEFAULT_PWR = {"hcv": 7.22, "mcv": 8.0}
 
 GEN_CHUNK = "general_info"
 CHUNK = "traffic_and_road_data"
-from ..utils.doc_handler import make_doc_opener
-_DOC_OPENER = make_doc_opener("traffic")
 
 # ── Field definitions ─────────────────────────────────────────────────────────
 
@@ -621,7 +619,7 @@ class TrafficData(ScrollableForm):
         # ── Mode selector ─────────────────────────────────────────────────────
         _temp_form = self.form
         self.form = main_form
-        build_form(self, PROJECT_MODE_FIELDS, _DOC_OPENER)
+        build_form(self, PROJECT_MODE_FIELDS)
         self.form = _temp_form
 
         self.mode.setFixedWidth(220)
@@ -655,7 +653,7 @@ class TrafficData(ScrollableForm):
 
         _temp_form = self.form
         self.form = india_layout
-        build_form(self, TRAFFIC_FIELDS, _DOC_OPENER)
+        build_form(self, TRAFFIC_FIELDS)
         self.form = _temp_form
 
         self.severity_minor.valueChanged.connect(self._on_severity_changed)
@@ -732,7 +730,7 @@ class TrafficData(ScrollableForm):
 
         _temp_form = self.form
         self.form = outside_layout
-        build_form(self, OUTSIDE_INDIA_FIELDS, _DOC_OPENER)
+        build_form(self, OUTSIDE_INDIA_FIELDS)
         self.form = _temp_form
 
         self._stack.addWidget(outside_widget)

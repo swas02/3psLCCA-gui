@@ -187,25 +187,6 @@ def _get_tools() -> list[dict]:
     except ImportError as e:
         tools.append(_error_card("Custom DB Viewer", str(e)))
 
-    # ── Docs Builder ───────────────────────────────────────────────────────
-    try:
-        from docs_builder_gui import DocsBuilderDialog
-        tools.append({
-            "key":    "docs_builder",
-            "icon":   "📄",
-            "name":   "Docs Builder",
-            "desc":   (
-                "Convert docs/*.md to site/*.html for offline viewing.\n"
-                "Runs pandoc on every Markdown file under docs/, inlines CSS for offline use, "
-                "generates sitemap.json and links.txt, and optionally validates all internal "
-                "links. After building, open the result directly in the offline webview."
-            ),
-            "accent": _MAUVE,
-            "open":   lambda parent: _open_dialog(DocsBuilderDialog, parent),
-        })
-    except ImportError as e:
-        tools.append(_error_card("Docs Builder", str(e)))
-
     # ── File Integrity Checker ─────────────────────────────────────────────
     try:
         from integrity_tool_gui import IntegrityToolDialog

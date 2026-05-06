@@ -14,8 +14,6 @@ from ..utils.form_builder.form_definitions import FieldDef, Section
 from ..utils.form_builder.form_builder import build_form
 from ..utils.validation_helpers import clear_field_styles, freeze_form, freeze_widgets, validate_form, confirm_clear_all
 
-from ..utils.doc_handler import make_doc_opener
-_DOC_OPENER = make_doc_opener("demolition")
 
 SUGGESTED_VALUES = {
     "demolition_cost_pct": 10.0,
@@ -83,7 +81,7 @@ class Demolition(ScrollableForm):
 
     def __init__(self, controller=None):
         super().__init__(controller=controller, chunk_name="demolition_data")
-        self.required_keys = build_form(self, DEMOLITION_FIELDS, _DOC_OPENER)
+        self.required_keys = build_form(self, DEMOLITION_FIELDS)
 
         # ── Buttons row (Maintenance Style) ──────────────────────────────────
         btn_row = QWidget()

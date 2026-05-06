@@ -89,27 +89,19 @@ class InfoPopup(QDialog):
         line.setFrameShadow(QFrame.Sunken)
         layout.addWidget(line)
 
-        expl_lbl = QLabel(defn.get("explanation", "No description available."))
-        expl_lbl.setWordWrap(True)
+        from ...utils.doc_link import doc_inline, doc_label
+        doc_slug = defn.get("doc_slug", [])
+        expl = defn.get("explanation", "No description available.")
+        html = expl + (" " + doc_inline(doc_slug, "Read More →") if doc_slug else "")
+        expl_lbl = doc_label(html)
         expl_lbl.setStyleSheet("font-size: 12px;")
         layout.addWidget(expl_lbl)
 
         btn_row = QHBoxLayout()
-        doc_slug = defn.get("doc_slug", "")
-        if doc_slug:
-            read_more = QPushButton("Read More →")
-            read_more.setStyleSheet("font-weight: 600; border: none;")
-            read_more.setCursor(Qt.PointingHandCursor)
-            # read_more.clicked.connect(
-            #     lambda: QDesktopServices.openUrl(QUrl(f"{BASE_DOCS_URL}{doc_slug}"))
-            # )
-            btn_row.addWidget(read_more)
-
         btn_row.addStretch()
         close_btn = QPushButton("Close")
         close_btn.clicked.connect(self.accept)
         btn_row.addWidget(close_btn)
-
         layout.addLayout(btn_row)
 
 
@@ -118,47 +110,6 @@ class InfoPopup(QDialog):
 # ---------------------------------------------------------------------------
 
 
-def _field_block(key: str, input_widget: QWidget, parent_dialog: QDialog) -> QWidget:
-    defn = FIELD_DEFINITIONS.get(key, {})
-    label = defn.get("label", key)
-    expl = defn.get("explanation", "")
-    required = defn.get("required", False)
-
-    block = QWidget()
-    layout = QVBoxLayout(block)
-    layout.setContentsMargins(0, 4, 0, 4)
-    layout.setSpacing(3)
-
-    title_lbl = QLabel(f"{label} *" if required else label)
-    title_lbl.setStyleSheet("font-weight: 600; font-size: 12px;")
-    layout.addWidget(title_lbl)
-
-    expl_row = QHBoxLayout()
-    expl_row.setContentsMargins(0, 0, 0, 0)
-    expl_row.setSpacing(6)
-
-    expl_lbl = QLabel(expl)
-    expl_lbl.setWordWrap(True)
-    expl_lbl.setStyleSheet("font-size: 11px;")
-    expl_row.addWidget(expl_lbl, stretch=1)
-
-    info_btn = QPushButton("ⓘ")
-    info_btn.setFixedSize(22, 22)
-    info_btn.setFlat(True)
-    info_btn.setStyleSheet(
-        "QPushButton {font-weight: bold; font-size: 13px; border: none; }"
-    )
-    info_btn.setFocusPolicy(Qt.NoFocus)
-    info_btn.setCursor(Qt.PointingHandCursor)
-    info_btn.clicked.connect(lambda: InfoPopup(key, parent_dialog).exec())
-    expl_row.addWidget(info_btn, alignment=Qt.AlignTop)
-
-    layout.addLayout(expl_row)
-
-    input_widget.setMinimumHeight(30)
-    layout.addWidget(input_widget)
-
-    return block
 
 
 def _section_header(title: str) -> QLabel:
@@ -167,9 +118,14 @@ def _section_header(title: str) -> QLabel:
     return lbl
 
 
-def _lbl(text: str) -> QLabel:
-    lbl = QLabel(text)
-    lbl.setStyleSheet("font-weight: 600; font-size: 11px;")
+def _lbl(text: str, key: str = "") -> QLabel:
+    from ...utils.doc_link import doc_inline, doc_label
+    slug = FIELD_DEFINITIONS.get(key, {}).get("doc_slug", []) if key else []
+    if slug:
+        lbl = doc_label(f'<span style="font-weight:600;font-size:11px;">{text}</span> {doc_inline(slug)}')
+    else:
+        lbl = QLabel(text)
+        lbl.setStyleSheet("font-weight: 600; font-size: 11px;")
     return lbl
 
 
@@ -884,7 +840,7 @@ class MaterialDialog(QDialog):
             )
 
         # ── Material Name (Always visible) ────────────────────────────────
-        root.addWidget(_lbl("Material Name *"))
+        root.addWidget(_lbl("Material Name *", "material_name"))
         self.name_in = QLineEdit(v.get("material_name", ""))
         self.name_in.setPlaceholderText(
             "e.g. Ready-mix Concrete M25  (type ? to browse all)"
@@ -924,7 +880,7 @@ class MaterialDialog(QDialog):
 
         qty_col = QVBoxLayout()
         qty_col.setSpacing(3)
-        qty_col.addWidget(_lbl("Quantity *"))
+        qty_col.addWidget(_lbl("Quantity *", "quantity"))
         qty_val = v.get("quantity", "")
         self.qty_in = QLineEdit("" if not qty_val else fmt(qty_val))
         self.qty_in.setPlaceholderText("e.g. 100")
@@ -935,7 +891,7 @@ class MaterialDialog(QDialog):
 
         unit_col = QVBoxLayout()
         unit_col.setSpacing(3)
-        unit_col.addWidget(_lbl("Unit *"))
+        unit_col.addWidget(_lbl("Unit *", "unit"))
         current_unit = v.get("unit", "m3")
         self.unit_in = self._build_unit_dropdown(current_unit, None)
         self.unit_in.wheelEvent = lambda event: event.ignore()
@@ -951,7 +907,7 @@ class MaterialDialog(QDialog):
 
         rate_col = QVBoxLayout()
         rate_col.setSpacing(3)
-        rate_col.addWidget(_lbl("Rate (Cost)"))
+        rate_col.addWidget(_lbl("Rate (Cost)", "rate"))
         rate_val = v.get("rate", "")
         self.rate_in = QLineEdit("" if not rate_val else str(rate_val))
         self.rate_in.setPlaceholderText("e.g. 4500")
@@ -962,7 +918,7 @@ class MaterialDialog(QDialog):
 
         src_col = QVBoxLayout()
         src_col.setSpacing(3)
-        src_col.addWidget(_lbl("Rate Source"))
+        src_col.addWidget(_lbl("Rate Source", "rate_source"))
         # Store original source so it can be restored when "Allow editing" is unchecked
         self._original_source = v.get("rate_source", "")
         self.src_in = QLineEdit(self._original_source)
@@ -1001,7 +957,7 @@ class MaterialDialog(QDialog):
 
         ef_col = QVBoxLayout()
         ef_col.setSpacing(3)
-        ef_col.addWidget(_lbl("Emission Factor"))
+        ef_col.addWidget(_lbl("Emission Factor", "carbon_emission"))
         ef_val = v.get("carbon_emission", "")
         self.carbon_em_in = QLineEdit("" if not ef_val else str(ef_val))
         self.carbon_em_in.setPlaceholderText("e.g. 0.179")
@@ -1012,7 +968,7 @@ class MaterialDialog(QDialog):
 
         denom_col = QVBoxLayout()
         denom_col.setSpacing(3)
-        denom_col.addWidget(_lbl("Per Unit  (kgCO₂e / ...)"))
+        denom_col.addWidget(_lbl("Per Unit  (kgCO₂e / ...)", "carbon_unit"))
         self.carbon_denom_cb = QComboBox()
         self.carbon_denom_cb.setMinimumHeight(32)
         self.carbon_denom_cb.wheelEvent = lambda event: event.ignore()
@@ -1034,7 +990,7 @@ class MaterialDialog(QDialog):
 
         src_col = QVBoxLayout()
         src_col.setSpacing(3)
-        src_col.addWidget(_lbl("Emission Factor Source"))
+        src_col.addWidget(_lbl("Emission Factor Source", "carbon_emission_src"))
         self._original_carbon_src = v.get("carbon_emission_src", "")
         self.carbon_src_in = QLineEdit(self._original_carbon_src)
         self.carbon_src_in.setPlaceholderText("e.g. ICE v3.0, IPCC")
@@ -1051,7 +1007,7 @@ class MaterialDialog(QDialog):
         cf_inner.setContentsMargins(0, 0, 0, 0)
         cf_inner.setSpacing(3)
 
-        self.cf_row_lbl = _lbl("Conversion Factor")
+        self.cf_row_lbl = _lbl("Conversion Factor", "conversion_factor")
         cf_inner.addWidget(self.cf_row_lbl)
 
         cf_input_row = QHBoxLayout()
@@ -1108,7 +1064,7 @@ class MaterialDialog(QDialog):
 
         scrap_col = QVBoxLayout()
         scrap_col.setSpacing(3)
-        scrap_col.addWidget(_lbl("Scrap Rate (per unit)"))
+        scrap_col.addWidget(_lbl("Scrap Rate (per unit)", "scrap_rate"))
         scrap_val = v.get("scrap_rate", "")
         self.scrap_in = QLineEdit("" if not scrap_val else fmt(scrap_val))
         self.scrap_in.setPlaceholderText("e.g. 50")
@@ -1119,7 +1075,7 @@ class MaterialDialog(QDialog):
 
         recov_col = QVBoxLayout()
         recov_col.setSpacing(3)
-        recov_col.addWidget(_lbl("Recovery after Demolition (%)"))
+        recov_col.addWidget(_lbl("Recovery after Demolition (%)", "post_demolition_recovery_percentage"))
         recov_val = v.get("post_demolition_recovery_percentage", "")
         self.recycling_perc_in = QLineEdit("" if not recov_val else fmt(recov_val))
         self.recycling_perc_in.setPlaceholderText("e.g. 90")
@@ -1140,7 +1096,7 @@ class MaterialDialog(QDialog):
 
         grade_col = QVBoxLayout()
         grade_col.setSpacing(3)
-        grade_col.addWidget(_lbl("Grade"))
+        grade_col.addWidget(_lbl("Grade", "grade"))
         self.grade_in = QLineEdit(v.get("grade", ""))
         self.grade_in.setPlaceholderText("e.g. M25, Fe500")
         self.grade_in.setMinimumHeight(32)
@@ -1149,7 +1105,7 @@ class MaterialDialog(QDialog):
 
         type_col = QVBoxLayout()
         type_col.setSpacing(3)
-        type_col.addWidget(_lbl("Type"))
+        type_col.addWidget(_lbl("Type", "type"))
         self.type_in = QComboBox()
         self.type_in.setEditable(True)
         self.type_in.setMinimumHeight(32)
@@ -1453,7 +1409,7 @@ class MaterialDialog(QDialog):
                 for name in self._suggestions
                 if AdvancedSearchEngine.is_match(q, name)
             )
-        self._active_completer.setModel(QStringListModel(filtered, self))
+        self._active_completer.setModel(QStringListModel(filtered))
         if filtered and (q == "?" or q):
             self._active_completer.complete()
 

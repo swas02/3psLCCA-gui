@@ -77,9 +77,10 @@ class FieldDef:
         Empty string if not applicable.
     required : bool
         Whether the field must be non-empty/non-zero before form submission.
-    doc_slug : str
-        Appended to the base docs URL to form the ⓘ link target.
-        Empty string disables the link.
+    doc_slug : list[str]
+        Path segments identifying the HTML doc page, e.g.
+        ``["financial", "discount-rate"]`` → ``site/financial/discount-rate.html``.
+        Empty list disables the link.
     """
 
     key: str
@@ -89,7 +90,7 @@ class FieldDef:
     options: Any = None
     unit: str = ""
     required: bool = False
-    doc_slug: str = ""
+    doc_slug: list[str] = field(default_factory=list)
     warn: tuple | None = None  # (low, high) or (low, high, msg) or (low, high, low_msg, high_msg)
     default: Any = None  # explicit initial value; if None, the widget's lower bound is used
     blocked: bool = False  # permanently read-only regardless of project lock state

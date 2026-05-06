@@ -80,7 +80,7 @@ OUTPUTS_FIELDS = [
         options=(0, 999),
         required=True,
         unit="(years)",
-        doc_slug="analysis-period",
+        doc_slug=["outputs", "analysis-period"],
         default=50,
     ),
 ]
@@ -687,7 +687,7 @@ class OutputsPage(ScrollableForm):
         )
         f.addRow(self._header)
 
-        self.required_keys = build_form(self, OUTPUTS_FIELDS, None)
+        self.required_keys = build_form(self, OUTPUTS_FIELDS)
         self._ap_label = f.labelForField(self.analysis_period)
 
         self._btn_row = QWidget()

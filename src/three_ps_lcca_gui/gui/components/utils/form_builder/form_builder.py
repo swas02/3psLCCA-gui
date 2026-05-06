@@ -41,6 +41,7 @@ from three_ps_lcca_gui.gui.themes import get_token
 from .form_definitions import FieldDef, Section
 from .image_utils import compress_image, resolve_img_settings
 from ..validation_helpers import confirm_clear_all
+from ..doc_link import doc_inline, doc_label
 
 
 # ---------------------------------------------------------------------------
@@ -62,37 +63,6 @@ def _make_section_header(title: str) -> list[QWidget]:
     return [header, divider]
 
 
-def _make_explanation_label(explanation: str, on_click=None) -> QLabel:
-    """Render explanation text with an optional inline ⓘ docs link.
-
-    Parameters
-    ----------
-    explanation : str
-        Helper text shown below the field title.
-    on_click : Callable[[], None] | None
-        Called when the user clicks the ⓘ icon.  Opens the offline doc page.
-        Pass None to render plain text with no link.
-    """
-    # # TODO: re-enable ⓘ doc link when doc system is ready
-    # if on_click:
-    #     # Use primary color for the icon to ensure visibility
-    #     icon_col = get_token("primary")
-    #     weight = get_token("weight-semibold")
-    #     html = (
-    #         explanation
-    #         + f' <a href="#doc" style="text-decoration:none;font-weight:{weight};color:{icon_col};"> ⓘ</a>'
-    #     )
-    # else:
-    #     html = explanation
-    html = explanation
-
-    label = QLabel(html)
-    label.setWordWrap(True)
-    label.setTextFormat(Qt.RichText)
-    label.setOpenExternalLinks(False)
-    # if on_click:
-    #     label.linkActivated.connect(lambda _href: on_click())
-    return label
 
 
 def _make_upload_img_widget(
@@ -223,7 +193,6 @@ def freeze_img_uploads(host, fields: list, frozen: bool) -> None:
 def build_form(
     host: Any,
     fields: list[Section | FieldDef],
-    doc_opener=None,
 ) -> list[str]:
     """
     Iterate *fields* and populate ``host.form`` (a QFormLayout).
@@ -244,10 +213,6 @@ def build_form(
         The form instance being populated.
     fields : list[Section | FieldDef]
         Declarative field definitions (see form_definitions.py).
-    doc_opener : Callable[[str], None] | None
-        Called with the field's ``doc_slug`` when the user clicks ⓘ.
-        Typically created via ``make_doc_opener("section")`` from doc_handler.
-        Pass None (default) to disable all ⓘ links.
 
     Returns
     -------
@@ -285,12 +250,9 @@ def build_form(
         title_label.setStyleSheet(f"font-weight: {get_token('weight-semibold')};")
         layout.addWidget(title_label)
 
-        # Explanation (doc slug / ⓘ button disabled for now)
         if f.explanation:
-            # on_click = (
-            #     (lambda s=f.doc_slug: doc_opener(s)) if doc_opener and f.doc_slug else None
-            # )
-            layout.addWidget(_make_explanation_label(f.explanation, on_click=None))
+            html = f.explanation + (" " + doc_inline(f.doc_slug) if f.doc_slug else "")
+            layout.addWidget(doc_label(html))
 
         # ── text ──────────────────────────────────────────────────────────
         if f.field_type == "text":

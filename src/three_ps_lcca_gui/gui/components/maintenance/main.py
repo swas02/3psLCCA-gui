@@ -23,9 +23,6 @@ from ..utils.validation_helpers import (
 )
 
 
-from ..utils.doc_handler import make_doc_opener
-
-_DOC_OPENER = make_doc_opener("maintenance")
 
 MAINTENANCE_FIELDS = [
     # ── Routine Maintenance ──────────────────────────────────────────────
@@ -264,7 +261,7 @@ class Maintenance(ScrollableForm):
     def __init__(self, controller=None):
         super().__init__(controller=controller, chunk_name="maintenance_data")
 
-        self.required_keys = build_form(self, MAINTENANCE_FIELDS, _DOC_OPENER)
+        self.required_keys = build_form(self, MAINTENANCE_FIELDS)
 
         # ── Buttons row ──────────────────────────────────────────────────
         btn_row = QWidget()

@@ -13,8 +13,6 @@ from ..utils.form_builder.form_builder import build_form
 from ..utils.validation_helpers import clear_field_styles, freeze_form, freeze_widgets, validate_form, confirm_clear_all
 
 
-from ..utils.doc_handler import make_doc_opener
-_DOC_OPENER = make_doc_opener("financial")
 
 FINANCIAL_FIELDS = [
     Section("Economic Parameters"),
@@ -27,7 +25,7 @@ FINANCIAL_FIELDS = [
         options=(0.0, 100.0, 2),
         unit="(%)",
         required=True,
-        doc_slug="discount-rate",
+        doc_slug=["financial", "discount-rate"],
         default=0.0,
     ),
     FieldDef("discount_rate_source", "Source: Discount Rate", "", "text"),
@@ -39,7 +37,7 @@ FINANCIAL_FIELDS = [
         options=(0.0, 100.0, 2),
         unit="(%)",
         required=True,
-        doc_slug="inflation-rate",
+        doc_slug=["financial", "inflation-rate"],
         default=0.0,
     ),
     FieldDef("inflation_rate_source", "Source: Inflation Rate", "", "text"),
@@ -51,7 +49,7 @@ FINANCIAL_FIELDS = [
         options=(0.0, 100.0, 2),
         unit="(%)",
         required=True,
-        doc_slug="interest-rate",
+        doc_slug=["financial", "interest-rate"],
         default=0.0,
     ),
     FieldDef("interest_rate_source", "Source: Interest Rate", "", "text"),
@@ -62,7 +60,7 @@ FINANCIAL_FIELDS = [
         "float",
         options=(0.0, 1.0, 4),
         required=True,
-        doc_slug="investment-ratio",
+        doc_slug=["financial", "investment-ratio"],
         default=0.0,
     ),
     FieldDef("investment_ratio_source", "Source: Investment Ratio", "", "text"),
@@ -96,7 +94,7 @@ class FinancialData(ScrollableForm):
     def __init__(self, controller=None):
         super().__init__(controller=controller, chunk_name="financial_data")
 
-        self.required_keys = build_form(self, FINANCIAL_FIELDS, _DOC_OPENER)
+        self.required_keys = build_form(self, FINANCIAL_FIELDS)
 
         # ── Buttons row ───────────────────────────────────────────────────
         btn_row = QWidget()

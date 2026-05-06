@@ -19,8 +19,6 @@ from ...utils.validation_helpers import freeze_form, freeze_widgets, confirm_cle
 
 CHUNK = "social_cost_data"
 GLOBAL_CHUNK = "general_info"
-from ...utils.doc_handler import make_doc_opener
-_DOC_OPENER = make_doc_opener("carbon/social-cost")
 
 _MODE_NITI = "NITI Aayog"
 _MODE_RICKE = "K. Ricke et al. (Country-Level)"
@@ -64,7 +62,7 @@ HEADER_FIELDS = [
         "Choose between government standards or peer-reviewed scientific models.",
         "combo",
         options=_SOURCES,
-        doc_slug="scc-methodology",
+        doc_slug=["carbon", "social-cost", "scc-methodology"],
     ),
 ]
 NITI_FIELDS = [
@@ -154,7 +152,7 @@ class SocialCost(ScrollableForm):
         f = self.form  # main QFormLayout
 
         # Header: methodology selector
-        build_form(self, HEADER_FIELDS, _DOC_OPENER)
+        build_form(self, HEADER_FIELDS)
         self._field_map.pop("source", None)  # managed manually, not via base autosave
         self.source.currentIndexChanged.connect(self._on_mode_changed)
 
@@ -245,7 +243,7 @@ class SocialCost(ScrollableForm):
         # Temporarily point self.form at this sub-layout so build_form adds rows here
         self.form, _saved = layout, self.form
         try:
-            build_form(self, NITI_FIELDS, _DOC_OPENER)
+            build_form(self, NITI_FIELDS)
             self._field_map.pop("inr_to_local_rate", None)
         finally:
             self.form = _saved
@@ -277,7 +275,7 @@ class SocialCost(ScrollableForm):
 
         self.form, _saved = layout, self.form
         try:
-            build_form(self, RICKE_FIELDS, _DOC_OPENER)
+            build_form(self, RICKE_FIELDS)
             self._field_map.pop("usd_to_local_rate", None)
             self._field_map.pop("ssp_scenario", None)
             self._field_map.pop("rcp_scenario", None)
@@ -302,7 +300,7 @@ class SocialCost(ScrollableForm):
 
         self.form, _saved = layout, self.form
         try:
-            build_form(self, CUSTOM_FIELDS, _DOC_OPENER)
+            build_form(self, CUSTOM_FIELDS)
             self._field_map.pop("scc_value", None)
         finally:
             self.form = _saved

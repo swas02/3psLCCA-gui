@@ -29,8 +29,6 @@ from PySide6.QtWidgets import QStyledItemDelegate
 CHUNK = "diversion_emissions"
 GEN_CHUNK = "general_info"
 TRAFFIC_CHUNK = "traffic_and_road_data"
-from ...utils.doc_handler import make_doc_opener
-_DOC_OPENER = make_doc_opener("carbon/traffic")
 
 _VEHICLES = [
     ("small_cars", "Small Car"),
@@ -285,7 +283,6 @@ class TrafficEmissions(ScrollableForm):
         build_form(
             self,
             [FieldDef("mode", "Calculation Mode", "", "combo", options=_MODES)],
-            _DOC_OPENER,
         )
         self._field_map.pop("mode", None)  # ← prevent base save loop from firing
 
@@ -357,7 +354,7 @@ class TrafficEmissions(ScrollableForm):
 
         _temp = self.form
         self.form = direct_layout
-        build_form(self, DIRECT_FIELDS, _DOC_OPENER)
+        build_form(self, DIRECT_FIELDS)
         self._field_map.pop("total_direct_emissions", None)  # handled in collect_data
         self.form = _temp
 

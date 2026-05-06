@@ -29,8 +29,6 @@ from ..utils.display_format import DECIMAL_PLACES
 from three_ps_lcca_gui.gui.themes import get_token
 
 
-from ..utils.doc_handler import make_doc_opener
-_DOC_OPENER = make_doc_opener("bridge")
 
 
 BRIDGE_FIELDS = [
@@ -93,7 +91,7 @@ BRIDGE_FIELDS = [
             "Slab",
             "Other",
         ],
-        doc_slug="bridge-type",
+        doc_slug=["bridge", "bridge-type"],
     ),
     FieldDef(
         "span",
@@ -231,7 +229,7 @@ class BridgeData(ScrollableForm):
     def __init__(self, controller=None):
         super().__init__(controller=controller, chunk_name="bridge_data")
 
-        self.required_keys = build_form(self, BRIDGE_FIELDS, _DOC_OPENER)
+        self.required_keys = build_form(self, BRIDGE_FIELDS)
 
         # location_country is set at project creation - lock it
 

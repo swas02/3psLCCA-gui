@@ -49,8 +49,6 @@ from ...utils.validation_helpers import freeze_widgets, confirm_clear_all
 
 CHUNK = "machinery_emissions_data"
 _ACTION_W = 80   # frozen action-column width (edit + delete)
-from ...utils.doc_handler import make_doc_opener
-_DOC_OPENER = make_doc_opener("carbon/machinery")
 
 ENERGY_SOURCES = [
     "Diesel",
@@ -858,7 +856,7 @@ class MachineryEmissions(ScrollableForm):
 
         _saved = self.form
         self.form = days_form_layout
-        build_form(self, DETAILED_FIELDS, _DOC_OPENER)
+        build_form(self, DETAILED_FIELDS)
         self.form = _saved
         self._field_map.pop("default_days", None)  # saved manually via collect_data
 
@@ -882,8 +880,8 @@ class MachineryEmissions(ScrollableForm):
 
         _saved = self.form
         self.form = lumpsum_layout
-        build_form(self, LUMPSUM_ELEC_FIELDS, _DOC_OPENER)
-        build_form(self, LUMPSUM_FUEL_FIELDS, _DOC_OPENER)
+        build_form(self, LUMPSUM_ELEC_FIELDS)
+        build_form(self, LUMPSUM_FUEL_FIELDS)
         self.form = _saved
 
         # Pop from _field_map - we save manually via collect_data
