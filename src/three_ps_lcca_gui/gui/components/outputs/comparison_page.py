@@ -828,6 +828,7 @@ class ComparisonPickerPanel(QWidget):
         self._open_windows: dict[frozenset, "ComparisonResultWindow"] = {}
         self._selected_pids: set[str] = set()
         self._picker_cards: dict[str, _ProjectCard] = {}
+        self._on_disk_pids: set[str] = set()
 
         self._build()
         theme_manager().theme_changed.connect(self._on_theme)
@@ -1123,6 +1124,7 @@ class ComparisonPickerPanel(QWidget):
         base = Path(SafeChunkEngine.get_default_base_dir())
         projects = SafeChunkEngine.list_all_projects(str(base))
         self._live_caches: dict[str, dict] = {}
+        self._on_disk_pids = {proj["project_id"] for proj in projects}
         
         eligible = []
         for proj in projects:
@@ -1208,6 +1210,7 @@ class ComparisonPickerPanel(QWidget):
         base = Path(SafeChunkEngine.get_default_base_dir())
         projects = SafeChunkEngine.list_all_projects(str(base))
         self._live_caches: dict[str, dict] = {}
+        self._on_disk_pids = {proj["project_id"] for proj in projects}
         for proj in projects:
             if not proj.get("user_meta", {}).get("fit_for_comparison"):
                 continue
@@ -1232,12 +1235,29 @@ class ComparisonPickerPanel(QWidget):
         ap    = entry["analysis_period"]
         hid   = entry["id"]
 
-        avail = {p: p in self._live_caches for p in pids}
-        if self.manager:
-            avail = {p: (v and not self.manager.is_project_open(p)) for p, v in avail.items()}
-        avail_count = sum(avail.values())
-        any_avail   = avail_count > 0
-        all_avail   = avail_count == len(pids)
+        # Determine individual project statuses: 'ok', 'not_analysed', 'missing'
+        p_status = {}
+        avail = {} # Parallel boolean map for the re-run worker logic
+        for p in pids:
+            is_open = self.manager.is_project_open(p) if self.manager else False
+            if p in self._live_caches:
+                if is_open:
+                    p_status[p] = 'not_analysed' # Locked/Open projects treated as not ready
+                    avail[p] = False
+                else:
+                    p_status[p] = 'ok'
+                    avail[p] = True
+            elif p in self._on_disk_pids:
+                p_status[p] = 'not_analysed'
+                avail[p] = False
+            else:
+                p_status[p] = 'missing'
+                avail[p] = False
+
+        avail_count = sum(1 for s in p_status.values() if s == 'ok')
+        n_not_ready = sum(1 for s in p_status.values() if s == 'not_analysed')
+        n_missing   = sum(1 for s in p_status.values() if s == 'missing')
+        all_ok      = (avail_count == len(pids))
 
         # ── Card shell ────────────────────────────────────────────────────────
         card = QFrame()
@@ -1283,23 +1303,28 @@ class ComparisonPickerPanel(QWidget):
         dots_h.setContentsMargins(0, 0, 0, 0)
         dots_h.setSpacing(SP4)
         for pid, name in zip(pids, names):
-            is_ok = avail.get(pid, False)
+            st = p_status.get(pid, 'missing')
             dw_h = QHBoxLayout()
             dw_h.setContentsMargins(0, 0, 0, 0)
             dw_h.setSpacing(SP1)
             dot = QFrame()
             dot.setFixedSize(8, 8)
-            dot.setStyleSheet(
-                f"background: {get_token('success' if is_ok else 'danger')}; "
-                f"border-radius: 4px;"
-            )
+            
+            if st == 'ok':
+                dot_color = get_token('success')
+                text_color = get_token('text_secondary')
+            elif st == 'not_analysed':
+                dot_color = get_token('warning')
+                text_color = get_token('warning')
+            else:
+                dot_color = get_token('danger')
+                text_color = get_token('danger')
+
+            dot.setStyleSheet(f"background: {dot_color}; border-radius: 4px;")
             dw_h.addWidget(dot)
             name_lbl = QLabel(name)
             name_lbl.setFont(_f(FS_SM))
-            name_lbl.setStyleSheet(
-                f"color: {get_token('text_secondary' if is_ok else 'danger')}; "
-                f"background: transparent;"
-            )
+            name_lbl.setStyleSheet(f"color: {text_color}; background: transparent;")
             dw_h.addWidget(name_lbl)
             dots_h.addLayout(dw_h)
         dots_h.addStretch()
@@ -1313,14 +1338,14 @@ class ComparisonPickerPanel(QWidget):
         cv.addWidget(ap_lbl)
 
         # Unavailability inline note
-        if not all_avail:
-            n_miss = len(pids) - avail_count
-            if any_avail:
-                note_text = f"⚠  {n_miss} project{'s' if n_miss > 1 else ''} no longer available — will be excluded"
+        if not all_ok:
+            if n_not_ready > 0:
+                note_text = "⚠  One or more projects are not analysed. Please run and make ready for comparison."
                 note_color = get_token("warning")
             else:
-                note_text = "⚠  No projects available — cannot re-run"
+                note_text = f"⚠  {n_missing} project{'s' if n_missing > 1 else ''} no longer available — will be excluded"
                 note_color = get_token("danger")
+
             note = QLabel(note_text)
             note.setFont(_f(FS_SM))
             note.setWordWrap(True)
