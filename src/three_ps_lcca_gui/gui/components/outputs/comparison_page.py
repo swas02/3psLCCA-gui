@@ -1096,15 +1096,12 @@ class ComparisonPickerPanel(QWidget):
 
     def preselect_project(self, pid: str):
         """Force-select a project in the picker (useful for shortcuts from Outputs)."""
-        self._render_picker()
-        if pid in self._picker_cards:
-            card = self._picker_cards[pid]
-            if not card.selected and not card._is_locked:
-                card._selected = True
-                card._apply_style()
-                self._selected_pids.add(pid)
-                self._run_btn.setEnabled(len(self._selected_pids) >= 2)
-                self._apply_run_btn_style()
+        card = self._picker_cards.get(pid)
+        if card and not card._is_locked and not card._selected:
+            card._selected = True
+            card._apply_style()
+            self._selected_pids.add(pid)
+            self._apply_run_btn_style()
 
     # ── active picker ─────────────────────────────────────────────────────────
 

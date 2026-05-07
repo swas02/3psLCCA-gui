@@ -646,7 +646,7 @@ class ProjectWindow(QMainWindow):
 
     # ── View switching ────────────────────────────────────────────────────────
 
-    def show_home(self):
+    def show_home(self, tab: str = None, project_select: str = None):
         self.setWindowTitle("3psLCCA - Home")
         self.home_widget.set_active_project(
             self.project_id if self.has_project_loaded() else None
@@ -654,6 +654,8 @@ class ProjectWindow(QMainWindow):
         self.home_widget.refresh_project_list()
         self.main_stack.setCurrentWidget(self.home_widget)
         self.manager.refresh_all_home_screens()
+        if tab == "compare":
+            QTimer.singleShot(0, lambda: self.home_widget.switch_to_compare(preselect_pid=project_select))
 
     def show_project_view(self):
         if not self.has_project_loaded():
@@ -681,34 +683,22 @@ class ProjectWindow(QMainWindow):
                 pass
 
             if is_locked_on_disk:
-                # Sync UI state to locked
                 self.btn_lock.setChecked(True)
                 self._on_lock_toggled(True)
-                
-                # Ensure all pages are built and registered
                 for name in self._page_names:
                     self._get_or_create_widget(name)
                 self.outputs_page.register_pages(self.widget_map)
-                
-                # Switch to Outputs and run calculation silently (no cache write)
                 self.content_stack.setCurrentWidget(self.outputs_page)
                 self.outputs_page.run_calculation(save_cache=False)
-                
                 items = self.sidebar.findItems("Outputs", Qt.MatchExactly)
                 if items:
                     self.sidebar.setCurrentItem(items[0])
-                return
-
-        # Standard landing: always go to General Information on initial load.
-        # (outputs_page is added first to content_stack so currentWidget() is
-        # never None — the old None-check never fired.)
-        current = self.content_stack.currentWidget()
-        if current is self.outputs_page or current is None:
-            self.content_stack.setCurrentWidget(
-                self._get_or_create_widget("General Information"))
-            items = self.sidebar.findItems("General Information", Qt.MatchExactly)
-            if items:
-                self.sidebar.setCurrentItem(items[0])
+            else:
+                self.content_stack.setCurrentWidget(
+                    self._get_or_create_widget("General Information"))
+                items = self.sidebar.findItems("General Information", Qt.MatchExactly)
+                if items:
+                    self.sidebar.setCurrentItem(items[0])
 
     def preload_all(self, on_complete):
         """Setup project UI if needed, then build every page widget one per
@@ -815,10 +805,15 @@ class ProjectWindow(QMainWindow):
             self.sidebar.setCurrentItem(items[0])
 
     def _on_compare_requested(self, project_id: str):
-        """Shortcut from OutputsPage: close project and navigate to comparison picker."""
-        self._close_project()
-        if self.home_widget:
-            self.home_widget.switch_to_compare(preselect_pid=project_id)
+        if self.controller.engine and self.controller.engine.is_active():
+            self.controller.close_project()
+        self.project_id = None
+
+        new_win = self.manager._create_window()
+        new_win.show_home(tab="compare", project_select=project_id)
+        new_win.show()
+        new_win.activateWindow()
+        self.close()
 
     # ── Controller signals ────────────────────────────────────────────────────
 
@@ -847,13 +842,15 @@ class ProjectWindow(QMainWindow):
         )
 
     def _close_project(self):
-        if not self.controller.engine or not self.controller.engine.is_active():
-            self.show_home()
-            return
-        self.controller.close_project()
+        if self.controller.engine and self.controller.engine.is_active():
+            self.controller.close_project()
         self.project_id = None
-        self.setWindowTitle("3psLCCA - Home")
-        self.show_home()
+
+        new_win = self.manager._create_window()
+        new_win.show_home()
+        new_win.show()
+        new_win.activateWindow()
+        self.close()
 
     def _save_now(self):
         if self.controller.engine and self.controller.engine.is_active():

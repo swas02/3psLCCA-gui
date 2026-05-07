@@ -119,16 +119,17 @@ class BaseDataWidget(QWidget):
         if not self.controller.engine.is_active() or not self.chunk_name:
             return
 
-        data = self.controller.get_chunk(self.chunk_name)
-        if not data or data == self._loaded_data:
+        data = self.controller.get_chunk(self.chunk_name) or {}
+        if data == self._loaded_data:
             return
 
         self._loaded_data = data
         self.load_data_dict(data)
 
     def _on_project_reloaded(self):
-        """Reset loaded state on project reload so fresh data is pulled."""
+        """Clear widgets and reload from the new project's engine."""
         self._loaded_data = {}
+        self.load_data_dict({})
         self.refresh_from_engine()
 
     def get_data_dict(self) -> dict:
