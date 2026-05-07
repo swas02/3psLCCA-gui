@@ -699,8 +699,11 @@ class ProjectWindow(QMainWindow):
                     self.sidebar.setCurrentItem(items[0])
                 return
 
-        # Standard landing or return: General Information (or keep current)
-        if not self.content_stack.currentWidget():
+        # Standard landing: always go to General Information on initial load.
+        # (outputs_page is added first to content_stack so currentWidget() is
+        # never None — the old None-check never fired.)
+        current = self.content_stack.currentWidget()
+        if current is self.outputs_page or current is None:
             self.content_stack.setCurrentWidget(
                 self._get_or_create_widget("General Information"))
             items = self.sidebar.findItems("General Information", Qt.MatchExactly)
