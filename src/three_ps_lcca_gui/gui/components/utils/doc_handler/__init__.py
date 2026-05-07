@@ -72,7 +72,7 @@ def _show(content: str, stem: str, parent: QWidget | None = None) -> None:
     if _dialog is None:
         _dialog = QDialog(parent)
         _dialog.setWindowFlags(
-            Qt.Tool |
+            Qt.Window |
             Qt.WindowMaximizeButtonHint |
             Qt.WindowCloseButtonHint
         )
@@ -91,7 +91,7 @@ def _show(content: str, stem: str, parent: QWidget | None = None) -> None:
     elif parent is not None:
         _dialog.setParent(parent)
         _dialog.setWindowFlags(
-            Qt.Tool |
+            Qt.Window |
             Qt.WindowMaximizeButtonHint |
             Qt.WindowCloseButtonHint
         )
